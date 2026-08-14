@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07090c;font-family:'Barlow',system-ui,sans-serif}
+a{color:#46d1a1;text-decoration:none}a:hover{color:#7fe4c0}
+</style>
+</helmet>
+<div style="width:1280px;height:720px;margin:24px auto;background:#0b0d10;color:#e8ecef;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.06)">
+
+<sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:28px 40px 16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:15px;color:rgba(232,236,239,.6)">
+    <span>{{ time }}</span>
+    <div style="display:flex;gap:22px;align-items:center">
+      <span>18°C</span>
+      <span style="color:#46d1a1">● GPS</span>
+      <span>BT</span>
+    </div>
+  </div>
+  <div style="flex:1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:26px;justify-self:start">
+      <div style="display:flex;gap:14px;font-family:'Barlow Semi Condensed',sans-serif;font-size:26px;font-weight:600;letter-spacing:2px">
+        <span style="color:rgba(232,236,239,.28)">P</span>
+        <span style="color:rgba(232,236,239,.28)">R</span>
+        <span style="color:rgba(232,236,239,.28)">N</span>
+        <span style="color:#e8ecef;border-bottom:3px solid #46d1a1;padding-bottom:2px">D</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:13px;letter-spacing:1.5px;color:rgba(232,236,239,.5);text-transform:uppercase">Régulateur</div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:30px;color:#46d1a1;font-weight:600">110</span>
+          <span style="font-size:14px;color:rgba(232,236,239,.5)">km/h · actif</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:13px;letter-spacing:1.5px;color:rgba(232,236,239,.5);text-transform:uppercase">Navigation</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:36px;height:36px;border-radius:8px;background:#12151a;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#46d1a1;font-size:20px;font-weight:700">↱</div>
+          <div>
+            <div style="font-weight:600;font-size:17px">A droite dans 400 m</div>
+            <div style="font-size:13px;color:rgba(232,236,239,.5)">Av. de la République</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:176px;font-weight:700;line-height:1;letter-spacing:-4px">{{ speed }}</div>
+      <div style="font-size:17px;letter-spacing:3px;color:rgba(232,236,239,.5)">{{ speedUnit }}</div>
+      <div style="margin-top:14px;width:58px;height:58px;border-radius:50%;background:#f4f4f2;border:6px solid #d24b38;display:flex;align-items:center;justify-content:center;color:#111;font-family:'Barlow Semi Condensed',sans-serif;font-size:24px;font-weight:700">90</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:22px;justify-self:end;min-width:250px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;font-size:14px;color:rgba(232,236,239,.6)">
+          <span>{{ energyLabel }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;color:#e8ecef">{{ energyValue }}</span>
+        </div>
+        <div style="height:10px;border-radius:5px;background:#171b21;overflow:hidden">
+          <div style="width:72%;height:100%;border-radius:5px;background:linear-gradient(90deg,#2ea77e,#46d1a1)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:rgba(232,236,239,.5)">
+          <span>Autonomie</span>
+          <span style="font-family:'IBM Plex Mono',monospace;color:#e8ecef">{{ rangeValue }}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;background:#0f1216;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px 16px">
+        <div style="font-size:12px;letter-spacing:1.5px;color:rgba(232,236,239,.45);text-transform:uppercase">Voyants</div>
+        <div style="display:flex;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+          <span style="display:flex;align-items:center;gap:5px;color:rgba(232,236,239,.35)"><span style="width:7px;height:7px;border-radius:50%;background:rgba(232,236,239,.25)"></span>ABS</span>
+          <span style="display:flex;align-items:center;gap:5px;color:rgba(232,236,239,.35)"><span style="width:7px;height:7px;border-radius:50%;background:rgba(232,236,239,.25)"></span>ESP</span>
+          <span style="display:flex;align-items:center;gap:5px;color:#f2b544"><span style="width:7px;height:7px;border-radius:50%;background:#f2b544"></span>PNEUS</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(242,181,68,.09);border:1px solid rgba(242,181,68,.3);border-radius:12px;padding:12px 16px">
+        <span style="color:#f2b544;font-size:18px;font-weight:700">!</span>
+        <div style="font-size:13.5px;color:#f2d9a8">Pression pneu arrière droit basse — 1,9 bar</div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:24px 40px 12px;gap:20px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:30px;font-weight:600">Menu</div>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:rgba(232,236,239,.5)">{{ time }}</span>
+  </div>
+  <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 1fr;gap:16px">
+    <sc-for list="{{ menuTiles }}" as="tile" hint-placeholder-count="8">
+      <div onClick="{{ tile.go }}" style="background:#12151a;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:22px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer" style-hover="background:#171b22;border-color:rgba(70,209,161,.4)">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(70,209,161,.12);display:flex;align-items:center;justify-content:center;color:#46d1a1;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600">{{ tile.glyph }}</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:19px;font-weight:600">{{ tile.label }}</div>
+          <div style="font-size:13px;color:rgba(232,236,239,.5)">{{ tile.sub }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isNav }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,#0e1116 0 26px,#10141a 26px 52px);display:flex;align-items:center;justify-content:center">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:rgba(232,236,239,.3);border:1px dashed rgba(232,236,239,.2);border-radius:8px;padding:8px 14px">carte — fond de plan à intégrer</span>
+  </div>
+  <div style="position:absolute;left:50%;top:58%;width:18px;height:18px;border-radius:50%;background:#46d1a1;border:4px solid rgba(70,209,161,.25);box-shadow:0 0 0 8px rgba(70,209,161,.12)"></div>
+  <div style="position:absolute;top:24px;left:24px;display:flex;align-items:center;gap:14px;background:rgba(11,13,16,.92);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 20px;backdrop-filter:blur(8px)">
+    <div style="width:46px;height:46px;border-radius:10px;background:rgba(70,209,161,.12);display:flex;align-items:center;justify-content:center;color:#46d1a1;font-size:26px;font-weight:700">↱</div>
+    <div>
+      <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:22px;font-weight:600">400 m — à droite</div>
+      <div style="font-size:14px;color:rgba(232,236,239,.55)">Av. de la République</div>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:24px;left:24px;display:flex;gap:22px;background:rgba(11,13,16,.92);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 20px;font-family:'IBM Plex Mono',monospace;backdrop-filter:blur(8px)">
+    <div><div style="font-size:11px;color:rgba(232,236,239,.45);letter-spacing:1px">ARRIVÉE</div><div style="font-size:18px;font-weight:600">14:32</div></div>
+    <div><div style="font-size:11px;color:rgba(232,236,239,.45);letter-spacing:1px">RESTANT</div><div style="font-size:18px;font-weight:600">12 km</div></div>
+    <div><div style="font-size:11px;color:rgba(232,236,239,.45);letter-spacing:1px">DURÉE</div><div style="font-size:18px;font-weight:600">18 min</div></div>
+  </div>
+  <div style="position:absolute;right:24px;bottom:24px;display:flex;flex-direction:column;gap:10px">
+    <div style="width:52px;height:52px;border-radius:12px;background:rgba(18,21,26,.95);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer" style-hover="border-color:rgba(70,209,161,.5)">+</div>
+    <div style="width:52px;height:52px;border-radius:12px;background:rgba(18,21,26,.95);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer" style-hover="border-color:rgba(70,209,161,.5)">−</div>
+    <div style="width:52px;height:52px;border-radius:12px;background:rgba(18,21,26,.95);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#46d1a1;font-size:18px;cursor:pointer" style-hover="border-color:rgba(70,209,161,.5)">◎</div>
+  </div>
+  <div style="position:absolute;top:24px;right:24px;background:rgba(11,13,16,.92);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;font-family:'IBM Plex Mono',monospace;font-size:14px;color:rgba(232,236,239,.6)">Destination : Gare centrale</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isVeh }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;padding:24px 40px 12px;gap:36px">
+  <div style="flex:1.1;display:flex;flex-direction:column;gap:16px">
+    <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:30px;font-weight:600">Véhicule</div>
+    <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center">
+      <div style="position:relative;width:220px;height:420px;border-radius:110px 110px 90px 90px;background:linear-gradient(180deg,#181d24,#10141a);border:1px solid rgba(255,255,255,.1)">
+        <div style="position:absolute;left:-8px;top:120px;width:16px;height:70px;border-radius:8px;background:#46d1a1" title="Porte AV G"></div>
+        <div style="position:absolute;right:-8px;top:120px;width:16px;height:70px;border-radius:8px;background:#46d1a1"></div>
+        <div style="position:absolute;left:-8px;top:210px;width:16px;height:70px;border-radius:8px;background:#f2b544"></div>
+        <div style="position:absolute;right:-8px;top:210px;width:16px;height:70px;border-radius:8px;background:#46d1a1"></div>
+        <div style="position:absolute;left:50%;transform:translateX(-50%);top:-6px;width:110px;height:12px;border-radius:6px;background:#46d1a1"></div>
+        <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:-6px;width:110px;height:12px;border-radius:6px;background:#46d1a1"></div>
+      </div>
+      <div style="position:absolute;left:6%;top:8%;text-align:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600">2,4</div><div style="font-size:11px;color:rgba(232,236,239,.45)">bar AV G</div></div>
+      <div style="position:absolute;right:6%;top:8%;text-align:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600">2,4</div><div style="font-size:11px;color:rgba(232,236,239,.45)">bar AV D</div></div>
+      <div style="position:absolute;left:6%;bottom:8%;text-align:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600">2,3</div><div style="font-size:11px;color:rgba(232,236,239,.45)">bar AR G</div></div>
+      <div style="position:absolute;right:6%;bottom:8%;text-align:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:#f2b544">1,9</div><div style="font-size:11px;color:#f2b544">bar AR D</div></div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:14px;justify-content:center">
+    <sc-for list="{{ vehRows }}" as="row" hint-placeholder-count="6">
+      <div style="display:flex;justify-content:space-between;align-items:center;background:#12151a;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:15px 20px">
+        <span style="font-size:15px;color:rgba(232,236,239,.65)">{{ row.label }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:{{ row.color }}">{{ row.value }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMedia }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;padding:24px 40px 12px;gap:36px;align-items:center">
+  <div style="width:300px;height:300px;border-radius:16px;background:repeating-linear-gradient(45deg,#12151a 0 22px,#151920 22px 44px);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:rgba(232,236,239,.3)">pochette album</span>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:24px">
+    <div>
+      <div style="font-size:13px;letter-spacing:1.5px;color:#46d1a1;text-transform:uppercase;font-weight:600">Bluetooth · Téléphone de Léa</div>
+      <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:34px;font-weight:600;margin-top:8px">Titre en lecture</div>
+      <div style="font-size:17px;color:rgba(232,236,239,.55);margin-top:4px">Artiste — Album</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:6px;border-radius:3px;background:#171b21"><div style="width:38%;height:100%;border-radius:3px;background:#46d1a1"></div></div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:12px;color:rgba(232,236,239,.45)"><span>1:24</span><span>3:41</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px">
+      <div style="width:60px;height:60px;border-radius:50%;background:#12151a;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" style-hover="border-color:rgba(70,209,161,.5)">⏮</div>
+      <div style="width:76px;height:76px;border-radius:50%;background:#46d1a1;color:#07120d;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;font-weight:700" style-hover="background:#5fdcb1">▶</div>
+      <div style="width:60px;height:60px;border-radius:50%;background:#12151a;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" style-hover="border-color:rgba(70,209,161,.5)">⏭</div>
+      <div style="margin-left:24px;display:flex;align-items:center;gap:12px;flex:1">
+        <span style="font-size:13px;color:rgba(232,236,239,.5)">Vol</span>
+        <div style="flex:1;height:6px;border-radius:3px;background:#171b21"><div style="width:55%;height:100%;border-radius:3px;background:rgba(232,236,239,.6)"></div></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div style="padding:9px 18px;border-radius:20px;background:rgba(70,209,161,.14);border:1px solid rgba(70,209,161,.4);color:#46d1a1;font-size:14px;font-weight:600">Bluetooth</div>
+      <div style="padding:9px 18px;border-radius:20px;background:#12151a;border:1px solid rgba(255,255,255,.08);color:rgba(232,236,239,.55);font-size:14px;cursor:pointer">Radio</div>
+      <div style="padding:9px 18px;border-radius:20px;background:#12151a;border:1px solid rgba(255,255,255,.08);color:rgba(232,236,239,.55);font-size:14px;cursor:pointer">USB</div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;padding:24px 40px 12px;gap:32px">
+  <div style="width:220px;display:flex;flex-direction:column;gap:6px">
+    <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:30px;font-weight:600;margin-bottom:14px">Paramètres</div>
+    <div style="padding:12px 16px;border-radius:10px;background:rgba(70,209,161,.12);color:#46d1a1;font-weight:600;font-size:15px">Général</div>
+    <div style="padding:12px 16px;border-radius:10px;color:rgba(232,236,239,.6);font-size:15px;cursor:pointer" style-hover="background:#12151a">Affichage</div>
+    <div style="padding:12px 16px;border-radius:10px;color:rgba(232,236,239,.6);font-size:15px;cursor:pointer" style-hover="background:#12151a">Son</div>
+    <div style="padding:12px 16px;border-radius:10px;color:rgba(232,236,239,.6);font-size:15px;cursor:pointer" style-hover="background:#12151a">Véhicule</div>
+    <div style="padding:12px 16px;border-radius:10px;color:rgba(232,236,239,.6);font-size:15px;cursor:pointer" style-hover="background:#12151a">Système</div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:12px;justify-content:center">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#12151a;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px 20px">
+      <span style="font-size:15px">Langue</span>
+      <div style="display:flex;gap:8px">
+        <span style="padding:7px 16px;border-radius:8px;background:rgba(70,209,161,.14);border:1px solid rgba(70,209,161,.4);color:#46d1a1;font-size:13.5px;font-weight:600">Français</span>
+        <span style="padding:7px 16px;border-radius:8px;background:#0f1216;border:1px solid rgba(255,255,255,.08);color:rgba(232,236,239,.5);font-size:13.5px;cursor:pointer">English</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#12151a;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px 20px">
+      <span style="font-size:15px">Unités</span>
+      <div style="display:flex;gap:8px">
+        <span style="padding:7px 16px;border-radius:8px;background:rgba(70,209,161,.14);border:1px solid rgba(70,209,161,.4);color:#46d1a1;font-size:13.5px;font-weight:600">km · °C</span>
+        <span style="padding:7px 16px;border-radius:8px;background:#0f1216;border:1px solid rgba(255,255,255,.08);color:rgba(232,236,239,.5);font-size:13.5px;cursor:pointer">mi · °F</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#12151a;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px 20px">
+      <span style="font-size:15px">Luminosité</span>
+      <div style="width:280px;height:6px;border-radius:3px;background:#171b21"><div style="width:70%;height:100%;border-radius:3px;background:#46d1a1"></div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#12151a;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px 20px">
+      <span style="font-size:15px">Thème</span>
+      <div style="display:flex;gap:8px">
+        <span style="padding:7px 16px;border-radius:8px;background:#0f1216;border:1px solid rgba(255,255,255,.08);color:rgba(232,236,239,.5);font-size:13.5px;cursor:pointer">Jour</span>
+        <span style="padding:7px 16px;border-radius:8px;background:rgba(70,209,161,.14);border:1px solid rgba(70,209,161,.4);color:#46d1a1;font-size:13.5px;font-weight:600">Nuit</span>
+        <span style="padding:7px 16px;border-radius:8px;background:#0f1216;border:1px solid rgba(255,255,255,.08);color:rgba(232,236,239,.5);font-size:13.5px;cursor:pointer">Auto</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#12151a;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px 20px">
+      <span style="font-size:15px">Version logicielle</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:rgba(232,236,239,.5)">V1.0.3 — à jour</span>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isStub }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+  <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:32px;font-weight:600">{{ stubTitle }}</div>
+  <div style="font-size:15px;color:rgba(232,236,239,.5)">Écran prévu en Phase 2 — contenu à définir.</div>
+  <div onClick="{{ goMenu }}" style="margin-top:10px;padding:11px 24px;border-radius:10px;background:rgba(70,209,161,.14);border:1px solid rgba(70,209,161,.4);color:#46d1a1;font-weight:600;cursor:pointer" style-hover="background:rgba(70,209,161,.22)">← Retour au menu</div>
+</div>
+</sc-if>
+
+<div style="height:76px;flex:none;display:flex;align-items:stretch;justify-content:center;gap:8px;background:#0e1013;border-top:1px solid rgba(255,255,255,.07);padding:8px 24px">
+  <sc-for list="{{ navItems }}" as="nv" hint-placeholder-count="5">
+    <div onClick="{{ nv.go }}" style="flex:1;max-width:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:12px;cursor:pointer;background:{{ nv.bg }}" style-hover="background:#171b22">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:{{ nv.color }}">{{ nv.glyph }}</span>
+      <span style="font-size:13px;font-weight:600;color:{{ nv.color }}">{{ nv.label }}</span>
+    </div>
+  </sc-for>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1328,&quot;height&quot;:768},&quot;powertrain&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;électrique&quot;,&quot;thermique&quot;],&quot;default&quot;:&quot;électrique&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Véhicule&quot;},&quot;unites&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;km/h&quot;,&quot;mph&quot;],&quot;default&quot;:&quot;km/h&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Véhicule&quot;}}">
+class Component extends DCLogic {
+  state = { screen: 'dash', time: '' };
+  componentDidMount() {
+    const tick = () => this.setState({ time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) });
+    tick();
+    this._t = setInterval(tick, 15000);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  go(screen) { return () => this.setState({ screen }); }
+  renderVals() {
+    const s = this.state.screen;
+    const electric = (this.props.powertrain ?? 'électrique') === 'électrique';
+    const mph = (this.props.unites ?? 'km/h') === 'mph';
+    const stubs = { conduite: 'Conduite', adas: 'ADAS', phone: 'Téléphone', entretien: 'Entretien' };
+    const menuTiles = [
+      { label: 'Véhicule', sub: 'État, portes, pneus', glyph: 'VH', go: this.go('veh') },
+      { label: 'Navigation', sub: 'Carte et itinéraire', glyph: 'NV', go: this.go('nav') },
+      { label: 'Conduite', sub: 'Modes et paramètres', glyph: 'CD', go: this.go('conduite') },
+      { label: 'ADAS', sub: 'Aides à la conduite', glyph: 'AD', go: this.go('adas') },
+      { label: 'Média', sub: 'Musique et radio', glyph: 'MD', go: this.go('media') },
+      { label: 'Téléphone', sub: 'Appels et contacts', glyph: 'TL', go: this.go('phone') },
+      { label: 'Entretien', sub: 'Suivi et alertes', glyph: 'EN', go: this.go('entretien') },
+      { label: 'Paramètres', sub: 'Système et affichage', glyph: 'PR', go: this.go('settings') },
+    ];
+    const active = { dash: 'dash', menu: 'menu', nav: 'nav', veh: 'veh', media: 'media' };
+    const navItems = [
+      { label: 'Accueil', glyph: '⌂', key: 'dash', go: this.go('dash') },
+      { label: 'Véhicule', glyph: '⛍', key: 'veh', go: this.go('veh') },
+      { label: 'Navigation', glyph: '➤', key: 'nav', go: this.go('nav') },
+      { label: 'Média', glyph: '♪', key: 'media', go: this.go('media') },
+      { label: 'Menu', glyph: '☰', key: 'menu', go: this.go('menu') },
+    ].map(n => ({ ...n, color: n.key === s ? '#46d1a1' : 'rgba(232,236,239,.5)', bg: n.key === s ? 'rgba(70,209,161,.1)' : 'transparent' }));
+    const vehRows = [
+      { label: 'Portes', value: '1 ouverte (AR G)', color: '#f2b544' },
+      { label: 'Coffre / capot', value: 'Fermés', color: '#46d1a1' },
+      { label: electric ? 'Batterie' : 'Carburant', value: electric ? '72 % · 310 km' : '46 L · 610 km', color: '#e8ecef' },
+      { label: 'Kilométrage', value: '24 812 km', color: '#e8ecef' },
+      { label: 'Temp. extérieure', value: '18 °C', color: '#e8ecef' },
+      { label: 'État général', value: '1 alerte pneus', color: '#f2b544' },
+    ];
+    return {
+      time: this.state.time,
+      isDash: s === 'dash', isMenu: s === 'menu', isNav: s === 'nav', isVeh: s === 'veh',
+      isMedia: s === 'media', isSettings: s === 'settings', isStub: !!stubs[s],
+      stubTitle: stubs[s] || '',
+      speed: mph ? '54' : '87',
+      speedUnit: mph ? 'mph' : 'km/h',
+      energyLabel: electric ? 'Batterie · 72 %' : 'Carburant',
+      energyValue: electric ? '72 %' : '46 L',
+      rangeValue: electric ? '310 km' : '610 km',
+      menuTiles, navItems, vehRows,
+      goMenu: this.go('menu'),
+    };
+  }
+}
+</script>
+</body>
+</html>

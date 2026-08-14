@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" rel="stylesheet">
+<link href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#01030a;font-family:'Inter',system-ui,sans-serif}
+a{color:#3b82f6;text-decoration:none}a:hover{color:#60a5fa}
+</style>
+</helmet>
+<div style="width:1600px;height:900px;margin:20px auto;background:radial-gradient(120% 90% at 50% 0%,#0b1424 0%,#04070f 55%,#02040a 100%);color:#eef2f8;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;border:1px solid #1b2536;box-shadow:0 30px 90px rgba(0,0,0,.8)">
+
+<div style="height:66px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 30px;position:relative;border-bottom:1px solid rgba(96,140,220,.1)">
+  <div style="display:flex;align-items:center;gap:16px;font-size:19px;font-weight:500">
+    <i class="ph ph-thermometer-simple" style="font-size:20px;color:#8b98ad"></i><span>23°C</span>
+    <span style="width:1px;height:24px;background:rgba(139,152,173,.3)"></span>
+    <i class="ph ph-clock" style="font-size:20px;color:#8b98ad"></i><span style="font-variant-numeric:tabular-nums">{{ time }}</span>
+  </div>
+  <div style="position:absolute;left:50%;top:0;transform:translateX(-50%);width:250px;height:60px;background:linear-gradient(180deg,#060b16,#08101f);border:1px solid rgba(96,140,220,.22);border-top:none;border-radius:0 0 26px 26px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(37,99,235,.15)">
+    <span style="font-size:21px;font-weight:700;line-height:1.1">D</span>
+    <span style="font-size:12px;font-weight:600;letter-spacing:.12em;color:#22c55e">READY</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:18px">
+    <span style="width:36px;height:36px;border-radius:50%;background:#f4f6fb;border:4px solid #dc2626;display:flex;align-items:center;justify-content:center;color:#0b1020;font-size:13px;font-weight:700">130</span>
+    <span style="display:flex;align-items:center;gap:5px;color:#22c55e"><i class="ph ph-headlights" style="font-size:22px"></i><span style="font-size:11px;font-weight:600">AUTO</span></span>
+    <i class="ph ph-bluetooth" style="font-size:20px;color:#3b82f6"></i>
+    <span style="display:flex;align-items:center;gap:4px;color:#c3cee0"><span style="font-size:14px;font-weight:600">4G</span><i class="ph ph-cell-signal-full" style="font-size:19px"></i></span>
+    <i class="ph ph-wifi-high" style="font-size:20px;color:#c3cee0"></i>
+    <i class="ph ph-user-circle" onClick="{{ goAccueil }}" style="font-size:27px;color:#8b98ad;cursor:pointer"></i>
+  </div>
+</div>
+
+<sc-if value="{{ isAccueil }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:grid;grid-template-columns:290px 1fr 290px;gap:30px;padding:24px 40px;align-items:center">
+  <div style="display:flex;flex-direction:column;gap:24px">
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:16px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+      <span style="width:70px;height:70px;border-radius:50%;border:2px solid #3b82f6;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center"><i class="ph ph-shield-check" style="font-size:32px;color:#3b82f6"></i></span>
+      <span style="font-size:20px;font-weight:600;margin-top:4px">Sécurité</span>
+      <span style="width:30px;height:3px;border-radius:2px;background:#3b82f6"></span>
+      <span style="font-size:14px;color:#8b98ad;line-height:1.5">Votre sécurité est notre priorité.</span>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:16px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+      <span style="width:70px;height:70px;border-radius:50%;border:2px solid #22c55e;background:rgba(34,197,94,.1);display:flex;align-items:center;justify-content:center"><i class="ph ph-leaf" style="font-size:32px;color:#22c55e"></i></span>
+      <span style="font-size:20px;font-weight:600;margin-top:4px">Efficience</span>
+      <span style="width:30px;height:3px;border-radius:2px;background:#22c55e"></span>
+      <span style="font-size:14px;color:#8b98ad;line-height:1.5">Conduisez plus loin, consommez moins.</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+    <span style="width:74px;height:74px;border-radius:50%;border:3px solid #2563eb;background:radial-gradient(circle,rgba(37,99,235,.25),transparent 70%);display:flex;align-items:center;justify-content:center;box-shadow:0 0 34px rgba(37,99,235,.45);font-size:34px;font-weight:700;color:#60a5fa">A</span>
+    <span style="font-size:44px;font-weight:700;letter-spacing:-.01em;margin-top:8px">Bienvenue</span>
+    <span style="font-size:19px;color:#aeb9cc">dans votre véhicule</span>
+    <span style="font-size:23px;font-weight:600;letter-spacing:.06em;margin-top:6px">AGOO<span style="color:#3b82f6">JIYE</span></span>
+    <image-slot id="hero-car" style="width:520px;height:220px;margin-top:6px" shape="rounded" radius="16" placeholder="visuel véhicule — face avant nuit"></image-slot>
+    <div onClick="{{ goDash }}" style="margin-top:14px;width:330px;height:60px;border-radius:14px;border:1px solid #3b82f6;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center;gap:12px;font-size:21px;font-weight:600;cursor:pointer;box-shadow:0 0 26px rgba(37,99,235,.3)" style-hover="background:rgba(59,130,246,.2)">Démarrer<i class="ph ph-caret-right" style="font-size:20px"></i></div>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <span style="width:9px;height:9px;border-radius:50%;background:#3b82f6"></span>
+      <span style="width:9px;height:9px;border-radius:50%;background:#2a3852"></span>
+      <span style="width:9px;height:9px;border-radius:50%;background:#2a3852"></span>
+      <span style="width:9px;height:9px;border-radius:50%;background:#2a3852"></span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:24px">
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:16px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+      <span style="width:70px;height:70px;border-radius:50%;border:2px solid #a78bfa;background:rgba(167,139,250,.1);display:flex;align-items:center;justify-content:center"><i class="ph ph-hand-tap" style="font-size:32px;color:#a78bfa"></i></span>
+      <span style="font-size:20px;font-weight:600;margin-top:4px">Intuitif</span>
+      <span style="width:30px;height:3px;border-radius:2px;background:#a78bfa"></span>
+      <span style="font-size:14px;color:#8b98ad;line-height:1.5">Une interface simple, claire et moderne.</span>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:16px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+      <span style="width:70px;height:70px;border-radius:50%;border:2px solid #3b82f6;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center"><i class="ph ph-gear-six" style="font-size:32px;color:#3b82f6"></i></span>
+      <span style="font-size:20px;font-weight:600;margin-top:4px">Personnalisable</span>
+      <span style="width:30px;height:3px;border-radius:2px;background:#3b82f6"></span>
+      <span style="font-size:14px;color:#8b98ad;line-height:1.5">Réglez et personnalisez votre expérience de conduite.</span>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDash }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;position:relative;overflow:hidden;background:radial-gradient(90% 70% at 50% 40%,#122442 0%,#070d1a 55%,#03060d 100%)">
+  <div style="position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:900px;height:58%;clip-path:polygon(46% 0,54% 0,92% 100%,8% 100%);background:linear-gradient(180deg,rgba(59,130,246,0),rgba(59,130,246,.12))"></div>
+  <div style="position:absolute;left:50%;bottom:0;transform:translateX(-50%) rotate(9deg);width:3px;height:44%;background:linear-gradient(180deg,rgba(147,197,253,.0),rgba(147,197,253,.5));transform-origin:top center;margin-left:-90px"></div>
+  <div style="position:absolute;left:50%;bottom:0;transform:translateX(-50%) rotate(-9deg);width:3px;height:44%;background:linear-gradient(180deg,rgba(147,197,253,.0),rgba(147,197,253,.5));transform-origin:top center;margin-left:90px"></div>
+  <div style="position:absolute;left:36px;top:36px;width:300px;background:linear-gradient(180deg,rgba(16,24,40,.9),rgba(9,14,24,.92));border:1px solid rgba(96,140,220,.16);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:20px">
+    <div>
+      <div style="font-size:13px;letter-spacing:.12em;color:#8b98ad;font-weight:600">BATTERIE</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:8px"><i class="ph-fill ph-battery-high" style="font-size:30px;color:#22c55e"></i><span style="font-size:30px;font-weight:700;color:#22c55e;font-variant-numeric:tabular-nums">{{ batPct }} %</span></div>
+    </div>
+    <div style="height:1px;background:linear-gradient(to right,rgba(139,152,173,.25),transparent)"></div>
+    <div>
+      <div style="font-size:13px;letter-spacing:.12em;color:#8b98ad;font-weight:600">AUTONOMIE</div>
+      <div style="font-size:28px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums">{{ range }} <span style="font-size:16px;font-weight:500;color:#8b98ad">km</span></div>
+    </div>
+    <div style="height:1px;background:linear-gradient(to right,rgba(139,152,173,.25),transparent)"></div>
+    <div>
+      <div style="font-size:13px;letter-spacing:.12em;color:#8b98ad;font-weight:600">CONSOMMATION</div>
+      <div style="font-size:24px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums">16.8 <span style="font-size:15px;font-weight:500;color:#8b98ad">kWh/100km</span></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:372px;top:40px;height:400px;display:flex;flex-direction:column;align-items:center;gap:8px">
+    <span style="font-size:13px;color:#8b98ad">100%</span>
+    <div style="flex:1;width:20px;border-radius:10px;background:#0d1a2e;overflow:hidden;position:relative;border:1px solid rgba(96,140,220,.15)">
+      <div style="position:absolute;bottom:0;left:0;right:0;height:{{ batPctCss }};background:linear-gradient(180deg,#4ade80,#16a34a)"></div>
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent 0 13px,#04070f 13px 16px)"></div>
+    </div>
+    <span style="font-size:13px;color:#8b98ad">0%</span>
+  </div>
+  <div style="position:absolute;left:410px;top:210px"><i class="ph-fill ph-lightning" style="font-size:19px;color:#8b98ad"></i></div>
+  <div style="position:absolute;left:50%;top:60px;transform:translateX(-50%);text-align:center">
+    <div style="font-size:170px;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;text-shadow:0 0 60px rgba(59,130,246,.35)">{{ speed }}</div>
+    <div style="font-size:22px;color:#aeb9cc;margin-top:2px">km/h</div>
+  </div>
+  <div style="position:absolute;right:36px;top:36px;width:340px;background:linear-gradient(180deg,rgba(16,24,40,.9),rgba(9,14,24,.92));border:1px solid rgba(96,140,220,.16);border-radius:16px;padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+    <div style="font-size:14px;letter-spacing:.1em;color:#3b82f6;font-weight:700">NAVIGATION</div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <i class="ph ph-arrow-bend-up-right" style="font-size:38px;color:#3b82f6"></i>
+      <div><span style="font-size:28px;font-weight:700">1.2</span> <span style="font-size:16px;color:#8b98ad">km</span>
+        <div style="font-size:14.5px;color:#c3cee0;margin-top:2px">Avenue des Champs-Élysées</div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:#8b98ad">Puis<div style="font-size:15px;color:#e6ebf4;margin-top:2px">Boulevard Périphérique</div></div>
+    <div style="height:5px;border-radius:3px;background:#0d1a2e"><div style="width:42%;height:100%;border-radius:3px;background:#3b82f6"></div></div>
+    <div style="display:flex;justify-content:space-between;font-variant-numeric:tabular-nums">
+      <div style="text-align:center"><div style="font-size:18px;font-weight:600">16:04</div><div style="font-size:12px;color:#8b98ad">arrivée</div></div>
+      <div style="width:1px;background:rgba(139,152,173,.25)"></div>
+      <div style="text-align:center"><div style="font-size:18px;font-weight:600">85 km</div><div style="font-size:12px;color:#8b98ad">restants</div></div>
+      <div style="width:1px;background:rgba(139,152,173,.25)"></div>
+      <div style="text-align:center"><div style="font-size:18px;font-weight:600">1h 32</div><div style="font-size:12px;color:#8b98ad">temps</div></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:50%;bottom:110px;transform:translateX(-50%);display:flex;align-items:center;gap:26px;background:rgba(8,13,24,.8);border:1px solid rgba(96,140,220,.18);border-radius:16px;padding:12px 28px">
+    <i class="ph ph-road-horizon" style="font-size:26px;color:#c3cee0"></i>
+    <span style="display:flex;align-items:center;gap:9px;color:#22c55e"><i class="ph ph-gauge" style="font-size:24px"></i><span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums">100 km/h</span></span>
+    <i class="ph ph-car-simple" style="font-size:26px;color:#c3cee0"></i>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:78px;border-top:1px solid rgba(96,140,220,.12);background:rgba(4,7,15,.85);display:flex;align-items:center;justify-content:space-between;padding:0 60px">
+    <i class="ph ph-house-simple" onClick="{{ goAccueil }}" style="font-size:24px;color:#8b98ad;cursor:pointer"></i>
+    <i class="ph-fill ph-seatbelt" style="font-size:26px;color:#ef4444"></i>
+    <span style="width:30px;height:30px;border-radius:50%;border:2.5px solid #ef4444;display:flex;align-items:center;justify-content:center;color:#ef4444;font-size:15px;font-weight:700">P</span>
+    <span style="font-size:19px;font-weight:700;letter-spacing:.08em;color:#22c55e">ECO</span>
+    <span style="display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;color:#8b98ad;letter-spacing:.08em">ODO</span><span style="font-size:19px;font-weight:600;font-variant-numeric:tabular-nums">12 458 km</span></span>
+    <i class="ph ph-tire" style="font-size:25px;color:#eab308"></i>
+    <i class="ph ph-headlights" style="font-size:25px;color:#3b82f6"></i>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:26px 56px;gap:24px;overflow:hidden">
+  <div style="text-align:center">
+    <div style="font-size:32px;font-weight:700;letter-spacing:.06em">MENU</div>
+    <div style="width:44px;height:3px;border-radius:2px;background:#3b82f6;margin:8px auto 6px"></div>
+    <div style="font-size:16px;color:#8b98ad">Sélectionnez une fonction</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px">
+    <sc-for list="{{ menuRow1 }}" as="t" hint-placeholder-count="5">
+      <div onClick="{{ t.go }}" style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:16px;padding:22px 18px 0;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;overflow:hidden;text-align:center" style-hover="border-color:rgba(96,140,220,.4)">
+        <span style="width:66px;height:66px;border-radius:50%;border:2px solid {{ t.c }};background:{{ t.tint }};display:flex;align-items:center;justify-content:center"><i class="ph {{ t.icon }}" style="font-size:30px;color:{{ t.c }}"></i></span>
+        <span style="font-size:17px;font-weight:700;letter-spacing:.04em">{{ t.label }}</span>
+        <span style="font-size:13px;color:#8b98ad;line-height:1.45">{{ t.sub }}</span>
+        <i class="ph ph-caret-right" style="font-size:14px;color:#8b98ad;align-self:flex-end;margin-right:2px"></i>
+        <span style="width:100%;height:4px;background:linear-gradient(to right,{{ t.c }},transparent)"></span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:0 90px">
+    <sc-for list="{{ menuRow2 }}" as="t" hint-placeholder-count="4">
+      <div onClick="{{ t.go }}" style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:16px;padding:22px 18px 0;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;overflow:hidden;text-align:center" style-hover="border-color:rgba(96,140,220,.4)">
+        <span style="width:66px;height:66px;border-radius:50%;border:2px solid {{ t.c }};background:{{ t.tint }};display:flex;align-items:center;justify-content:center"><i class="ph {{ t.icon }}" style="font-size:30px;color:{{ t.c }}"></i></span>
+        <span style="font-size:17px;font-weight:700;letter-spacing:.04em">{{ t.label }}</span>
+        <span style="font-size:13px;color:#8b98ad;line-height:1.45">{{ t.sub }}</span>
+        <i class="ph ph-caret-right" style="font-size:14px;color:#8b98ad;align-self:flex-end;margin-right:2px"></i>
+        <span style="width:100%;height:4px;background:linear-gradient(to right,{{ t.c }},transparent)"></span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isVeh }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:grid;grid-template-columns:280px 1fr 300px;grid-template-rows:1fr 190px;gap:18px;padding:20px 32px;overflow:hidden">
+  <div style="grid-row:1/3;display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+      <span onClick="{{ goMenu }}" style="width:42px;height:42px;border-radius:50%;background:rgba(16,24,40,.9);border:1px solid rgba(96,140,220,.16);display:flex;align-items:center;justify-content:center;cursor:pointer"><i class="ph ph-arrow-left" style="font-size:19px"></i></span>
+      <span style="font-size:24px;font-weight:700;letter-spacing:.05em">VÉHICULE</span>
+    </div>
+    <sc-for list="{{ sideVeh }}" as="it" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:12px;border-left:3px solid {{ it.bar }};background:{{ it.bg }};color:{{ it.color }};font-size:15.5px;font-weight:500;cursor:pointer" style-hover="background:rgba(16,24,40,.9)"><i class="ph {{ it.icon }}" style="font-size:20px"></i>{{ it.label }}</div>
+    </sc-for>
+  </div>
+  <div style="position:relative;background:linear-gradient(180deg,rgba(16,24,40,.6),rgba(9,14,24,.8));border:1px solid rgba(96,140,220,.14);border-radius:16px;overflow:hidden">
+    <image-slot id="vehicule-car" shape="rect" placeholder="véhicule 3/4 avant — fond noir"></image-slot>
+    <div style="position:absolute;left:22px;top:20px;pointer-events:none"><div style="font-size:13.5px;font-weight:600">Coffre</div><div style="font-size:12.5px;color:#8b98ad">Fermé <span style="color:#22c55e">●</span></div></div>
+    <div style="position:absolute;left:44%;top:20px;pointer-events:none"><div style="font-size:13.5px;font-weight:600">Toit ouvrant</div><div style="font-size:12.5px;color:#8b98ad">Fermé <span style="color:#22c55e">●</span></div></div>
+    <div style="position:absolute;left:22px;top:42%;pointer-events:none"><div style="font-size:13.5px;font-weight:600">Capot</div><div style="font-size:12.5px;color:#8b98ad">Fermé <span style="color:#22c55e">●</span></div></div>
+    <div style="position:absolute;left:22px;bottom:22px;pointer-events:none"><div style="font-size:13.5px;font-weight:600">Porte avant G</div><div style="font-size:12.5px;color:#8b98ad">Fermée <span style="color:#22c55e">●</span></div></div>
+    <div style="position:absolute;right:22px;top:32%;text-align:right;pointer-events:none"><div style="font-size:13.5px;font-weight:600">Porte avant D</div><div style="font-size:12.5px;color:#8b98ad"><span style="color:#22c55e">●</span> Fermée</div></div>
+    <div style="position:absolute;right:22px;top:58%;text-align:right;pointer-events:none"><div style="font-size:13.5px;font-weight:600">Porte arrière D</div><div style="font-size:12.5px;color:#8b98ad"><span style="color:#22c55e">●</span> Fermée</div></div>
+    <div style="position:absolute;left:44%;bottom:22px;pointer-events:none"><div style="font-size:13.5px;font-weight:600">Porte arrière G</div><div style="font-size:12.5px;color:#8b98ad">Fermée <span style="color:#22c55e">●</span></div></div>
+  </div>
+  <div style="grid-row:1/3;display:flex;flex-direction:column;gap:14px;margin-top:54px">
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:13px;color:#8b98ad">Kilométrage</div><div style="font-size:22px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums">12 458 <span style="font-size:14px;font-weight:500;color:#8b98ad">km</span></div></div>
+      <i class="ph ph-chart-line-up" style="font-size:24px;color:#3b82f6"></i>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:16px 18px">
+      <div style="font-size:13px;color:#8b98ad">Statut général</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;color:#22c55e"><i class="ph ph-check-circle" style="font-size:20px"></i><span style="font-size:16px;font-weight:600">Aucun défaut</span></div>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:13px;color:#8b98ad">Prochaine révision</div><div style="font-size:18px;font-weight:600;margin-top:3px">Dans 12 000 km</div></div>
+      <i class="ph ph-calendar-blank" style="font-size:24px;color:#3b82f6"></i>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:13px;color:#3b82f6;font-weight:600">VIN</div><div style="font-size:14.5px;font-weight:500;margin-top:3px;font-variant-numeric:tabular-nums">VR3D1A23XKY123456</div></div>
+      <i class="ph ph-copy" style="font-size:22px;color:#8b98ad"></i>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;justify-content:space-between">
+      <div style="font-size:14px;font-weight:600">Batterie</div>
+      <div style="display:flex;align-items:center;gap:8px"><i class="ph-fill ph-battery-high" style="font-size:24px;color:#22c55e"></i><span style="font-size:24px;font-weight:700;color:#22c55e">{{ batPct }} %</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#8b98ad">Autonomie <span style="color:#eef2f8;font-weight:600;font-size:15px">{{ range }} km</span></div>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:14px;font-weight:600">Pression des pneus</div>
+      <div style="flex:1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;font-size:14px;font-variant-numeric:tabular-nums">
+        <div style="text-align:right"><div>2.5 <span style="color:#8b98ad;font-size:12px">bar</span></div><div style="margin-top:10px">2.6 <span style="color:#8b98ad;font-size:12px">bar</span></div></div>
+        <div style="width:34px;height:62px;border-radius:16px;background:#101a2c;border:1px solid rgba(96,140,220,.25)"></div>
+        <div><div>2.5 <span style="color:#8b98ad;font-size:12px">bar</span></div><div style="margin-top:10px">2.6 <span style="color:#8b98ad;font-size:12px">bar</span></div></div>
+      </div>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:14px;font-weight:600">Températures</div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:13.5px"><i class="ph ph-thermometer-simple" style="font-size:18px;color:#3b82f6"></i><span style="flex:1;color:#8b98ad">Moteur</span><span style="font-weight:600">90 °C</span></div>
+      <div style="height:4px;border-radius:2px;background:#0d1a2e"><div style="width:62%;height:100%;border-radius:2px;background:#3b82f6"></div></div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:13.5px"><i class="ph ph-car-battery" style="font-size:18px;color:#3b82f6"></i><span style="flex:1;color:#8b98ad">Batterie</span><span style="font-weight:600">28 °C</span></div>
+      <div style="height:4px;border-radius:2px;background:#0d1a2e"><div style="width:35%;height:100%;border-radius:2px;background:#3b82f6"></div></div>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:14px;font-weight:600">Niveau de liquide</div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:13.5px"><i class="ph ph-drop" style="font-size:18px;color:#3b82f6"></i><span style="flex:1;color:#8b98ad">Lave-glace</span><span style="color:#22c55e;font-weight:600">OK</span></div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:13.5px"><i class="ph ph-brake-warning" style="font-size:18px;color:#22c55e"></i><span style="flex:1;color:#8b98ad">Liquide de frein</span><span style="color:#22c55e;font-weight:600">OK</span></div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isNav }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0"><image-slot id="nav-map" shape="rect" placeholder="fond de carte — vue 3D nuit"></image-slot></div>
+  <div style="position:absolute;left:57%;top:10%;width:8px;height:58%;border-radius:4px;background:linear-gradient(180deg,#93c5fd,#2563eb);transform:rotate(7deg);pointer-events:none;box-shadow:0 0 18px rgba(59,130,246,.5)"></div>
+  <div style="position:absolute;left:54.5%;top:66%;width:52px;height:52px;border-radius:50%;background:#2563eb;border:3px solid #93c5fd;display:flex;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 0 24px rgba(37,99,235,.6)"><i class="ph-fill ph-navigation-arrow" style="font-size:24px;color:#fff;transform:rotate(90deg)"></i></div>
+  <div style="position:absolute;left:60%;top:6%;background:#dc2626;border-radius:6px;padding:3px 10px;font-size:13px;font-weight:700;pointer-events:none">N13</div>
+  <div style="position:absolute;left:36%;top:16%;background:rgba(10,16,28,.85);border:1px solid rgba(96,140,220,.2);border-radius:8px;padding:6px 14px;font-size:13.5px;pointer-events:none">Avenue Foch</div>
+  <div style="position:absolute;left:34%;top:33%;background:rgba(10,16,28,.85);border:1px solid rgba(96,140,220,.2);border-radius:8px;padding:6px 14px;font-size:13.5px;pointer-events:none">Avenue Victor Hugo</div>
+  <div style="position:absolute;left:37%;top:48%;background:rgba(10,16,28,.85);border:1px solid rgba(96,140,220,.2);border-radius:8px;padding:6px 14px;font-size:13.5px;pointer-events:none">Avenue Kléber</div>
+  <div style="position:absolute;left:59%;top:52%;background:#2563eb;border-radius:8px;padding:7px 16px;font-size:14px;font-weight:600;pointer-events:none;box-shadow:0 4px 16px rgba(37,99,235,.4)">Avenue des Champs-Élysées</div>
+  <div style="position:absolute;left:35%;top:62%;background:rgba(10,16,28,.85);border:1px solid rgba(96,140,220,.2);border-radius:8px;padding:6px 14px;font-size:13.5px;pointer-events:none">Rue de la Boétie</div>
+  <div style="position:absolute;left:28px;top:22px;width:400px;background:rgba(8,13,24,.92);border:1px solid rgba(96,140,220,.18);border-radius:18px;padding:24px;backdrop-filter:blur(10px)">
+    <div style="display:flex;align-items:center;gap:16px">
+      <i class="ph ph-arrow-bend-up-right" style="font-size:52px;color:#3b82f6"></i>
+      <div><span style="font-size:40px;font-weight:700">1.2</span> <span style="font-size:19px;color:#8b98ad">km</span></div>
+    </div>
+    <div style="font-size:18px;font-weight:500;margin-top:6px">Avenue des Champs-Élysées</div>
+    <div style="display:flex;align-items:center;gap:0;margin:16px 0">
+      <div style="flex:1;height:5px;border-radius:3px;background:#0d1a2e;position:relative"><div style="width:55%;height:100%;border-radius:3px;background:linear-gradient(90deg,#2563eb,#60a5fa)"></div><span style="position:absolute;left:55%;top:50%;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;background:#93c5fd"></span></div>
+    </div>
+    <div style="height:1px;background:linear-gradient(to right,rgba(139,152,173,.25),transparent);margin-bottom:14px"></div>
+    <sc-for list="{{ navSteps }}" as="st" hint-placeholder-count="3">
+      <div style="display:flex;align-items:center;gap:14px;padding:9px 0">
+        <i class="ph {{ st.icon }}" style="font-size:22px;color:#c3cee0"></i>
+        <div style="flex:1"><div style="font-size:13px;color:#3b82f6;font-weight:600">Puis</div><div style="font-size:15px;margin-top:1px">{{ st.label }}</div></div>
+        <span style="font-size:15px;color:#8b98ad;font-variant-numeric:tabular-nums">{{ st.dist }}</span>
+      </div>
+    </sc-for>
+    <div onClick="{{ goMenu }}" style="margin-top:12px;height:52px;border-radius:12px;border:1px solid rgba(239,68,68,.5);background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center;gap:12px;color:#ef4444;font-size:16px;font-weight:600;cursor:pointer" style-hover="background:rgba(239,68,68,.2)">Fin du trajet <i class="ph ph-x" style="font-size:17px"></i></div>
+  </div>
+  <div style="position:absolute;right:26px;top:24px;display:flex;flex-direction:column;gap:12px">
+    <span style="width:54px;height:54px;border-radius:50%;background:rgba(8,13,24,.9);border:1px solid rgba(96,140,220,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer"><i class="ph-fill ph-caret-up" style="font-size:15px;color:#ef4444"></i><span style="font-size:12px;font-weight:700;margin-top:-2px">N</span></span>
+    <span style="width:54px;height:54px;border-radius:50%;background:rgba(8,13,24,.9);border:1px solid rgba(96,140,220,.2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;cursor:pointer" style-hover="border-color:#3b82f6">3D</span>
+    <span style="width:54px;height:54px;border-radius:50%;background:rgba(8,13,24,.9);border:1px solid rgba(96,140,220,.2);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#3b82f6"><i class="ph ph-plus" style="font-size:21px"></i></span>
+    <span style="width:54px;height:54px;border-radius:50%;background:rgba(8,13,24,.9);border:1px solid rgba(96,140,220,.2);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#3b82f6"><i class="ph ph-minus" style="font-size:21px"></i></span>
+    <span style="width:54px;height:54px;border-radius:50%;background:rgba(8,13,24,.9);border:1px solid rgba(96,140,220,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3b82f6" style-hover="border-color:#3b82f6"><i class="ph ph-crosshair-simple" style="font-size:21px"></i></span>
+  </div>
+  <div style="position:absolute;left:460px;right:26px;bottom:20px;display:flex;gap:14px;align-items:stretch">
+    <div style="flex:1;display:flex;align-items:center;gap:26px;background:rgba(8,13,24,.92);border:1px solid rgba(96,140,220,.18);border-radius:14px;padding:14px 24px;backdrop-filter:blur(10px)">
+      <span style="display:flex;align-items:center;gap:12px"><i class="ph ph-flag-checkered" style="font-size:22px;color:#c3cee0"></i><span><span style="font-size:19px;font-weight:700;font-variant-numeric:tabular-nums">16:04</span><div style="font-size:12px;color:#8b98ad">Arrivée</div></span></span>
+      <span style="width:1px;align-self:stretch;background:rgba(139,152,173,.25)"></span>
+      <span><span style="font-size:19px;font-weight:700;font-variant-numeric:tabular-nums">85 km</span><div style="font-size:12px;color:#8b98ad">Restants</div></span>
+      <span style="width:1px;align-self:stretch;background:rgba(139,152,173,.25)"></span>
+      <span><span style="font-size:19px;font-weight:700;font-variant-numeric:tabular-nums">1h 32</span><div style="font-size:12px;color:#8b98ad">Temps restant</div></span>
+      <span style="width:1px;align-self:stretch;background:rgba(139,152,173,.25)"></span>
+      <span style="display:flex;align-items:center;gap:10px"><i class="ph ph-traffic-cone" style="font-size:22px;color:#c3cee0"></i><span><div style="font-size:13px;color:#8b98ad">Trafic</div><span style="font-size:15px;font-weight:600;color:#22c55e">Fluide</span></span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;background:rgba(8,13,24,.92);border:1px solid rgba(96,140,220,.25);border-radius:14px;padding:0 24px;font-size:15.5px;font-weight:500;cursor:pointer" style-hover="border-color:#3b82f6"><i class="ph ph-arrows-left-right" style="font-size:20px"></i>Itinéraire alternatif</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMedia }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:grid;grid-template-columns:280px 1fr 430px;gap:20px;padding:20px 32px;overflow:hidden">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+      <span onClick="{{ goMenu }}" style="width:42px;height:42px;border-radius:50%;background:rgba(16,24,40,.9);border:1px solid rgba(96,140,220,.16);display:flex;align-items:center;justify-content:center;cursor:pointer"><i class="ph ph-arrow-left" style="font-size:19px"></i></span>
+      <span style="font-size:24px;font-weight:700;letter-spacing:.05em">MÉDIA</span>
+    </div>
+    <sc-for list="{{ sideMedia }}" as="it" hint-placeholder-count="6">
+      <div onClick="{{ it.go }}" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:12px;border-left:3px solid {{ it.bar }};background:{{ it.bg }};color:{{ it.color }};font-size:15.5px;font-weight:500;cursor:pointer" style-hover="background:rgba(16,24,40,.9)"><i class="ph {{ it.icon }}" style="font-size:20px"></i>{{ it.label }}</div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px;min-height:0">
+    <div style="flex:1;background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;gap:26px">
+        <image-slot id="album-blue" style="width:250px;height:250px;flex:none" shape="rounded" radius="14" placeholder="pochette album"></image-slot>
+        <div style="flex:1;display:flex;flex-direction:column;gap:8px;padding-top:8px">
+          <span style="align-self:flex-start;font-size:13px;color:#93c5fd;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);border-radius:8px;padding:5px 14px">Lecture en cours</span>
+          <span style="font-size:32px;font-weight:700;margin-top:8px">Better Tomorrow</span>
+          <span style="font-size:19px;color:#c3cee0">Kendrick Lamar</span>
+          <span style="font-size:15px;color:#8b98ad">Mr. Morale &amp; The Big Steppers</span>
+          <div style="margin-top:auto">
+            <div style="height:5px;border-radius:3px;background:#0d1a2e;position:relative"><div style="width:40%;height:100%;border-radius:3px;background:#3b82f6"></div><span style="position:absolute;left:40%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#e6ebf4"></span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:#8b98ad;margin-top:8px;font-variant-numeric:tabular-nums"><span>1:42</span><span>4:21</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:34px">
+        <i class="ph ph-shuffle" style="font-size:24px;color:#8b98ad;cursor:pointer" style-hover="color:#e6ebf4"></i>
+        <i class="ph-fill ph-skip-back" style="font-size:28px;cursor:pointer"></i>
+        <span onClick="{{ togglePlay }}" style="width:74px;height:74px;border-radius:50%;border:2px solid #3b82f6;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 22px rgba(37,99,235,.35)" style-hover="background:rgba(59,130,246,.12)"><i class="ph-fill {{ playIcon }}" style="font-size:30px"></i></span>
+        <i class="ph-fill ph-skip-forward" style="font-size:28px;cursor:pointer"></i>
+        <i class="ph ph-repeat" style="font-size:24px;color:#8b98ad;cursor:pointer" style-hover="color:#e6ebf4"></i>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;flex:none">
+      <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer" style-hover="border-color:rgba(96,140,220,.4)">
+        <i class="ph ph-faders" style="font-size:24px;color:#3b82f6"></i>
+        <div style="flex:1"><div style="font-size:14.5px;font-weight:600">Égaliseur</div><div style="font-size:12px;color:#8b98ad">Personnaliser le son</div></div>
+        <i class="ph ph-caret-right" style="font-size:15px;color:#8b98ad"></i>
+      </div>
+      <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+        <i class="ph ph-speaker-high" style="font-size:24px;color:#3b82f6"></i>
+        <div style="flex:1"><div style="font-size:14.5px;font-weight:600">Son spatial</div><div style="font-size:12px;color:#8b98ad">Son immersif</div></div>
+        <span onClick="{{ toggleSpatial }}" style="width:52px;height:29px;border-radius:15px;background:{{ spatialBg }};position:relative;cursor:pointer;transition:background .2s;flex:none"><span style="position:absolute;top:3.5px;left:{{ spatialKnob }};width:22px;height:22px;border-radius:50%;background:#f2f5fa;transition:left .2s"></span></span>
+      </div>
+      <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer" style-hover="border-color:rgba(96,140,220,.4)">
+        <i class="ph ph-gear-six" style="font-size:24px;color:#3b82f6"></i>
+        <div style="flex:1"><div style="font-size:14.5px;font-weight:600">Paramètres média</div><div style="font-size:12px;color:#8b98ad">Sources, affichage…</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-height:0">
+    <div style="display:flex;gap:28px;padding:6px 8px 14px;border-bottom:1px solid rgba(96,140,220,.12);margin-bottom:12px">
+      <span style="font-size:16px;font-weight:600;color:#e6ebf4;position:relative">Ma musique<span style="position:absolute;left:0;right:0;bottom:-15px;height:3px;border-radius:2px;background:#3b82f6"></span></span>
+      <span style="font-size:16px;color:#8b98ad;cursor:pointer" style-hover="color:#e6ebf4">Favoris</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;overflow:hidden">
+      <sc-for list="{{ tracks }}" as="tr" hint-placeholder-count="6">
+        <div onClick="{{ tr.go }}" style="display:flex;align-items:center;gap:14px;border-radius:12px;padding:10px 14px;background:{{ tr.bg }};border:1px solid {{ tr.border }};cursor:pointer" style-hover="background:rgba(16,24,40,.9)">
+          <span style="width:48px;height:48px;border-radius:8px;background:{{ tr.art }};flex:none;display:flex;align-items:center;justify-content:center"><i class="ph {{ tr.icon }}" style="font-size:18px;color:{{ tr.iconColor }}"></i></span>
+          <div style="flex:1"><div style="font-size:15.5px;font-weight:600">{{ tr.t }}</div><div style="font-size:13px;color:{{ tr.aColor }};margin-top:1px">{{ tr.a }}</div></div>
+          <span style="font-size:14px;color:#8b98ad;font-variant-numeric:tabular-nums">{{ tr.d }}</span>
+          <i class="ph ph-dots-three-vertical" style="font-size:17px;color:#8b98ad"></i>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMediaNow }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:grid;grid-template-columns:280px 1fr 430px;grid-template-rows:1fr 92px;gap:18px;padding:20px 32px;overflow:hidden">
+  <div style="grid-row:1/3;display:flex;flex-direction:column;gap:6px">
+    <div style="font-size:24px;font-weight:700;letter-spacing:.05em;margin:6px 0 14px">MÉDIA</div>
+    <sc-for list="{{ sideMediaNow }}" as="it" hint-placeholder-count="8">
+      <div onClick="{{ it.go }}" style="display:flex;align-items:center;gap:13px;padding:13px 16px;border-radius:12px;border-left:3px solid {{ it.bar }};background:{{ it.bg }};color:{{ it.color }};font-size:15px;font-weight:500;cursor:pointer" style-hover="background:rgba(20,16,32,.9)"><i class="ph {{ it.icon }}" style="font-size:19px"></i>{{ it.label }}</div>
+    </sc-for>
+  </div>
+  <div style="background:linear-gradient(180deg,rgba(24,16,38,.8),rgba(12,9,20,.9));border:1px solid rgba(167,139,250,.18);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:16px;min-height:0">
+    <div style="display:flex;gap:26px;flex:1;min-height:0">
+      <image-slot id="album-purple" style="width:240px;height:240px;flex:none" shape="rounded" radius="14" placeholder="pochette — Midnight Drive"></image-slot>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <span style="font-size:34px;font-weight:700">Midnight Drive</span>
+          <i class="ph-fill ph-heart" style="font-size:26px;color:#a78bfa"></i>
+        </div>
+        <span style="font-size:18px;color:#c3cee0">Eclipse</span>
+        <span style="font-size:15px;color:#a78bfa">Neon Horizon</span>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
+          <span style="font-size:12px;font-weight:600;border:1px solid rgba(167,139,250,.4);border-radius:6px;padding:3px 10px;color:#c4b5fd">FLAC</span>
+          <span style="font-size:13px;color:#8b98ad">44.1 kHz</span>
+          <span style="margin-left:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(139,152,173,.35);display:flex;align-items:center;justify-content:center;cursor:pointer"><i class="ph ph-dots-three" style="font-size:19px"></i></span>
+        </div>
+        <div style="margin-top:auto">
+          <div style="height:5px;border-radius:3px;background:#171227;position:relative"><div style="width:37%;height:100%;border-radius:3px;background:#a78bfa"></div><span style="position:absolute;left:37%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#c4b5fd"></span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#8b98ad;margin-top:8px;font-variant-numeric:tabular-nums"><span>01:24</span><span>03:47</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:34px;flex:none">
+      <i class="ph ph-shuffle" style="font-size:24px;color:#a78bfa;cursor:pointer"></i>
+      <i class="ph-fill ph-skip-back" style="font-size:28px;cursor:pointer"></i>
+      <span onClick="{{ togglePlay }}" style="width:72px;height:72px;border-radius:50%;border:2px solid #a78bfa;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 22px rgba(167,139,250,.35)" style-hover="background:rgba(167,139,250,.12)"><i class="ph-fill {{ playIcon }}" style="font-size:28px"></i></span>
+      <i class="ph-fill ph-skip-forward" style="font-size:28px;cursor:pointer"></i>
+      <i class="ph ph-repeat" style="font-size:24px;color:#a78bfa;cursor:pointer"></i>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;background:rgba(16,12,28,.8);border:1px solid rgba(167,139,250,.15);border-radius:12px;padding:12px 18px;flex:none">
+      <i class="ph ph-speaker-high" style="font-size:20px;color:#c3cee0"></i>
+      <div style="flex:1;height:5px;border-radius:3px;background:#171227;position:relative"><div style="width:32%;height:100%;border-radius:3px;background:#a78bfa"></div><span style="position:absolute;left:32%;top:50%;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;background:#c4b5fd"></span></div>
+      <span style="font-size:16px;font-weight:600;font-variant-numeric:tabular-nums">18</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-height:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px 14px">
+      <span style="font-size:16px;font-weight:700;letter-spacing:.08em;position:relative">FILE D'ATTENTE<span style="position:absolute;left:0;bottom:-8px;width:34px;height:3px;border-radius:2px;background:#a78bfa"></span></span>
+      <i class="ph ph-queue" style="font-size:21px;color:#8b98ad"></i>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px;overflow:hidden;margin-top:6px">
+      <sc-for list="{{ queue }}" as="q" hint-placeholder-count="5">
+        <div style="display:flex;align-items:center;gap:14px;border-radius:12px;padding:10px 14px;background:{{ q.bg }};border:1px solid {{ q.border }};cursor:pointer" style-hover="background:rgba(20,16,32,.9)">
+          <span style="width:46px;height:46px;border-radius:8px;background:{{ q.art }};flex:none"></span>
+          <div style="flex:1"><div style="font-size:15px;font-weight:600">{{ q.t }}</div><div style="font-size:13px;color:#8b98ad;margin-top:1px">{{ q.a }}</div></div>
+          <sc-if value="{{ q.now }}" hint-placeholder-val="{{ false }}"><i class="ph-fill ph-chart-bar" style="font-size:16px;color:#a78bfa"></i></sc-if>
+          <span style="font-size:13.5px;color:#8b98ad;font-variant-numeric:tabular-nums">{{ q.d }}</span>
+        </div>
+      </sc-for>
+      <div style="font-size:13.5px;color:#8b98ad;padding:8px 6px">12 morceaux &nbsp;•&nbsp; 45:30</div>
+    </div>
+  </div>
+  <div style="grid-column:2/4;display:flex;align-items:center;gap:24px;background:linear-gradient(180deg,rgba(20,16,34,.9),rgba(12,9,20,.95));border:1px solid rgba(167,139,250,.15);border-radius:14px;padding:0 22px">
+    <span style="width:52px;height:52px;border-radius:8px;background:linear-gradient(135deg,#3b1d5e,#c084fc);flex:none"></span>
+    <div style="min-width:170px"><div style="font-size:15px;font-weight:600">Midnight Drive</div><div style="font-size:12.5px;color:#8b98ad">Eclipse</div></div>
+    <span style="width:1px;align-self:stretch;margin:14px 0;background:rgba(139,152,173,.2)"></span>
+    <div style="display:flex;align-items:center;gap:20px">
+      <i class="ph-fill ph-skip-back" style="font-size:20px;cursor:pointer"></i>
+      <span onClick="{{ togglePlay }}" style="width:46px;height:46px;border-radius:50%;border:2px solid #a78bfa;display:flex;align-items:center;justify-content:center;cursor:pointer"><i class="ph-fill {{ playIcon }}" style="font-size:18px"></i></span>
+      <i class="ph-fill ph-skip-forward" style="font-size:20px;cursor:pointer"></i>
+    </div>
+    <span style="display:flex;align-items:center;gap:10px"><i class="ph ph-speaker-high" style="font-size:19px;color:#c3cee0"></i><span style="font-size:15px;font-weight:600">18</span></span>
+    <span style="width:1px;align-self:stretch;margin:14px 0;background:rgba(139,152,173,.2)"></span>
+    <span style="display:flex;align-items:center;gap:12px;cursor:pointer"><i class="ph ph-faders" style="font-size:22px;color:#a78bfa"></i><span><div style="font-size:14px;font-weight:600">Égaliseur</div><div style="font-size:12px;color:#8b98ad">Personnalisé</div></span></span>
+    <span style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-left:auto"><i class="ph ph-arrows-out-cardinal" style="font-size:22px;color:#a78bfa"></i><span><div style="font-size:14px;font-weight:600">Balance</div><div style="font-size:12px;color:#8b98ad">Centré</div></span></span>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isAdas }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:grid;grid-template-columns:280px 1fr 480px;gap:20px;padding:20px 32px;overflow:hidden">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+      <span onClick="{{ goMenu }}" style="width:42px;height:42px;border-radius:50%;background:rgba(16,24,40,.9);border:1px solid rgba(96,140,220,.16);display:flex;align-items:center;justify-content:center;cursor:pointer"><i class="ph ph-arrow-left" style="font-size:19px"></i></span>
+      <span style="font-size:24px;font-weight:700;letter-spacing:.05em">ADAS</span>
+    </div>
+    <sc-for list="{{ sideAdas }}" as="it" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:12px;border-left:3px solid {{ it.bar }};background:{{ it.bg }};color:{{ it.color }};font-size:15.5px;font-weight:500;cursor:pointer" style-hover="background:rgba(16,24,40,.9)"><i class="ph {{ it.icon }}" style="font-size:20px"></i>{{ it.label }}</div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
+    <div style="display:flex;align-items:center;gap:10px"><span style="font-size:19px;font-weight:700;letter-spacing:.05em">AIDES À LA CONDUITE</span><i class="ph ph-info" style="font-size:19px;color:#8b98ad"></i></div>
+    <div style="display:flex;gap:14px">
+      <sc-for list="{{ adasChips }}" as="ch" hint-placeholder-count="4">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 8px;border-radius:12px;border:1px solid {{ ch.border }};background:{{ ch.bg }}">
+          <i class="ph {{ ch.icon }}" style="font-size:26px;color:#22c55e"></i>
+          <span style="font-size:12.5px;color:#a7e8bd">{{ ch.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="flex:1;border-radius:16px;overflow:hidden;border:1px solid rgba(34,197,94,.2);position:relative;min-height:0">
+      <image-slot id="adas-road" shape="rect" placeholder="visualisation route + véhicules détectés"></image-slot>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;background:rgba(9,14,24,.9);border:1px solid rgba(96,140,220,.14);border-radius:14px;padding:16px 20px;flex:none">
+      <i class="ph-fill ph-check-circle" style="font-size:26px;color:#22c55e"></i>
+      <div><div style="font-size:16px;font-weight:600">Système activé</div><div style="font-size:13.5px;color:#8b98ad;margin-top:2px">Les aides à la conduite sont actives et opérationnelles.</div></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:11px;min-height:0">
+    <div style="font-size:17px;font-weight:700;letter-spacing:.05em;margin:8px 0 4px">SYSTÈMES ADAS</div>
+    <sc-for list="{{ adasItems }}" as="a" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:14px;background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:13px;padding:13px 16px">
+        <i class="ph {{ a.icon }}" style="font-size:24px;color:{{ a.iconColor }}"></i>
+        <div style="flex:1"><div style="font-size:14.5px;font-weight:600">{{ a.label }}</div><div style="font-size:12.5px;color:#8b98ad;margin-top:1px">{{ a.sub }}</div></div>
+        <span onClick="{{ a.go }}" style="width:52px;height:29px;border-radius:15px;background:{{ a.bg }};position:relative;cursor:pointer;transition:background .2s;flex:none"><span style="position:absolute;top:3.5px;left:{{ a.knob }};width:22px;height:22px;border-radius:50%;background:#f2f5fa;transition:left .2s"></span></span>
+      </div>
+    </sc-for>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(9,14,24,.9);border:1px solid rgba(96,140,220,.14);border-radius:13px;padding:15px 18px;cursor:pointer;font-size:15px;font-weight:500" style-hover="border-color:rgba(96,140,220,.4)">Paramètres des alertes<i class="ph ph-caret-right" style="font-size:16px;color:#8b98ad"></i></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isConduite }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:grid;grid-template-columns:280px 1fr 440px;gap:20px;padding:20px 32px;overflow:hidden">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-size:24px;font-weight:700;letter-spacing:.05em;margin:6px 0 14px">CONDUITE</div>
+    <sc-for list="{{ sideConduite }}" as="it" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:12px;border-left:3px solid {{ it.bar }};background:{{ it.bg }};color:{{ it.color }};font-size:15.5px;font-weight:500;cursor:pointer" style-hover="background:rgba(16,24,40,.9)"><i class="ph {{ it.icon }}" style="font-size:20px"></i>{{ it.label }}</div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
+    <div style="font-size:19px;font-weight:700;letter-spacing:.05em">MODE DE CONDUITE</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      <sc-for list="{{ driveModes }}" as="m" hint-placeholder-count="4">
+        <div onClick="{{ m.go }}" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 10px 14px;border-radius:14px;border:1px solid {{ m.border }};background:{{ m.bg }};cursor:pointer" style-hover="border-color:rgba(96,140,220,.5)">
+          <i class="ph {{ m.icon }}" style="font-size:30px;color:{{ m.iconColor }}"></i>
+          <span style="font-size:15px;font-weight:700;letter-spacing:.06em;color:{{ m.textColor }}">{{ m.label }}</span>
+          <span style="width:34px;height:3px;border-radius:2px;background:{{ m.underline }}"></span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="flex:1;border-radius:16px;overflow:hidden;border:1px solid rgba(96,140,220,.14);position:relative;min-height:0">
+      <image-slot id="conduite-car" shape="rect" placeholder="véhicule de profil — effet mode sélectionné"></image-slot>
+    </div>
+    <div style="flex:none">
+      <div style="display:flex;align-items:center;gap:10px"><i class="ph {{ modeIcon }}" style="font-size:22px;color:{{ modeColor }}"></i><span style="font-size:19px;font-weight:700;letter-spacing:.05em;color:{{ modeColor }}">{{ modeLabel }}</span></div>
+      <div style="font-size:14.5px;color:#aeb9cc;line-height:1.55;margin-top:6px">{{ modeDesc }}</div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <span style="width:8px;height:8px;border-radius:50%;background:{{ modeColor }}"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#2a3852"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#2a3852"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:#2a3852"></span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px;background:linear-gradient(180deg,rgba(16,24,40,.7),rgba(9,14,24,.85));border:1px solid rgba(96,140,220,.12);border-radius:16px;padding:22px;overflow:hidden">
+    <div style="font-size:16px;font-weight:700;letter-spacing:.05em">PARAMÈTRES DE CONDUITE</div>
+    <div>
+      <div style="font-size:13px;font-weight:600;letter-spacing:.08em;color:#8b98ad;margin-bottom:9px">RÉGÉNÉRATION D'ÉNERGIE</div>
+      <div style="display:flex;gap:6px;background:rgba(9,14,24,.8);border-radius:12px;padding:5px">
+        <sc-for list="{{ regenSeg }}" as="sg" hint-placeholder-count="4">
+          <div onClick="{{ sg.go }}" style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;color:{{ sg.color }};background:{{ sg.bg }};border:1px solid {{ sg.border }}">{{ sg.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;letter-spacing:.08em;color:#8b98ad;margin-bottom:12px">RÉPONSE DE L'ACCÉLÉRATEUR</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-size:13.5px;color:#aeb9cc">Douce</span>
+        <div style="flex:1;height:5px;border-radius:3px;background:#0d1a2e;position:relative"><div style="width:62%;height:100%;border-radius:3px;background:#22c55e"></div><span style="position:absolute;left:62%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#4ade80"></span></div>
+        <span style="font-size:13.5px;color:#aeb9cc">Réactive</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;letter-spacing:.08em;color:#8b98ad;margin-bottom:9px">DIRECTION</div>
+      <div style="display:flex;gap:6px;background:rgba(9,14,24,.8);border-radius:12px;padding:5px">
+        <sc-for list="{{ dirSeg }}" as="sg" hint-placeholder-count="3">
+          <div onClick="{{ sg.go }}" style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;color:{{ sg.color }};background:{{ sg.bg }};border:1px solid {{ sg.border }}">{{ sg.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;letter-spacing:.08em;color:#8b98ad;margin-bottom:9px">TRACTION</div>
+      <div style="display:flex;gap:6px;background:rgba(9,14,24,.8);border-radius:12px;padding:5px">
+        <sc-for list="{{ tracSeg }}" as="sg" hint-placeholder-count="3">
+          <div onClick="{{ sg.go }}" style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;color:{{ sg.color }};background:{{ sg.bg }};border:1px solid {{ sg.border }}">{{ sg.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;background:rgba(9,14,24,.85);border:1px solid rgba(96,140,220,.14);border-radius:13px;padding:15px 18px;cursor:pointer;font-size:15px;font-weight:500" style-hover="border-color:rgba(96,140,220,.4)">Personnaliser le mode<i class="ph ph-caret-right" style="font-size:16px;color:#8b98ad"></i></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPhone }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:grid;grid-template-columns:330px 1fr 470px;gap:20px;padding:20px 32px;overflow:hidden">
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:24px;font-weight:700;letter-spacing:.05em;margin:6px 0 8px">TÉLÉPHONE</div>
+    <div style="display:flex;align-items:center;gap:16px;padding:18px;border-radius:14px;border:1px solid #3b82f6;background:rgba(59,130,246,.1);cursor:pointer;box-shadow:0 0 20px rgba(37,99,235,.2)">
+      <span style="width:52px;height:52px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center"><i class="ph-fill ph-user" style="font-size:24px"></i></span>
+      <div style="flex:1"><div style="font-size:17px;font-weight:600">Contacts</div><div style="font-size:13.5px;color:#93c5fd;margin-top:2px">245 contacts</div></div>
+      <i class="ph ph-caret-right" style="font-size:17px;color:#8b98ad"></i>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;padding:18px;border-radius:14px;border:1px solid rgba(96,140,220,.14);background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));cursor:pointer" style-hover="border-color:rgba(96,140,220,.4)">
+      <span style="width:52px;height:52px;border-radius:50%;background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.4);display:flex;align-items:center;justify-content:center"><i class="ph ph-clock-counter-clockwise" style="font-size:24px;color:#a78bfa"></i></span>
+      <div style="flex:1"><div style="font-size:17px;font-weight:600">Récents</div><div style="font-size:13.5px;color:#8b98ad;margin-top:2px">8 appels</div></div>
+      <i class="ph ph-caret-right" style="font-size:17px;color:#8b98ad"></i>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;padding:18px;border-radius:14px;border:1px solid rgba(96,140,220,.14);background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));cursor:pointer" style-hover="border-color:rgba(96,140,220,.4)">
+      <span style="width:52px;height:52px;border-radius:50%;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);display:flex;align-items:center;justify-content:center"><i class="ph ph-bluetooth" style="font-size:24px;color:#3b82f6"></i></span>
+      <div style="flex:1"><div style="font-size:17px;font-weight:600">Bluetooth</div><div style="font-size:13.5px;color:#8b98ad;margin-top:2px">Connecté</div></div>
+      <span style="width:11px;height:11px;border-radius:50%;background:#3b82f6"></span>
+    </div>
+  </div>
+  <div style="background:linear-gradient(180deg,rgba(16,24,40,.7),rgba(9,14,24,.85));border:1px solid rgba(96,140,220,.12);border-radius:18px;padding:26px;display:flex;flex-direction:column;align-items:center;gap:8px">
+    <div style="position:relative">
+      <image-slot id="avatar-alice" style="width:150px;height:150px" shape="circle" placeholder="photo"></image-slot>
+      <span style="position:absolute;right:2px;bottom:2px;width:36px;height:36px;border-radius:50%;background:#2563eb;border:3px solid #0a1120;display:flex;align-items:center;justify-content:center"><i class="ph-fill ph-star" style="font-size:16px"></i></span>
+    </div>
+    <span style="font-size:34px;font-weight:700;margin-top:10px">Alice Martin</span>
+    <span style="font-size:20px;color:#c3cee0;font-variant-numeric:tabular-nums">+229 97 45 21 08</span>
+    <span style="font-size:15px;color:#8b98ad">Mobile &nbsp;•&nbsp; <span style="color:#3b82f6">Favori</span></span>
+    <span style="display:flex;align-items:center;gap:8px;margin-top:6px;color:#22c55e;font-size:14px;font-weight:700;letter-spacing:.08em"><span style="width:9px;height:9px;border-radius:50%;background:#22c55e"></span>CONNECTÉ</span>
+    <div style="display:flex;gap:14px;margin-top:16px">
+      <div style="display:flex;align-items:center;gap:12px;height:56px;padding:0 34px;border-radius:14px;background:#2563eb;font-size:17px;font-weight:600;cursor:pointer;box-shadow:0 6px 22px rgba(37,99,235,.4)" style-hover="background:#3b82f6"><i class="ph-fill ph-phone" style="font-size:20px"></i>Appeler</div>
+      <div style="display:flex;align-items:center;gap:12px;height:56px;padding:0 30px;border-radius:14px;border:1px solid rgba(96,140,220,.3);background:rgba(16,24,40,.8);font-size:17px;font-weight:600;cursor:pointer" style-hover="border-color:#3b82f6"><i class="ph ph-chat-circle-dots" style="font-size:20px"></i>Message</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:16px;background:rgba(9,14,24,.8);border:1px solid rgba(96,140,220,.12);border-radius:12px;padding:12px 22px;font-size:14.5px;color:#8b98ad">
+      <i class="ph ph-phone-call" style="font-size:18px"></i>Dernier appel &nbsp;•&nbsp; <span style="color:#93c5fd">Aujourd'hui 18:42</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:11px;min-height:0">
+    <div style="font-size:17px;font-weight:700;letter-spacing:.05em;margin:8px 0 4px">CONTACTS RÉCENTS</div>
+    <sc-for list="{{ calls }}" as="c" hint-placeholder-count="5">
+      <div style="display:flex;align-items:center;gap:14px;background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid {{ c.border }};border-left:3px solid {{ c.bar }};border-radius:13px;padding:11px 16px;cursor:pointer" style-hover="background:rgba(16,24,40,.95)">
+        <span style="width:46px;height:46px;border-radius:50%;background:{{ c.art }};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex:none">{{ c.init }}</span>
+        <div style="flex:1"><div style="font-size:16px;font-weight:600">{{ c.name }}</div><div style="font-size:13px;color:#8b98ad;margin-top:1px">{{ c.when }}</div></div>
+        <span style="width:42px;height:42px;border-radius:50%;background:rgba(34,197,94,.12);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(34,197,94,.25)"><i class="ph-fill ph-phone" style="font-size:18px;color:#22c55e"></i></span>
+      </div>
+    </sc-for>
+    <div style="display:flex;justify-content:center;align-items:center;gap:10px;background:rgba(9,14,24,.9);border:1px solid rgba(96,140,220,.14);border-radius:13px;padding:14px;cursor:pointer;font-size:15px;font-weight:500" style-hover="border-color:rgba(96,140,220,.4)">Voir tous les récents<i class="ph ph-caret-right" style="font-size:15px;color:#8b98ad"></i></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isEntretien }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:grid;grid-template-columns:400px 1fr 460px;grid-template-rows:1fr 108px;gap:18px;padding:18px 32px;overflow:hidden">
+  <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+    <div style="font-size:17px;font-weight:700;letter-spacing:.05em">ÉTAT DU VÉHICULE</div>
+    <div style="flex:1;background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:16px">
+        <i class="ph-fill ph-shield-check" style="font-size:52px;color:#22c55e"></i>
+        <div><div style="font-size:15px;font-weight:700;color:#22c55e;letter-spacing:.04em">VÉHICULE EN</div><div style="font-size:22px;font-weight:700;color:#22c55e;letter-spacing:.04em">BON ÉTAT</div><div style="font-size:13px;color:#8b98ad;margin-top:2px">Aucun problème détecté</div></div>
+      </div>
+      <sc-for list="{{ okRows }}" as="r" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:13px;background:rgba(9,14,24,.85);border:1px solid rgba(96,140,220,.1);border-radius:11px;padding:12px 16px">
+          <i class="ph {{ r.icon }}" style="font-size:20px;color:#c3cee0"></i>
+          <span style="flex:1;font-size:15px;font-weight:500">{{ r.label }}</span>
+          <span style="font-size:14px;font-weight:700;color:#22c55e">OK</span>
+          <i class="ph ph-caret-right" style="font-size:14px;color:#8b98ad"></i>
+        </div>
+      </sc-for>
+      <div style="font-size:12.5px;color:#8b98ad;text-align:center">Dernière vérification : Aujourd'hui 08:42</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+    <div style="font-size:17px;font-weight:700;letter-spacing:.05em;text-align:center">PROCHAIN ENTRETIEN</div>
+    <div style="flex:1;background:linear-gradient(180deg,rgba(16,24,40,.7),rgba(9,14,24,.85));border:1px solid rgba(96,140,220,.12);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px">
+      <div style="position:relative;width:270px;height:270px;border-radius:50%;background:conic-gradient(from 220deg,#3b82f6 0 30%,#22c55e 30% 72%,#12233a 72% 100%);box-shadow:0 0 40px rgba(37,99,235,.25)">
+        <div style="position:absolute;inset:13px;border-radius:50%;background:#080e1a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+          <span style="font-size:13px;letter-spacing:.14em;color:#8b98ad;font-weight:600">DANS</span>
+          <span style="font-size:44px;font-weight:700;font-variant-numeric:tabular-nums">12 450</span>
+          <span style="font-size:14px;color:#8b98ad">km</span>
+          <span style="width:110px;height:1px;background:rgba(139,152,173,.3);margin:7px 0"></span>
+          <span style="font-size:15px;font-variant-numeric:tabular-nums"><span style="color:#22c55e;font-weight:700">1 850</span> <span style="color:#aeb9cc">km restants</span></span>
+          <span style="display:flex;align-items:center;gap:8px;font-size:14px;margin-top:6px"><i class="ph ph-calendar-blank" style="font-size:16px;color:#8b98ad"></i>15 SEPT. 2026</span>
+          <span style="font-size:12.5px;color:#8b98ad">Entretien prévu</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 32px;border-radius:13px;border:1px solid #3b82f6;background:rgba(59,130,246,.08);font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 0 18px rgba(37,99,235,.25)" style-hover="background:rgba(59,130,246,.18)">Voir détails<i class="ph ph-caret-right" style="font-size:16px"></i></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:11px;min-height:0">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:17px;font-weight:700;letter-spacing:.05em">ÉTAT DES COMPOSANTS</span><i class="ph ph-info" style="font-size:19px;color:#8b98ad"></i></div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:16px">
+      <i class="ph ph-tire" style="font-size:30px;color:#c3cee0"></i>
+      <div style="flex:1"><div style="font-size:14.5px;font-weight:700;letter-spacing:.05em">PNEUS</div><div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#22c55e;margin-top:3px"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e"></span>Normal</div></div>
+      <div style="display:grid;grid-template-columns:auto auto auto;align-items:center;gap:5px 10px;font-size:14px;font-variant-numeric:tabular-nums">
+        <span>2.5</span><span style="width:26px;height:44px;border-radius:10px;background:#101a2c;border:1px solid rgba(96,140,220,.3);grid-row:1/3"></span><span>2.5</span>
+        <span>2.6</span><span>2.6 <span style="font-size:12px;color:#8b98ad">bar</span></span>
+      </div>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:16px">
+      <i class="ph ph-record" style="font-size:30px;color:#c3cee0"></i>
+      <div style="width:110px"><div style="font-size:14.5px;font-weight:700;letter-spacing:.05em">FREINS</div><div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#22c55e;margin-top:3px"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e"></span>Normal</div></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px;font-size:13.5px">
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:52px;color:#8b98ad">Avant</span><div style="flex:1;height:5px;border-radius:3px;background:#0d1a2e"><div style="width:92%;height:100%;border-radius:3px;background:#22c55e"></div></div><span style="font-weight:600;font-variant-numeric:tabular-nums">92 %</span></div>
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:52px;color:#8b98ad">Arrière</span><div style="flex:1;height:5px;border-radius:3px;background:#0d1a2e"><div style="width:88%;height:100%;border-radius:3px;background:#22c55e"></div></div><span style="font-weight:600;font-variant-numeric:tabular-nums">88 %</span></div>
+      </div>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:16px">
+      <i class="ph-fill ph-battery-charging" style="font-size:30px;color:#22c55e"></i>
+      <div style="flex:1"><div style="font-size:14.5px;font-weight:700;letter-spacing:.05em">BATTERIE</div><div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#22c55e;margin-top:3px"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e"></span>Excellent</div></div>
+      <span style="font-size:30px;font-weight:700;color:#22c55e;font-variant-numeric:tabular-nums">{{ batPct }} <span style="font-size:16px">%</span></span>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:16px">
+      <i class="ph ph-drop" style="font-size:30px;color:#c3cee0"></i>
+      <div style="flex:1"><div style="font-size:14.5px;font-weight:700;letter-spacing:.05em">LIQUIDES</div><div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#22c55e;margin-top:3px"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e"></span>Normaux</div></div>
+      <span style="font-size:14px;color:#aeb9cc">Tous les niveaux</span>
+    </div>
+  </div>
+  <div style="grid-column:1/4;background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:16px;padding:14px 24px;display:flex;align-items:center;gap:20px">
+    <span style="font-size:15px;font-weight:700;letter-spacing:.05em;width:200px">DERNIERS ENTRETIENS</span>
+    <sc-for list="{{ histRows }}" as="h" hint-placeholder-count="3">
+      <div style="flex:1;display:flex;align-items:center;gap:14px;border-left:1px solid rgba(139,152,173,.2);padding-left:20px">
+        <span style="width:44px;height:44px;border-radius:11px;background:rgba(9,14,24,.9);border:1px solid rgba(96,140,220,.2);display:flex;align-items:center;justify-content:center"><i class="ph ph-calendar-check" style="font-size:20px;color:#c3cee0"></i></span>
+        <div style="flex:1"><div style="font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">{{ h.date }}</div><div style="font-size:13px;color:#8b98ad;margin-top:1px">{{ h.label }}</div></div>
+        <i class="ph ph-check-circle" style="font-size:22px;color:#22c55e"></i>
+      </div>
+    </sc-for>
+    <div style="display:flex;align-items:center;gap:10px;border:1px solid rgba(96,140,220,.25);border-radius:12px;padding:12px 20px;font-size:14.5px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="border-color:#3b82f6">Voir tout l'historique<i class="ph ph-caret-right" style="font-size:15px;color:#8b98ad"></i></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:grid;grid-template-columns:330px 1fr 400px;gap:22px;padding:20px 32px;overflow:hidden">
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:24px;font-weight:700;letter-spacing:.05em;margin:6px 0 8px">PARAMÈTRES</div>
+    <sc-for list="{{ sideSettings }}" as="it" hint-placeholder-count="5">
+      <div style="display:flex;align-items:center;gap:15px;padding:15px 16px;border-radius:13px;border:1px solid {{ it.border }};border-left:3px solid {{ it.bar }};background:{{ it.bg }};cursor:pointer" style-hover="background:rgba(16,24,40,.95)">
+        <span style="width:46px;height:46px;border-radius:50%;background:{{ it.tint }};display:flex;align-items:center;justify-content:center"><i class="ph {{ it.icon }}" style="font-size:22px;color:{{ it.c }}"></i></span>
+        <div style="flex:1"><div style="font-size:16px;font-weight:600">{{ it.label }}</div><div style="font-size:12.5px;color:#8b98ad;margin-top:1px">{{ it.sub }}</div></div>
+        <i class="ph ph-caret-right" style="font-size:15px;color:#8b98ad"></i>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:11px;min-height:0">
+    <div style="font-size:17px;font-weight:700;letter-spacing:.05em;margin:8px 0 4px">GÉNÉRAL</div>
+    <sc-for list="{{ genRows }}" as="g" hint-placeholder-count="4">
+      <div style="display:flex;align-items:center;gap:15px;background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:13px;padding:14px 18px;cursor:pointer" style-hover="border-color:rgba(96,140,220,.35)">
+        <span style="width:42px;height:42px;border-radius:50%;background:{{ g.tint }};display:flex;align-items:center;justify-content:center"><i class="ph {{ g.icon }}" style="font-size:20px;color:{{ g.c }}"></i></span>
+        <span style="flex:1;font-size:16px;font-weight:500">{{ g.label }}</span>
+        <span style="font-size:15px;color:#aeb9cc;font-variant-numeric:tabular-nums">{{ g.val }}</span>
+        <i class="ph {{ g.chev }}" style="font-size:15px;color:#8b98ad"></i>
+      </div>
+    </sc-for>
+    <div style="display:flex;align-items:center;gap:15px;background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:13px;padding:14px 18px">
+      <span style="width:42px;height:42px;border-radius:50%;background:rgba(59,130,246,.12);display:flex;align-items:center;justify-content:center"><i class="ph ph-clock-clockwise" style="font-size:20px;color:#3b82f6"></i></span>
+      <div style="flex:1"><div style="font-size:16px;font-weight:500">Heure automatique</div><div style="font-size:12.5px;color:#8b98ad;margin-top:1px">Synchroniser l'heure avec le réseau</div></div>
+      <span onClick="{{ toggleAutoTime }}" style="width:52px;height:29px;border-radius:15px;background:{{ autoTimeBg }};position:relative;cursor:pointer;transition:background .2s"><span style="position:absolute;top:3.5px;left:{{ autoTimeKnob }};width:22px;height:22px;border-radius:50%;background:#f2f5fa;transition:left .2s"></span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:15px;background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:13px;padding:14px 18px;cursor:pointer" style-hover="border-color:rgba(96,140,220,.35)">
+      <span style="width:42px;height:42px;border-radius:50%;background:rgba(167,139,250,.12);display:flex;align-items:center;justify-content:center"><i class="ph ph-globe-hemisphere-west" style="font-size:20px;color:#a78bfa"></i></span>
+      <span style="flex:1;font-size:16px;font-weight:500">Fuseau horaire</span>
+      <span style="font-size:15px;color:#aeb9cc">GMT+01:00</span>
+      <i class="ph ph-caret-right" style="font-size:15px;color:#8b98ad"></i>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+    <div style="font-size:17px;font-weight:700;letter-spacing:.05em;margin:8px 0 4px">À PROPOS DU SYSTÈME</div>
+    <image-slot id="settings-car" style="width:100%;height:170px;flex:none" shape="rounded" radius="14" placeholder="silhouette véhicule — contour lumineux"></image-slot>
+    <div style="background:linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9));border:1px solid rgba(96,140,220,.12);border-radius:14px;padding:6px 18px">
+      <sc-for list="{{ aboutRows }}" as="ab" hint-placeholder-count="5">
+        <div style="display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid rgba(139,152,173,.12);font-size:14px"><span style="color:#8b98ad">{{ ab.k }}</span><span style="font-weight:500;font-variant-numeric:tabular-nums;text-align:right">{{ ab.v }}</span></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;justify-content:center;align-items:center;gap:12px;border:1px solid rgba(96,140,220,.3);border-radius:13px;padding:15px;cursor:pointer;font-size:15.5px;font-weight:500" style-hover="border-color:#3b82f6"><i class="ph ph-arrows-clockwise" style="font-size:19px"></i>Vérifier les mises à jour</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showNavBar }}" hint-placeholder-val="{{ true }}">
+<div style="height:86px;flex:none;display:flex;align-items:center;justify-content:center;gap:14px;border-top:1px solid rgba(96,140,220,.12);background:rgba(4,7,15,.7);padding:0 30px">
+  <sc-for list="{{ navItems }}" as="nv" hint-placeholder-count="5">
+    <div onClick="{{ nv.go }}" style="display:flex;align-items:center;gap:12px;height:56px;padding:0 30px;border-radius:14px;border:1px solid {{ nv.border }};background:{{ nv.bg }};color:{{ nv.color }};cursor:pointer;box-shadow:{{ nv.glow }}" style-hover="background:rgba(16,24,40,.9)">
+      <i class="ph {{ nv.icon }}" style="font-size:22px"></i>
+      <span style="font-size:16px;font-weight:500">{{ nv.label }}</span>
+    </div>
+  </sc-for>
+</div>
+</sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1648,&quot;height&quot;:948},&quot;vitesse&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:120,&quot;min&quot;:0,&quot;max&quot;:220,&quot;unit&quot;:&quot;km/h&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Dashboard&quot;},&quot;batterie&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:82,&quot;min&quot;:0,&quot;max&quot;:100,&quot;step&quot;:1,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Véhicule&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'accueil', time: '14:32', playing: true, spatial: true, autoTime: true,
+    driveMode: 'eco', regen: 'Moyenne', dir: 'Standard', trac: 'Standard',
+    adas: { acc: true, lka: true, ldw: true, fcw: true, aeb: true, bsd: true },
+  };
+  componentDidMount() {
+    const tick = () => this.setState({ time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) });
+    tick();
+    this._t = setInterval(tick, 15000);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  go(screen) { return () => this.setState({ screen }); }
+  seg(list, key, accent) {
+    return list.map(v => { const a = this.state[key] === v; return {
+      label: v, go: () => this.setState({ [key]: v }),
+      color: a ? '#d9f7e4' : '#8b98ad', bg: a ? 'rgba(34,197,94,.12)' : 'transparent', border: a ? accent : 'transparent' }; });
+  }
+  side(items, accent, tintBg) {
+    return items.map(it => ({ ...it,
+      bar: it.active ? accent : 'transparent',
+      bg: it.active ? tintBg : 'transparent',
+      color: it.active ? accent : '#aeb9cc' }));
+  }
+  renderVals() {
+    const s = this.state.screen;
+    const BLUE = '#3b82f6', GREEN = '#22c55e', PURPLE = '#a78bfa';
+    const bat = Math.round(this.props.batterie ?? 82);
+    const speed = Math.round(this.props.vitesse ?? 120);
+    const onT = (v, c) => v ? { bg: c, knob: '26px' } : { bg: '#2a3852', knob: '4px' };
+    const tint = h => h.replace(')', ',.12)').replace('rgb', 'rgba').replace('#3b82f6', 'rgba(59,130,246,.12)');
+    const menuAll = [
+      { label: 'VÉHICULE', icon: 'ph-car-simple', c: GREEN, sub: 'État du véhicule et informations', go: this.go('veh') },
+      { label: 'NAVIGATION', icon: 'ph-navigation-arrow', c: BLUE, sub: 'Carte, itinéraire et guidage', go: this.go('nav') },
+      { label: 'MÉDIA', icon: 'ph-music-notes', c: PURPLE, sub: 'Musique, radio et audio', go: this.go('media') },
+      { label: 'TÉLÉPHONE', icon: 'ph-phone', c: GREEN, sub: 'Appels, contacts et Bluetooth', go: this.go('phone') },
+      { label: 'CONDUITE', icon: 'ph-steering-wheel', c: '#f59e0b', sub: 'Modes de conduite et réglages', go: this.go('conduite') },
+      { label: 'ADAS', icon: 'ph-shield-check', c: BLUE, sub: 'Aides à la conduite et sécurité', go: this.go('adas') },
+      { label: 'ENTRETIEN', icon: 'ph-wrench', c: '#eab308', sub: 'Maintenance et diagnostics', go: this.go('entretien') },
+      { label: 'PARAMÈTRES', icon: 'ph-gear-six', c: '#14b8a6', sub: 'Réglages système et préférences', go: this.go('parametres') },
+      { label: 'À PROPOS', icon: 'ph-info', c: '#ef4444', sub: 'Informations système et version', go: this.go('parametres') },
+    ].map(t => ({ ...t, tint: 'color-mix(in srgb, ' + t.c + ' 12%, transparent)' }));
+    const accentByScreen = { veh: GREEN, adas: GREEN, conduite: GREEN, mediaNow: PURPLE };
+    const acc = accentByScreen[s] || BLUE;
+    const activeKey = { accueil: 'dash', dash: 'dash', veh: 'veh', nav: 'nav', media: 'media', mediaNow: 'media', menu: 'menu', phone: 'menu', adas: 'menu', conduite: 'menu', entretien: 'menu', parametres: 'menu' }[s];
+    const navItems = [
+      { label: s === 'accueil' ? 'Accueil' : 'Dashboard', icon: s === 'accueil' ? 'ph-house-simple' : 'ph-gauge', key: 'dash', go: this.go(s === 'accueil' ? 'dash' : 'dash') },
+      { label: 'Véhicule', icon: 'ph-car-simple', key: 'veh', go: this.go('veh') },
+      { label: 'Navigation', icon: 'ph-navigation-arrow', key: 'nav', go: this.go('nav') },
+      { label: 'Média', icon: 'ph-music-notes', key: 'media', go: this.go('media') },
+      { label: 'Menu', icon: 'ph-squares-four', key: 'menu', go: this.go('menu') },
+    ].map(n => { const a = n.key === activeKey; return { ...n,
+      color: a ? acc : '#8b98ad', border: a ? acc : 'transparent',
+      bg: a ? 'color-mix(in srgb, ' + acc + ' 10%, transparent)' : 'transparent',
+      glow: a ? '0 0 18px color-mix(in srgb, ' + acc + ' 30%, transparent)' : 'none' }; });
+    const sideVeh = this.side([
+      { label: 'Aperçu', icon: 'ph-car-simple', active: true },
+      { label: 'Portes et ouvrants', icon: 'ph-lock-simple-open' },
+      { label: 'Pression des pneus', icon: 'ph-tire' },
+      { label: 'Énergie', icon: 'ph-battery-charging' },
+      { label: 'Températures', icon: 'ph-thermometer-simple' },
+      { label: 'Informations', icon: 'ph-info' },
+    ], GREEN, 'rgba(34,197,94,.09)');
+    const sideMedia = this.side([
+      { label: 'Musique', icon: 'ph-music-notes', active: true },
+      { label: 'Radio', icon: 'ph-radio' },
+      { label: 'Bluetooth', icon: 'ph-bluetooth' },
+      { label: 'USB', icon: 'ph-usb' },
+      { label: 'Apple CarPlay', icon: 'ph-play-circle' },
+      { label: 'Android Auto', icon: 'ph-android-logo' },
+    ], BLUE, 'rgba(59,130,246,.09)');
+    const sideMediaNow = this.side([
+      { label: 'Lecture en cours', icon: 'ph-music-note', active: true },
+      { label: 'Ma bibliothèque', icon: 'ph-books', go: this.go('media') },
+      { label: 'Playlists', icon: 'ph-queue' },
+      { label: 'Radio', icon: 'ph-radio' },
+      { label: 'Bluetooth', icon: 'ph-bluetooth' },
+      { label: 'USB', icon: 'ph-usb' },
+      { label: 'Sources', icon: 'ph-squares-four' },
+      { label: 'Paramètres audio', icon: 'ph-gear-six' },
+    ], PURPLE, 'rgba(167,139,250,.09)');
+    const sideAdas = this.side([
+      { label: 'Aides à la conduite', icon: 'ph-road-horizon', active: true },
+      { label: 'Régulateur de vitesse', icon: 'ph-gauge' },
+      { label: 'Sécurité', icon: 'ph-shield-check' },
+      { label: 'Stationnement', icon: 'ph-letter-circle-p' },
+      { label: 'Vision', icon: 'ph-eye' },
+      { label: 'Alerte conducteur', icon: 'ph-coffee' },
+    ], GREEN, 'rgba(34,197,94,.09)');
+    const sideConduite = this.side([
+      { label: 'Modes de conduite', icon: 'ph-car-simple', active: true },
+      { label: 'Régénération', icon: 'ph-lightning' },
+      { label: 'Traction', icon: 'ph-steering-wheel' },
+      { label: 'Direction', icon: 'ph-arrows-left-right' },
+      { label: 'Suspension', icon: 'ph-arrows-vertical' },
+      { label: 'Freinage', icon: 'ph-record' },
+    ], GREEN, 'rgba(34,197,94,.09)');
+    const sideSettings = [
+      { label: 'Général', sub: 'Langue, unités, date, heure', icon: 'ph-gear-six', c: BLUE, active: true },
+      { label: 'Affichage', sub: 'Luminosité, thème, mode', icon: 'ph-sun', c: '#f59e0b' },
+      { label: 'Son', sub: 'Volume, balance, notifications', icon: 'ph-speaker-high', c: BLUE },
+      { label: 'Véhicule', sub: 'Préférences, conduite', icon: 'ph-car-simple', c: '#8b98ad' },
+      { label: 'Système', sub: 'Infos système, mises à jour', icon: 'ph-cube', c: '#8b98ad' },
+    ].map(it => ({ ...it,
+      tint: 'color-mix(in srgb, ' + it.c + ' 12%, transparent)',
+      bar: it.active ? BLUE : 'transparent',
+      border: it.active ? BLUE : 'rgba(96,140,220,.14)',
+      bg: it.active ? 'rgba(59,130,246,.1)' : 'linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9))' }));
+    const genRows = [
+      { label: 'Langue', val: 'Français', icon: 'ph-globe-simple', c: PURPLE, chev: 'ph-caret-down' },
+      { label: 'Unités', val: 'Métrique', icon: 'ph-ruler', c: BLUE, chev: 'ph-caret-down' },
+      { label: 'Heure', val: this.state.time, icon: 'ph-clock', c: '#f59e0b', chev: 'ph-caret-down' },
+      { label: 'Date', val: '24 / 05 / 2026', icon: 'ph-calendar-blank', c: GREEN, chev: 'ph-caret-right' },
+    ].map(g => ({ ...g, tint: 'color-mix(in srgb, ' + g.c + ' 12%, transparent)' }));
+    const aboutRows = [
+      { k: 'Nom du système', v: 'AGOOJIYE V1' },
+      { k: 'Version logicielle', v: '1.0.0' },
+      { k: 'Version UI', v: '1.0.0' },
+      { k: 'ID du véhicule (VIN)', v: 'VR3A1ZK87P1234567' },
+      { k: 'Espace de stockage', v: '28.4 GB / 64 GB' },
+    ];
+    const modes = [
+      { key: 'eco', label: 'ECO', icon: 'ph-leaf', c: GREEN, desc: 'Optimise l\u2019efficacité énergétique pour maximiser l\u2019autonomie. Idéal pour une conduite économique au quotidien.' },
+      { key: 'normal', label: 'NORMAL', icon: 'ph-car-simple', c: BLUE, desc: 'Équilibre entre performance et consommation pour tous les trajets.' },
+      { key: 'sport', label: 'SPORT', icon: 'ph-flag-checkered', c: '#f59e0b', desc: 'Réponse immédiate de l\u2019accélérateur et direction plus ferme.' },
+      { key: 'comfort', label: 'COMFORT', icon: 'ph-armchair', c: PURPLE, desc: 'Souplesse et silence privilégiés pour les longs trajets.' },
+    ];
+    const cur = modes.find(m => m.key === this.state.driveMode);
+    const driveModes = modes.map(m => { const a = m.key === this.state.driveMode; return {
+      ...m, go: () => this.setState({ driveMode: m.key }),
+      border: a ? m.c : 'rgba(96,140,220,.14)',
+      bg: a ? 'color-mix(in srgb, ' + m.c + ' 8%, transparent)' : 'linear-gradient(180deg,rgba(16,24,40,.85),rgba(9,14,24,.9))',
+      iconColor: m.c, textColor: a ? '#eef2f8' : '#aeb9cc', underline: a ? m.c : 'transparent' }; });
+    const adasDefs = [
+      { key: 'acc', label: 'Régulateur de vitesse adaptatif (ACC)', sub: 'Maintient la distance avec le véhicule devant', icon: 'ph-gauge' },
+      { key: 'lka', label: 'Aide au maintien dans la voie (LKA)', sub: 'Corrige la trajectoire si nécessaire', icon: 'ph-road-horizon' },
+      { key: 'ldw', label: 'Alerte de sortie de voie (LDW)', sub: 'Alerte en cas de franchissement de ligne', icon: 'ph-warning-diamond' },
+      { key: 'fcw', label: 'Alerte collision avant (FCW)', sub: 'Alerte en cas de risque de collision', icon: 'ph-car-profile' },
+      { key: 'aeb', label: 'Freinage d\u2019urgence automatique (AEB)', sub: 'Freine automatiquement si nécessaire', icon: 'ph-record' },
+      { key: 'bsd', label: 'Détection des angles morts (BSD)', sub: 'Alerte en cas de véhicule dans l\u2019angle mort', icon: 'ph-eye' },
+    ];
+    const adasItems = adasDefs.map(a => { const v = this.state.adas[a.key]; return { ...a,
+      go: () => this.setState(st => ({ adas: { ...st.adas, [a.key]: !st.adas[a.key] } })),
+      iconColor: v ? GREEN : '#5b6579', ...onT(v, GREEN) }; });
+    const adasChips = [
+      { label: 'Voie détectée', icon: 'ph-road-horizon' },
+      { label: 'Véhicule détecté', icon: 'ph-car-simple', hot: true },
+      { label: 'Distance sûre', icon: 'ph-arrows-out-line-horizontal' },
+      { label: '60 km/h — Limite', icon: 'ph-gauge' },
+    ].map(c => ({ ...c, border: c.hot ? GREEN : 'rgba(34,197,94,.25)', bg: c.hot ? 'rgba(34,197,94,.12)' : 'rgba(9,14,24,.7)' }));
+    const calls = [
+      { name: 'Alice Martin', when: 'Aujourd\u2019hui  •  18:42', init: 'AM', art: 'linear-gradient(135deg,#1d4ed8,#7c3aed)', now: true },
+      { name: 'Thomas K.', when: 'Aujourd\u2019hui  •  15:20', init: 'TK', art: 'linear-gradient(135deg,#0e7490,#2563eb)' },
+      { name: 'Sarah Johnson', when: 'Hier  •  21:14', init: 'SJ', art: 'linear-gradient(135deg,#7c3aed,#db2777)' },
+      { name: 'David M.', when: 'Hier  •  17:03', init: 'DM', art: 'linear-gradient(135deg,#166534,#0e7490)' },
+      { name: 'Julien Moreau', when: 'Hier  •  12:11', init: 'JM', art: 'linear-gradient(135deg,#92400e,#b91c1c)' },
+    ].map(c => ({ ...c, bar: c.now ? BLUE : 'transparent', border: 'rgba(96,140,220,.12)' }));
+    const tracks = [
+      { t: 'Better Tomorrow', a: 'Kendrick Lamar', d: '4:21', art: 'linear-gradient(135deg,#1e3a8a,#7c3aed)', now: true },
+      { t: 'Snooze', a: 'SZA', d: '3:21', art: 'linear-gradient(135deg,#0ea5e9,#1e40af)' },
+      { t: 'Die For You', a: 'The Weeknd', d: '4:20', art: 'linear-gradient(135deg,#b91c1c,#7f1d1d)' },
+      { t: 'Levitating', a: 'Dua Lipa', d: '3:23', art: 'linear-gradient(135deg,#6d28d9,#db2777)' },
+      { t: 'Calm Down', a: 'Rema', d: '3:41', art: 'linear-gradient(135deg,#d97706,#dc2626)' },
+      { t: 'Mon Soleil', a: 'Aya Nakamura', d: '3:28', art: 'linear-gradient(135deg,#0f766e,#65a30d)' },
+    ].map(tr => ({ ...tr, go: this.go('mediaNow'),
+      bg: tr.now ? 'rgba(59,130,246,.1)' : 'transparent',
+      border: tr.now ? 'rgba(59,130,246,.5)' : 'rgba(96,140,220,.1)',
+      icon: tr.now ? 'ph-chart-bar' : 'ph-music-note', iconColor: tr.now ? '#93c5fd' : 'rgba(255,255,255,.7)',
+      aColor: tr.now ? '#93c5fd' : '#8b98ad' }));
+    const queue = [
+      { t: 'Midnight Drive', a: 'Eclipse', d: '03:47', art: 'linear-gradient(135deg,#3b1d5e,#c084fc)', now: true },
+      { t: 'Nightfall', a: 'Eclipse', d: '04:12', art: 'linear-gradient(135deg,#1e3a5f,#60a5fa)' },
+      { t: 'Future Lights', a: 'Nova', d: '03:35', art: 'linear-gradient(135deg,#701a75,#ec4899)' },
+      { t: 'Lost in Motion', a: 'Aurora Road', d: '04:01', art: 'linear-gradient(135deg,#134e4a,#38bdf8)' },
+      { t: 'Starlight', a: 'Eclipse', d: '03:28', art: 'linear-gradient(135deg,#7c2d12,#f97316)' },
+    ].map(q => ({ ...q, bg: q.now ? 'rgba(167,139,250,.1)' : 'transparent', border: q.now ? 'rgba(167,139,250,.5)' : 'rgba(167,139,250,.08)' }));
+    const navSteps = [
+      { label: 'Boulevard Périphérique', dist: '850 m', icon: 'ph-arrow-bend-up-right' },
+      { label: 'Porte Maillot', dist: '2.4 km', icon: 'ph-arrow-bend-up-left' },
+      { label: 'Place de l\u2019Étoile', dist: '3.1 km', icon: 'ph-arrows-clockwise' },
+    ];
+    const okRows = [
+      { label: 'Batterie', icon: 'ph-car-battery' },
+      { label: 'Freins', icon: 'ph-record' },
+      { label: 'Pneus', icon: 'ph-tire' },
+      { label: 'Liquides', icon: 'ph-drop' },
+    ];
+    const histRows = [
+      { date: '15/03/2026', label: 'Contrôle général' },
+      { date: '12/01/2026', label: 'Pneus' },
+      { date: '20/09/2025', label: 'Révision' },
+    ];
+    const sp = onT(this.state.spatial, BLUE), at = onT(this.state.autoTime, BLUE);
+    return {
+      time: this.state.time, speed: String(speed), batPct: String(bat), batPctCss: bat + '%', range: String(Math.round(bat * 5.02)),
+      isAccueil: s === 'accueil', isDash: s === 'dash', isMenu: s === 'menu', isVeh: s === 'veh', isNav: s === 'nav',
+      isMedia: s === 'media', isMediaNow: s === 'mediaNow', isAdas: s === 'adas', isConduite: s === 'conduite',
+      isPhone: s === 'phone', isEntretien: s === 'entretien', isSettings: s === 'parametres',
+      showNavBar: s !== 'dash',
+      goMenu: this.go('menu'), goDash: this.go('dash'), goAccueil: this.go('accueil'),
+      navItems, menuRow1: menuAll.slice(0, 5), menuRow2: menuAll.slice(5),
+      sideVeh, sideMedia, sideMediaNow, sideAdas, sideConduite, sideSettings,
+      genRows, aboutRows, driveModes, adasItems, adasChips, calls, tracks, queue, navSteps, okRows, histRows,
+      modeLabel: cur.label, modeDesc: cur.desc, modeColor: cur.c, modeIcon: cur.icon,
+      regenSeg: this.seg(['Faible', 'Moyenne', 'Forte', 'Auto'], 'regen', GREEN),
+      dirSeg: this.seg(['Légère', 'Standard', 'Ferme'], 'dir', GREEN),
+      tracSeg: this.seg(['Eco', 'Standard', 'Sport'], 'trac', GREEN),
+      togglePlay: () => this.setState(st => ({ playing: !st.playing })),
+      playIcon: this.state.playing ? 'ph-pause' : 'ph-play',
+      toggleSpatial: () => this.setState(st => ({ spatial: !st.spatial })),
+      spatialBg: sp.bg, spatialKnob: sp.knob,
+      toggleAutoTime: () => this.setState(st => ({ autoTime: !st.autoTime })),
+      autoTimeBg: at.bg, autoTimeKnob: at.knob,
+    };
+  }
+}
+</script>
+</body>
+</html>

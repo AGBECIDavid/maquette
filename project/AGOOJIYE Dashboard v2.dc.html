@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" rel="stylesheet">
+<link href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" rel="stylesheet">
+<style>
+body{margin:0;background:#0e101a;font-family:'Inter',system-ui,sans-serif}
+a{color:#9184d9;text-underline-offset:3px}a:hover{color:#b5abfc}
+</style>
+</helmet>
+<div style="width:1920px;height:720px;margin:24px auto;background:#161826;color:#e9e9ed;overflow:hidden;display:flex;flex-direction:column;border-radius:16px;box-shadow:0 0 0 1px #3f424d,0 16px 40px rgba(0,0,0,.65)">
+
+<sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:grid;grid-template-columns:430px 1fr 430px;gap:48px;padding:32px 56px 12px">
+  <div style="display:flex;flex-direction:column;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9397ab">AGOOJIYE</div>
+      <div style="display:flex;gap:18px;font-size:22px;font-weight:500;letter-spacing:.1em;margin-top:10px">
+        <span style="color:#595d6c">P</span><span style="color:#595d6c">R</span><span style="color:#595d6c">N</span>
+        <span style="color:#e9e9ed;position:relative">D<span style="position:absolute;left:0;right:0;bottom:-8px;height:2px;background:#9184d9"></span></span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;gap:14px;background:#232532;border-radius:8px;padding:16px 18px;box-shadow:0 0 0 1px #3f424d">
+        <i class="ph ph-gauge" style="font-size:24px;color:#9184d9"></i>
+        <div style="flex:1">
+          <div style="font-size:12px;color:#9397ab">Régulateur adaptatif</div>
+          <div style="font-size:17px;font-weight:500">110 km/h · actif</div>
+        </div>
+        <span style="font-size:12px;color:#d2cefd;background:rgba(145,132,217,.12);border:1px solid rgba(145,132,217,.4);border-radius:999px;padding:4px 12px">ON</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;background:#232532;border-radius:8px;padding:16px 18px;box-shadow:0 0 0 1px #3f424d">
+        <i class="ph ph-arrow-elbow-up-right" style="font-size:24px;color:#9184d9"></i>
+        <div>
+          <div style="font-size:17px;font-weight:500">À droite dans 400 m</div>
+          <div style="font-size:12.5px;color:#9397ab">Av. de la République · arrivée 14:32</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:22px;padding:0 4px">
+        <i class="ph ph-headlights" style="font-size:22px;color:#595d6c"></i>
+        <i class="ph ph-seatbelt" style="font-size:22px;color:#595d6c"></i>
+        <i class="ph ph-warning" style="font-size:22px;color:#d9a662"></i>
+        <i class="ph ph-snowflake" style="font-size:22px;color:#595d6c"></i>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+    <div style="font-size:200px;font-weight:500;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ speed }}</div>
+    <div style="font-size:16px;letter-spacing:.22em;color:#9397ab;text-transform:uppercase">km/h</div>
+    <div style="margin-top:20px;display:flex;align-items:center;gap:16px">
+      <div style="width:56px;height:56px;border-radius:50%;background:#f3f5fe;border:5px solid #c25a50;display:flex;align-items:center;justify-content:center;color:#161826;font-size:22px;font-weight:600">90</div>
+      <div style="height:1px;width:120px;background:linear-gradient(to right,rgba(233,233,237,.16),transparent)"></div>
+      <span style="font-size:13px;color:#9397ab">limitation détectée</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;justify-content:space-between;align-items:stretch">
+    <div style="display:flex;justify-content:flex-end;gap:20px;font-size:14px;color:#9397ab;font-variant-numeric:tabular-nums">
+      <span>{{ time }}</span><span>18 °C</span>
+      <i class="ph ph-bluetooth" style="font-size:17px;color:#9184d9"></i>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="background:#232532;border-radius:8px;padding:18px;box-shadow:0 0 0 1px #3f424d;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:10px"><i class="ph ph-battery-high" style="font-size:22px;color:#9184d9"></i><span style="font-size:14px;color:#9397ab">Batterie</span></div>
+          <span style="font-size:17px;font-weight:500;font-variant-numeric:tabular-nums">72 %</span>
+        </div>
+        <div style="height:8px;border-radius:4px;background:#292b31;overflow:hidden"><div style="width:72%;height:100%;border-radius:4px;background:linear-gradient(90deg,#5d5294,#9184d9)"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#9397ab">
+          <span>Autonomie</span><span style="color:#e9e9ed;font-variant-numeric:tabular-nums">310 km</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(217,166,98,.08);border:1px solid rgba(217,166,98,.35);border-radius:8px;padding:14px 16px">
+        <i class="ph ph-tire" style="font-size:22px;color:#d9a662"></i>
+        <div style="font-size:13.5px;color:#e8d6b8">Pression pneu arrière droit basse — 1,9 bar</div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:28px 56px 12px;gap:22px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <h2 style="margin:0;font-size:30px;font-weight:500;letter-spacing:-.015em">Menu</h2>
+    <span style="font-size:14px;color:#9397ab;font-variant-numeric:tabular-nums">{{ time }}</span>
+  </div>
+  <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 1fr;gap:16px">
+    <sc-for list="{{ menuTiles }}" as="tile" hint-placeholder-count="8">
+      <div onClick="{{ tile.go }}" style="background:#232532;border-radius:8px;padding:22px 24px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;box-shadow:0 0 0 1px #3f424d" style-hover="box-shadow:0 0 0 1px #9184d9">
+        <i class="ph {{ tile.icon }}" style="font-size:30px;color:#9184d9"></i>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="font-size:19px;font-weight:500">{{ tile.label }}</div>
+          <div style="font-size:13px;color:#9397ab">{{ tile.sub }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isNav }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,#191b2a 0 28px,#1d1f2f 28px 56px);display:flex;align-items:center;justify-content:center">
+    <span style="font-family:ui-monospace,monospace;font-size:13px;color:#595d6c;border:1px dashed #3f424d;border-radius:8px;padding:8px 14px">carte — fond de plan à intégrer</span>
+  </div>
+  <div style="position:absolute;left:50%;top:56%;width:16px;height:16px;border-radius:50%;background:#9184d9;box-shadow:0 0 0 6px rgba(145,132,217,.25),0 0 0 14px rgba(145,132,217,.1)"></div>
+  <div style="position:absolute;top:28px;left:32px;display:flex;align-items:center;gap:16px;background:rgba(22,24,38,.94);border-radius:8px;padding:18px 22px;box-shadow:0 0 0 1px #3f424d;backdrop-filter:blur(8px)">
+    <i class="ph ph-arrow-elbow-up-right" style="font-size:38px;color:#9184d9"></i>
+    <div>
+      <div style="font-size:23px;font-weight:500">400 m — à droite</div>
+      <div style="font-size:14px;color:#9397ab">Av. de la République</div>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:28px;left:32px;display:flex;gap:28px;background:rgba(22,24,38,.94);border-radius:8px;padding:14px 22px;box-shadow:0 0 0 1px #3f424d;font-variant-numeric:tabular-nums;backdrop-filter:blur(8px)">
+    <div><div style="font-size:11px;color:#9397ab;letter-spacing:.1em;text-transform:uppercase">Arrivée</div><div style="font-size:19px;font-weight:500">14:32</div></div>
+    <div style="width:1px;background:linear-gradient(rgba(233,233,237,.16),transparent)"></div>
+    <div><div style="font-size:11px;color:#9397ab;letter-spacing:.1em;text-transform:uppercase">Restant</div><div style="font-size:19px;font-weight:500">12 km</div></div>
+    <div style="width:1px;background:linear-gradient(rgba(233,233,237,.16),transparent)"></div>
+    <div><div style="font-size:11px;color:#9397ab;letter-spacing:.1em;text-transform:uppercase">Durée</div><div style="font-size:19px;font-weight:500">18 min</div></div>
+  </div>
+  <div style="position:absolute;top:28px;right:32px;display:flex;align-items:center;gap:10px;background:rgba(22,24,38,.94);border-radius:8px;padding:12px 18px;box-shadow:0 0 0 1px #3f424d">
+    <i class="ph ph-map-pin" style="font-size:18px;color:#9184d9"></i>
+    <span style="font-size:14px;color:#cfd3e5">Gare centrale</span>
+  </div>
+  <div style="position:absolute;right:32px;bottom:28px;display:flex;flex-direction:column;gap:10px">
+    <div style="width:52px;height:52px;border-radius:8px;background:rgba(35,37,50,.96);box-shadow:0 0 0 1px #3f424d;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="box-shadow:0 0 0 1px #9184d9"><i class="ph ph-plus" style="font-size:22px"></i></div>
+    <div style="width:52px;height:52px;border-radius:8px;background:rgba(35,37,50,.96);box-shadow:0 0 0 1px #3f424d;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="box-shadow:0 0 0 1px #9184d9"><i class="ph ph-minus" style="font-size:22px"></i></div>
+    <div style="width:52px;height:52px;border-radius:8px;background:rgba(35,37,50,.96);box-shadow:0 0 0 1px #3f424d;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#9184d9" style-hover="box-shadow:0 0 0 1px #9184d9"><i class="ph ph-crosshair-simple" style="font-size:22px"></i></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isVeh }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;padding:28px 56px 12px;gap:64px">
+  <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+    <h2 style="margin:0;font-size:30px;font-weight:500;letter-spacing:-.015em">Véhicule</h2>
+    <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center">
+      <div style="position:relative;width:200px;height:400px;border-radius:100px 100px 84px 84px;background:linear-gradient(180deg,#2a2c3c,#1c1e2c);box-shadow:0 0 0 1px #3f424d">
+        <div style="position:absolute;left:-7px;top:110px;width:14px;height:66px;border-radius:7px;background:#9184d9"></div>
+        <div style="position:absolute;right:-7px;top:110px;width:14px;height:66px;border-radius:7px;background:#9184d9"></div>
+        <div style="position:absolute;left:-7px;top:196px;width:14px;height:66px;border-radius:7px;background:#d9a662"></div>
+        <div style="position:absolute;right:-7px;top:196px;width:14px;height:66px;border-radius:7px;background:#9184d9"></div>
+        <div style="position:absolute;left:50%;transform:translateX(-50%);top:-5px;width:100px;height:10px;border-radius:5px;background:#9184d9"></div>
+        <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:-5px;width:100px;height:10px;border-radius:5px;background:#9184d9"></div>
+      </div>
+      <div style="position:absolute;left:12%;top:6%;text-align:center"><div style="font-size:18px;font-weight:500;font-variant-numeric:tabular-nums">2,4</div><div style="font-size:11px;color:#9397ab">bar · AV G</div></div>
+      <div style="position:absolute;right:12%;top:6%;text-align:center"><div style="font-size:18px;font-weight:500;font-variant-numeric:tabular-nums">2,4</div><div style="font-size:11px;color:#9397ab">bar · AV D</div></div>
+      <div style="position:absolute;left:12%;bottom:6%;text-align:center"><div style="font-size:18px;font-weight:500;font-variant-numeric:tabular-nums">2,3</div><div style="font-size:11px;color:#9397ab">bar · AR G</div></div>
+      <div style="position:absolute;right:12%;bottom:6%;text-align:center"><div style="font-size:18px;font-weight:500;color:#d9a662;font-variant-numeric:tabular-nums">1,9</div><div style="font-size:11px;color:#d9a662">bar · AR D</div></div>
+    </div>
+  </div>
+  <div style="flex:1.2;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:center">
+    <sc-for list="{{ vehRows }}" as="row" hint-placeholder-count="8">
+      <div style="display:flex;align-items:center;gap:14px;background:#232532;border-radius:8px;padding:16px 18px;box-shadow:0 0 0 1px #3f424d">
+        <i class="ph {{ row.icon }}" style="font-size:22px;color:{{ row.iconColor }}"></i>
+        <div style="flex:1">
+          <div style="font-size:12.5px;color:#9397ab">{{ row.label }}</div>
+          <div style="font-size:15.5px;font-weight:500;color:{{ row.color }}">{{ row.value }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isConduite }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:28px 56px 12px;gap:24px">
+  <h2 style="margin:0;font-size:30px;font-weight:500;letter-spacing:-.015em">Conduite</h2>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+    <sc-for list="{{ driveModes }}" as="m" hint-placeholder-count="4">
+      <div onClick="{{ m.go }}" style="background:{{ m.bg }};border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:14px;cursor:pointer;box-shadow:{{ m.shadow }}" style-hover="box-shadow:0 0 0 1px #9184d9">
+        <i class="ph {{ m.icon }}" style="font-size:32px;color:{{ m.iconColor }}"></i>
+        <div>
+          <div style="font-size:20px;font-weight:500">{{ m.label }}</div>
+          <div style="font-size:13px;color:#9397ab;margin-top:3px">{{ m.sub }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div style="background:#232532;border-radius:8px;padding:20px 22px;box-shadow:0 0 0 1px #3f424d;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:16px;font-weight:500">Régénération au freinage</div>
+        <div style="font-size:13px;color:#9397ab;margin-top:2px">Récupération d'énergie à la décélération</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <sc-for list="{{ regenLevels }}" as="r" hint-placeholder-count="3">
+          <div onClick="{{ r.go }}" style="min-width:64px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:14px;cursor:pointer;color:{{ r.color }};background:{{ r.bg }};box-shadow:{{ r.shadow }}">{{ r.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="background:#232532;border-radius:8px;padding:20px 22px;box-shadow:0 0 0 1px #3f424d;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:16px;font-weight:500">Contrôle de traction</div>
+        <div style="font-size:13px;color:#9397ab;margin-top:2px">Recommandé sur route ouverte</div>
+      </div>
+      <div onClick="{{ toggleTraction }}" style="width:58px;height:32px;border-radius:16px;background:{{ tractionBg }};position:relative;cursor:pointer;transition:background .2s">
+        <div style="position:absolute;top:4px;left:{{ tractionKnob }};width:24px;height:24px;border-radius:50%;background:#e9e9ed;transition:left .2s"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isAdas }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:28px 56px 12px;gap:22px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <h2 style="margin:0;font-size:30px;font-weight:500;letter-spacing:-.015em">Aides à la conduite</h2>
+    <span style="font-size:13px;color:#9397ab">{{ adasSummary }}</span>
+  </div>
+  <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start">
+    <sc-for list="{{ adasItems }}" as="a" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:16px;background:#232532;border-radius:8px;padding:18px 20px;box-shadow:0 0 0 1px #3f424d">
+        <i class="ph {{ a.icon }}" style="font-size:26px;color:{{ a.iconColor }}"></i>
+        <div style="flex:1">
+          <div style="font-size:16px;font-weight:500">{{ a.label }}</div>
+          <div style="font-size:13px;color:#9397ab;margin-top:2px">{{ a.sub }}</div>
+        </div>
+        <div onClick="{{ a.go }}" style="width:58px;height:32px;border-radius:16px;background:{{ a.bg }};position:relative;cursor:pointer;transition:background .2s">
+          <div style="position:absolute;top:4px;left:{{ a.knob }};width:24px;height:24px;border-radius:50%;background:#e9e9ed;transition:left .2s"></div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMedia }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;padding:28px 56px 12px;gap:56px;align-items:center">
+  <div style="width:340px;height:340px;border-radius:14px;background:repeating-linear-gradient(45deg,#232532 0 24px,#272939 24px 48px);box-shadow:0 0 0 1px #3f424d;display:flex;align-items:center;justify-content:center;flex:none">
+    <span style="font-family:ui-monospace,monospace;font-size:12px;color:#595d6c">pochette album</span>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:26px;max-width:900px">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#9184d9"><i class="ph ph-bluetooth" style="font-size:16px"></i>Téléphone de Léa</div>
+      <div style="font-size:34px;font-weight:500;margin-top:10px;letter-spacing:-.015em">Titre en lecture</div>
+      <div style="font-size:17px;color:#9397ab;margin-top:4px">Artiste — Album</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:5px;border-radius:3px;background:#292b31"><div style="width:38%;height:100%;border-radius:3px;background:#9184d9"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#9397ab;font-variant-numeric:tabular-nums"><span>1:24</span><span>3:41</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:18px">
+      <div style="width:56px;height:56px;border-radius:50%;box-shadow:0 0 0 1px #3f424d;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="box-shadow:0 0 0 1px #9184d9"><i class="ph-fill ph-skip-back" style="font-size:20px"></i></div>
+      <div onClick="{{ togglePlay }}" style="width:72px;height:72px;border-radius:50%;border:1px solid #9184d9;color:#9184d9;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(145,132,217,.12)"><i class="ph-fill {{ playIcon }}" style="font-size:28px"></i></div>
+      <div style="width:56px;height:56px;border-radius:50%;box-shadow:0 0 0 1px #3f424d;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="box-shadow:0 0 0 1px #9184d9"><i class="ph-fill ph-skip-forward" style="font-size:20px"></i></div>
+      <div style="margin-left:28px;display:flex;align-items:center;gap:12px;flex:1">
+        <i class="ph ph-speaker-high" style="font-size:18px;color:#9397ab"></i>
+        <div style="flex:1;height:5px;border-radius:3px;background:#292b31"><div style="width:55%;height:100%;border-radius:3px;background:#9397ab"></div></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <span style="padding:10px 20px;border-radius:999px;border:1px solid #9184d9;color:#d2cefd;font-size:14px">Bluetooth</span>
+      <span style="padding:10px 20px;border-radius:999px;box-shadow:0 0 0 1px #3f424d;color:#9397ab;font-size:14px;cursor:pointer" style-hover="color:#e9e9ed">Radio</span>
+      <span style="padding:10px 20px;border-radius:999px;box-shadow:0 0 0 1px #3f424d;color:#9397ab;font-size:14px;cursor:pointer" style-hover="color:#e9e9ed">USB</span>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPhone }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;padding:28px 56px 12px;gap:48px">
+  <div style="width:380px;display:flex;flex-direction:column;gap:18px;flex:none">
+    <h2 style="margin:0;font-size:30px;font-weight:500;letter-spacing:-.015em">Téléphone</h2>
+    <div style="display:flex;align-items:center;gap:14px;background:#232532;border-radius:8px;padding:18px;box-shadow:0 0 0 1px #3f424d">
+      <i class="ph ph-device-mobile" style="font-size:26px;color:#9184d9"></i>
+      <div style="flex:1">
+        <div style="font-size:15.5px;font-weight:500">Téléphone de Léa</div>
+        <div style="font-size:12.5px;color:#9397ab">Connecté · Bluetooth</div>
+      </div>
+      <span style="width:9px;height:9px;border-radius:50%;background:#9184d9"></span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;height:52px;border-radius:8px;border:1px solid #9184d9;color:#d2cefd;font-size:15px;cursor:pointer" style-hover="background:rgba(145,132,217,.12)"><i class="ph ph-phone" style="font-size:19px"></i>Clavier</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;height:52px;border-radius:8px;box-shadow:0 0 0 1px #3f424d;color:#cfd3e5;font-size:15px;cursor:pointer" style-hover="box-shadow:0 0 0 1px #9184d9"><i class="ph ph-users" style="font-size:19px"></i>Contacts</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#9397ab;margin-top:14px">Appels récents</div>
+    <sc-for list="{{ calls }}" as="c" hint-placeholder-count="4">
+      <div style="display:flex;align-items:center;gap:16px;background:#232532;border-radius:8px;padding:14px 18px;box-shadow:0 0 0 1px #3f424d">
+        <i class="ph {{ c.icon }}" style="font-size:20px;color:{{ c.iconColor }}"></i>
+        <div style="flex:1">
+          <div style="font-size:15.5px;font-weight:500">{{ c.name }}</div>
+          <div style="font-size:12.5px;color:#9397ab">{{ c.when }}</div>
+        </div>
+        <div style="width:46px;height:46px;border-radius:50%;border:1px solid #9184d9;color:#9184d9;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(145,132,217,.12)"><i class="ph ph-phone" style="font-size:19px"></i></div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isEntretien }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;padding:28px 56px 12px;gap:48px">
+  <div style="width:420px;display:flex;flex-direction:column;gap:18px;flex:none">
+    <h2 style="margin:0;font-size:30px;font-weight:500;letter-spacing:-.015em">Entretien</h2>
+    <div style="background:#232532;border-radius:8px;padding:22px;box-shadow:0 0 0 1px #3f424d;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#9397ab"><i class="ph ph-wrench" style="font-size:16px;color:#9184d9"></i>Prochain entretien</div>
+      <div style="font-size:28px;font-weight:500">dans 5 200 km</div>
+      <div style="font-size:13.5px;color:#9397ab">ou avant le 12/2026 · Révision périodique</div>
+      <div style="height:6px;border-radius:3px;background:#292b31;margin-top:8px"><div style="width:65%;height:100%;border-radius:3px;background:#9184d9"></div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;background:rgba(217,166,98,.08);border:1px solid rgba(217,166,98,.35);border-radius:8px;padding:14px 16px">
+      <i class="ph ph-warning" style="font-size:20px;color:#d9a662"></i>
+      <div style="font-size:13.5px;color:#e8d6b8">Pression pneu AR D à contrôler</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#9397ab;margin-top:14px">État des organes</div>
+    <sc-for list="{{ healthRows }}" as="h" hint-placeholder-count="4">
+      <div style="display:flex;align-items:center;gap:16px;background:#232532;border-radius:8px;padding:15px 18px;box-shadow:0 0 0 1px #3f424d">
+        <i class="ph {{ h.icon }}" style="font-size:22px;color:{{ h.iconColor }}"></i>
+        <div style="flex:1;font-size:15.5px;font-weight:500">{{ h.label }}</div>
+        <span style="font-size:13px;color:{{ h.color }};background:{{ h.bg }};border-radius:999px;padding:5px 14px">{{ h.status }}</span>
+      </div>
+    </sc-for>
+    <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#9397ab;margin-top:10px">Historique</div>
+    <div style="display:flex;flex-direction:column;gap:0;font-size:13.5px;color:#9397ab">
+      <div style="display:flex;justify-content:space-between;padding:9px 4px">​<span>Révision périodique — 19 500 km</span><span>02/2026</span></div>
+      <div style="height:1px;background:linear-gradient(to right,transparent,rgba(233,233,237,.16) 48px,rgba(233,233,237,.16) calc(100% - 48px),transparent)"></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 4px"><span>Permutation des pneus — 12 000 km</span><span>07/2025</span></div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;padding:28px 56px 12px;gap:44px">
+  <div style="width:250px;display:flex;flex-direction:column;gap:4px;flex:none">
+    <h2 style="margin:0 0 16px;font-size:30px;font-weight:500;letter-spacing:-.015em">Paramètres</h2>
+    <div style="padding:13px 16px;border-radius:8px;background:rgba(145,132,217,.12);color:#d2cefd;font-size:15px;font-weight:500">Général</div>
+    <div style="padding:13px 16px;border-radius:8px;color:#9397ab;font-size:15px;cursor:pointer" style-hover="background:#232532">Affichage</div>
+    <div style="padding:13px 16px;border-radius:8px;color:#9397ab;font-size:15px;cursor:pointer" style-hover="background:#232532">Son</div>
+    <div style="padding:13px 16px;border-radius:8px;color:#9397ab;font-size:15px;cursor:pointer" style-hover="background:#232532">Véhicule</div>
+    <div style="padding:13px 16px;border-radius:8px;color:#9397ab;font-size:15px;cursor:pointer" style-hover="background:#232532">Système</div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:12px;justify-content:center;max-width:1100px">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#232532;border-radius:8px;padding:17px 22px;box-shadow:0 0 0 1px #3f424d">
+      <span style="font-size:15px">Langue</span>
+      <div style="display:flex;gap:8px">
+        <span style="padding:9px 18px;border-radius:8px;border:1px solid #9184d9;color:#d2cefd;font-size:13.5px">Français</span>
+        <span style="padding:9px 18px;border-radius:8px;box-shadow:0 0 0 1px #3f424d;color:#9397ab;font-size:13.5px;cursor:pointer" style-hover="color:#e9e9ed">English</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#232532;border-radius:8px;padding:17px 22px;box-shadow:0 0 0 1px #3f424d">
+      <span style="font-size:15px">Unités</span>
+      <div style="display:flex;gap:8px">
+        <span style="padding:9px 18px;border-radius:8px;border:1px solid #9184d9;color:#d2cefd;font-size:13.5px">km · °C</span>
+        <span style="padding:9px 18px;border-radius:8px;box-shadow:0 0 0 1px #3f424d;color:#9397ab;font-size:13.5px;cursor:pointer" style-hover="color:#e9e9ed">mi · °F</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#232532;border-radius:8px;padding:17px 22px;box-shadow:0 0 0 1px #3f424d">
+      <span style="font-size:15px">Luminosité</span>
+      <div style="width:320px;height:5px;border-radius:3px;background:#292b31"><div style="width:70%;height:100%;border-radius:3px;background:#9184d9"></div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#232532;border-radius:8px;padding:17px 22px;box-shadow:0 0 0 1px #3f424d">
+      <span style="font-size:15px">Thème</span>
+      <div style="display:flex;gap:8px">
+        <span style="padding:9px 18px;border-radius:8px;box-shadow:0 0 0 1px #3f424d;color:#9397ab;font-size:13.5px;cursor:pointer" style-hover="color:#e9e9ed">Jour</span>
+        <span style="padding:9px 18px;border-radius:8px;border:1px solid #9184d9;color:#d2cefd;font-size:13.5px">Nuit</span>
+        <span style="padding:9px 18px;border-radius:8px;box-shadow:0 0 0 1px #3f424d;color:#9397ab;font-size:13.5px;cursor:pointer" style-hover="color:#e9e9ed">Auto</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#232532;border-radius:8px;padding:17px 22px;box-shadow:0 0 0 1px #3f424d">
+      <span style="font-size:15px">Version logicielle</span>
+      <span style="font-size:14px;color:#9397ab;font-variant-numeric:tabular-nums">AGOOJIYE OS 1.0.3 — à jour</span>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<div style="height:78px;flex:none;display:flex;align-items:stretch;justify-content:center;gap:10px;background:#12141f;border-top:1px solid rgba(233,233,237,.1);padding:9px 32px">
+  <sc-for list="{{ navItems }}" as="nv" hint-placeholder-count="5">
+    <div onClick="{{ nv.go }}" style="flex:1;max-width:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:8px;cursor:pointer;background:{{ nv.bg }}" style-hover="background:#232532">
+      <i class="ph {{ nv.icon }}" style="font-size:21px;color:{{ nv.color }}"></i>
+      <span style="font-size:12.5px;font-weight:500;color:{{ nv.color }}">{{ nv.label }}</span>
+    </div>
+  </sc-for>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1968,&quot;height&quot;:768}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'dash', time: '', playing: true, driveMode: 'normal', regen: 'moyen', traction: true,
+    adas: { acc: true, lane: true, lka: false, coll: true, blind: true, det: true },
+  };
+  componentDidMount() {
+    const tick = () => this.setState({ time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) });
+    tick();
+    this._t = setInterval(tick, 15000);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  go(screen) { return () => this.setState({ screen }); }
+  renderVals() {
+    const ACC = '#9184d9', MUT = '#9397ab', WARN = '#d9a662', s = this.state.screen;
+    const on = { bg: 'rgba(145,132,217,.55)', knob: '30px' }, off = { bg: '#3f424d', knob: '4px' };
+    const menuTiles = [
+      { label: 'Véhicule', sub: 'État, portes, pneus', icon: 'ph-car-profile', go: this.go('veh') },
+      { label: 'Navigation', sub: 'Carte et itinéraire', icon: 'ph-map-trifold', go: this.go('nav') },
+      { label: 'Conduite', sub: 'Modes et régénération', icon: 'ph-steering-wheel', go: this.go('conduite') },
+      { label: 'ADAS', sub: 'Aides à la conduite', icon: 'ph-shield-check', go: this.go('adas') },
+      { label: 'Média', sub: 'Musique et radio', icon: 'ph-music-notes', go: this.go('media') },
+      { label: 'Téléphone', sub: 'Appels et contacts', icon: 'ph-phone', go: this.go('phone') },
+      { label: 'Entretien', sub: 'Suivi et alertes', icon: 'ph-wrench', go: this.go('entretien') },
+      { label: 'Paramètres', sub: 'Système et affichage', icon: 'ph-gear-six', go: this.go('settings') },
+    ];
+    const navItems = [
+      { label: 'Accueil', icon: 'ph-house-simple', key: 'dash' },
+      { label: 'Véhicule', icon: 'ph-car-profile', key: 'veh' },
+      { label: 'Navigation', icon: 'ph-navigation-arrow', key: 'nav' },
+      { label: 'Média', icon: 'ph-music-notes', key: 'media' },
+      { label: 'Menu', icon: 'ph-squares-four', key: 'menu' },
+    ].map(n => ({ ...n, go: this.go(n.key), color: n.key === s ? '#d2cefd' : MUT, bg: n.key === s ? 'rgba(145,132,217,.12)' : 'transparent' }));
+    const vehRows = [
+      { label: 'Portes', value: '1 ouverte — AR G', icon: 'ph-car-simple', iconColor: WARN, color: '#e8d6b8' },
+      { label: 'Coffre / capot', value: 'Fermés', icon: 'ph-lock-simple', iconColor: ACC, color: '#e9e9ed' },
+      { label: 'Batterie', value: '72 % · 310 km', icon: 'ph-battery-high', iconColor: ACC, color: '#e9e9ed' },
+      { label: 'Kilométrage', value: '24 812 km', icon: 'ph-gauge', iconColor: ACC, color: '#e9e9ed' },
+      { label: 'Temp. extérieure', value: '18 °C', icon: 'ph-thermometer-simple', iconColor: ACC, color: '#e9e9ed' },
+      { label: 'État général', value: '1 alerte pneus', icon: 'ph-heartbeat', iconColor: WARN, color: '#e8d6b8' },
+    ];
+    const modes = [
+      { key: 'eco', label: 'Eco', sub: 'Autonomie maximale', icon: 'ph-leaf' },
+      { key: 'comfort', label: 'Comfort', sub: 'Souplesse et silence', icon: 'ph-armchair' },
+      { key: 'normal', label: 'Normal', sub: 'Équilibre au quotidien', icon: 'ph-circle-half' },
+      { key: 'sport', label: 'Sport', sub: 'Réponse immédiate', icon: 'ph-lightning' },
+    ].map(m => ({ ...m, go: () => this.setState({ driveMode: m.key }),
+      bg: m.key === this.state.driveMode ? 'rgba(145,132,217,.12)' : '#232532',
+      shadow: m.key === this.state.driveMode ? '0 0 0 1px #9184d9' : '0 0 0 1px #3f424d',
+      iconColor: m.key === this.state.driveMode ? '#d2cefd' : MUT }));
+    const regenLevels = ['faible', 'moyen', 'fort'].map(r => ({ label: r, go: () => this.setState({ regen: r }),
+      color: r === this.state.regen ? '#d2cefd' : MUT,
+      bg: r === this.state.regen ? 'rgba(145,132,217,.12)' : 'transparent',
+      shadow: r === this.state.regen ? '0 0 0 1px #9184d9' : '0 0 0 1px #3f424d' }));
+    const adasDefs = [
+      { key: 'acc', label: 'Régulateur adaptatif', sub: 'Maintient la distance avec le véhicule précédent', icon: 'ph-gauge' },
+      { key: 'lane', label: 'Lane Assist', sub: 'Maintien actif dans la voie', icon: 'ph-road-horizon' },
+      { key: 'lka', label: 'Alerte de sortie de voie', sub: 'Vibration au franchissement de ligne', icon: 'ph-warning-diamond' },
+      { key: 'coll', label: 'Alerte collision', sub: 'Freinage d\u2019urgence automatique', icon: 'ph-shield-warning' },
+      { key: 'blind', label: 'Angles morts', sub: 'Surveillance dans les rétroviseurs', icon: 'ph-eye' },
+      { key: 'det', label: 'Détection des véhicules', sub: 'Piétons, cycles et véhicules', icon: 'ph-scan' },
+    ];
+    const adasItems = adasDefs.map(a => { const v = this.state.adas[a.key]; return { ...a,
+      go: () => this.setState(st => ({ adas: { ...st.adas, [a.key]: !st.adas[a.key] } })),
+      iconColor: v ? ACC : '#595d6c', ...(v ? on : off) }; });
+    const nOn = adasDefs.filter(a => this.state.adas[a.key]).length;
+    const calls = [
+      { name: 'Maman', when: 'Aujourd\u2019hui · 11:42 · sortant', icon: 'ph-phone-outgoing', iconColor: ACC },
+      { name: 'Karim B.', when: 'Aujourd\u2019hui · 09:15 · entrant', icon: 'ph-phone-incoming', iconColor: ACC },
+      { name: 'Garage Centrale', when: 'Hier · 17:03 · manqué', icon: 'ph-phone-x', iconColor: WARN },
+      { name: 'Sofia', when: 'Hier · 12:40 · sortant', icon: 'ph-phone-outgoing', iconColor: ACC },
+    ];
+    const okTag = { color: '#d2cefd', bg: 'rgba(145,132,217,.12)' }, warnTag = { color: '#e8d6b8', bg: 'rgba(217,166,98,.12)' };
+    const healthRows = [
+      { label: 'Pneus', status: 'À contrôler', icon: 'ph-tire', iconColor: WARN, ...warnTag },
+      { label: 'Freins', status: 'Bon état', icon: 'ph-record', iconColor: ACC, ...okTag },
+      { label: 'Batterie haute tension', status: 'Santé 96 %', icon: 'ph-battery-charging', iconColor: ACC, ...okTag },
+      { label: 'Batterie 12 V', status: 'Bon état', icon: 'ph-car-battery', iconColor: ACC, ...okTag },
+    ];
+    return {
+      time: this.state.time, speed: '87',
+      isDash: s === 'dash', isMenu: s === 'menu', isNav: s === 'nav', isVeh: s === 'veh',
+      isConduite: s === 'conduite', isAdas: s === 'adas', isMedia: s === 'media',
+      isPhone: s === 'phone', isEntretien: s === 'entretien', isSettings: s === 'settings',
+      menuTiles, navItems, vehRows, driveModes: modes, regenLevels, adasItems, calls, healthRows,
+      adasSummary: nOn + ' / 6 systèmes actifs',
+      toggleTraction: () => this.setState(st => ({ traction: !st.traction })),
+      tractionBg: this.state.traction ? 'rgba(145,132,217,.55)' : '#3f424d',
+      tractionKnob: this.state.traction ? '30px' : '4px',
+      togglePlay: () => this.setState(st => ({ playing: !st.playing })),
+      playIcon: this.state.playing ? 'ph-pause' : 'ph-play',
+    };
+  }
+}
+</script>
+</body>
+</html>
