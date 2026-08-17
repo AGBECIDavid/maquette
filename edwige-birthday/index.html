@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Reine du 15 Octobre</title>
+<style>
+  :root{
+    --pearl:#fff7f2;
+    --pearl-deep:#fbeadf;
+    --blush:#f6d3e0;
+    --blush-soft:#fbe6ee;
+    --rose:#e18aa8;
+    --rose-deep:#c15c82;
+    --magenta:#b23e6b;
+    --gold:#cf9d5f;
+    --gold-light:#f1d9ab;
+    --gold-deep:#a97a3f;
+    --ink:#5c2438;
+    --ink-soft:#8a4a63;
+    --line:rgba(255,255,255,.65);
+    --shadow-rose: 0 20px 60px -20px rgba(178,62,107,.35);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 70% 45% at 50% 0%, var(--blush-soft) 0%, transparent 60%),
+      radial-gradient(ellipse 90% 60% at 50% 100%, var(--pearl-deep) 0%, transparent 65%),
+      linear-gradient(180deg, var(--pearl) 0%, var(--blush) 55%, var(--pearl) 100%);
+    color:var(--ink);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    overflow-x:hidden;
+    min-height:100vh;
+  }
+
+  h1,h2,h3,p{margin:0;}
+
+  /* ---------- Ambient stage: petals, sparkles, palace silhouette ---------- */
+  .stage{
+    position:fixed; inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:0;
+  }
+  .palace{
+    position:absolute; left:50%; bottom:-4%;
+    transform:translateX(-50%);
+    width:min(1400px, 220vw);
+    height:42vh;
+    filter:blur(2px);
+    opacity:.55;
+  }
+  .palace svg{width:100%; height:100%; display:block;}
+
+  .petal{
+    position:absolute; top:-8%;
+    width:14px; height:14px;
+    border-radius:50% 0 50% 50%;
+    background:linear-gradient(135deg, var(--rose) 0%, var(--blush) 100%);
+    opacity:.75;
+    animation-name:fall, sway;
+    animation-timing-function:linear, ease-in-out;
+    animation-iteration-count:infinite, infinite;
+    will-change:transform;
+  }
+  .petal.gold{background:linear-gradient(135deg, var(--gold-light), var(--gold));}
+  .petal.small{width:9px; height:9px;}
+  .petal.large{width:19px; height:19px;}
+
+  @keyframes fall{
+    from{ transform:translateY(-10vh) rotate(0deg); }
+    to{ transform:translateY(112vh) rotate(340deg); }
+  }
+  @keyframes sway{
+    0%,100%{ margin-left:0px; }
+    50%{ margin-left:38px; }
+  }
+
+  .sparkle{
+    position:absolute;
+    color:var(--gold);
+    font-size:12px;
+    opacity:0;
+    animation:twinkle 3.6s ease-in-out infinite;
+    text-shadow:0 0 6px rgba(207,157,95,.8);
+  }
+  @keyframes twinkle{
+    0%,100%{ opacity:0; transform:scale(.5);}
+    50%{ opacity:1; transform:scale(1);}
+  }
+
+  /* ---------- Layout ---------- */
+  main{
+    position:relative; z-index:1;
+    max-width:640px;
+    margin:0 auto;
+    padding:9vh 22px 10vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  /* ---------- Medallion / crown portrait ---------- */
+  .medallion{
+    position:relative;
+    width:min(64vw, 300px);
+    height:min(64vw, 300px);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:28px;
+  }
+  .halo{
+    position:absolute; inset:-18%;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(241,217,171,.65) 0%, rgba(225,138,168,.35) 45%, transparent 72%);
+    filter:blur(6px);
+    animation:pulse 4.5s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ transform:scale(1); opacity:.85; }
+    50%{ transform:scale(1.08); opacity:1; }
+  }
+  .orbit{
+    position:absolute; inset:0;
+    animation:spin 22s linear infinite;
+  }
+  .orbit span{
+    position:absolute;
+    color:var(--gold);
+    font-size:13px;
+    text-shadow:0 0 6px rgba(207,157,95,.9);
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .frame{
+    position:relative;
+    width:78%; height:78%;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 35% 30%, #fffdfb 0%, var(--pearl) 55%, var(--blush) 100%);
+    border:2px solid var(--gold-light);
+    box-shadow:
+      0 0 0 6px var(--pearl),
+      0 0 0 8px var(--gold-light),
+      var(--shadow-rose);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .monogram{
+    font-family:Georgia, serif;
+    font-style:italic;
+    font-size:min(13vw, 64px);
+    font-weight:700;
+    background:linear-gradient(160deg, var(--gold-deep) 0%, var(--gold-light) 45%, var(--rose-deep) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .crown{
+    position:absolute; top:-15%; left:50%;
+    transform:translateX(-50%);
+    width:46%;
+    filter:drop-shadow(0 6px 10px rgba(169,122,63,.45));
+  }
+
+  /* ---------- Text block ---------- */
+  .card{
+    text-align:center;
+    background:rgba(255,255,255,.42);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:34px 26px 30px;
+    box-shadow:var(--shadow-rose);
+  }
+  .eyebrow{
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size:12px;
+    letter-spacing:.32em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .headline{
+    font-size:clamp(28px, 6vw, 40px);
+    font-weight:400;
+    letter-spacing:.02em;
+    color:var(--ink);
+    text-wrap:balance;
+  }
+  .name{
+    font-size:clamp(46px, 11vw, 78px);
+    font-style:italic;
+    font-weight:700;
+    line-height:1.05;
+    margin:6px 0 10px;
+    background:linear-gradient(160deg, var(--magenta) 0%, var(--rose-deep) 40%, var(--gold) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .royal-title{
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size:13px;
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    color:var(--gold-deep);
+    padding-top:8px;
+    margin-top:8px;
+    border-top:1px solid var(--gold-light);
+    display:inline-block;
+  }
+  .message{
+    font-style:italic;
+    font-size:clamp(15px, 2.6vw, 18px);
+    line-height:1.6;
+    color:var(--ink-soft);
+    max-width:46ch;
+    margin:22px auto 0;
+    text-wrap:balance;
+  }
+
+  .cta{
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size:13px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--pearl);
+    background:linear-gradient(135deg, var(--rose-deep), var(--magenta));
+    border:none;
+    border-radius:999px;
+    padding:14px 30px;
+    margin-top:30px;
+    cursor:pointer;
+    box-shadow:0 12px 28px -10px rgba(178,62,107,.55);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .cta:hover{ transform:translateY(-2px); box-shadow:0 16px 32px -10px rgba(178,62,107,.6); }
+  .cta:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; }
+  .cta.ghost{
+    background:transparent;
+    color:var(--magenta);
+    border:1.5px solid var(--rose-deep);
+    box-shadow:none;
+  }
+  .cta.ghost:hover{ background:rgba(178,62,107,.08); }
+  .cta:disabled{ opacity:.5; cursor:default; transform:none; box-shadow:none; }
+
+  /* ---------- Game panel ---------- */
+  .game-panel{
+    width:100%;
+    margin-top:64px;
+    text-align:center;
+  }
+  .game-panel h2{
+    font-size:clamp(24px, 5vw, 32px);
+    font-weight:400;
+    font-style:italic;
+    color:var(--ink);
+  }
+  .game-intro{
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size:14.5px;
+    color:var(--ink-soft);
+    max-width:42ch;
+    margin:12px auto 0;
+    line-height:1.55;
+  }
+
+  .hud{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    margin:22px 0 18px;
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  .hud-item{
+    background:rgba(255,255,255,.55);
+    border:1px solid var(--gold-light);
+    border-radius:14px;
+    padding:10px 20px;
+    font-size:12.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .hud-item span{
+    display:block;
+    font-family:Georgia, serif;
+    font-style:italic;
+    font-size:24px;
+    color:var(--magenta);
+    letter-spacing:0;
+    text-transform:none;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .game-stage{
+    position:relative;
+    width:100%;
+    max-width:520px;
+    height:420px;
+    margin:0 auto;
+    border-radius:22px;
+    background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(246,211,224,.4));
+    border:1px solid var(--gold-light);
+    box-shadow:inset 0 0 40px rgba(255,255,255,.6), var(--shadow-rose);
+    overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .fall-item{
+    position:absolute; top:-40px;
+    font-size:30px;
+    line-height:1;
+    cursor:pointer;
+    filter:drop-shadow(0 3px 6px rgba(92,36,56,.25));
+    background:none; border:none; padding:6px;
+    animation-name:item-fall;
+    animation-timing-function:linear;
+    animation-fill-mode:forwards;
+  }
+  @keyframes item-fall{
+    from{ transform:translateY(0) rotate(0deg); }
+    to{ transform:translateY(460px) rotate(200deg); }
+  }
+  .fall-item.popped{
+    animation:none !important;
+    pointer-events:none;
+    transform:scale(1.6) !important;
+    opacity:0;
+    transition:transform .35s ease, opacity .35s ease;
+  }
+  .float-score{
+    position:absolute;
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--gold-deep);
+    pointer-events:none;
+    animation:float-up .8s ease-out forwards;
+  }
+  @keyframes float-up{
+    from{ transform:translateY(0); opacity:1; }
+    to{ transform:translateY(-38px); opacity:0; }
+  }
+
+  .finale{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px;
+    background:linear-gradient(180deg, rgba(255,247,242,.96), rgba(246,211,224,.97));
+    padding:20px;
+    text-align:center;
+  }
+  .finale.hidden{ display:none; }
+  .finale .tier{
+    font-family:Georgia, serif;
+    font-style:italic;
+    font-size:22px;
+    color:var(--magenta);
+  }
+  .finale .final-score{
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size:13px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .confetti{
+    position:absolute; top:-5%;
+    width:8px; height:14px;
+    animation:confetti-fall linear forwards;
+    opacity:.9;
+  }
+  @keyframes confetti-fall{
+    from{ transform:translateY(0) rotate(0deg); opacity:1; }
+    to{ transform:translateY(440px) rotate(420deg); opacity:0; }
+  }
+
+  footer{
+    position:relative; z-index:1;
+    text-align:center;
+    padding:40px 20px 60px;
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size:12px;
+    letter-spacing:.08em;
+    color:var(--ink-soft);
+    opacity:.8;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .petal, .sparkle, .halo, .orbit, .fall-item, .confetti{
+      animation:none !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="palace" aria-hidden="true">
+    <svg viewBox="0 0 800 300" preserveAspectRatio="xMidYMax slice">
+      <defs>
+        <linearGradient id="palaceGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e18aa8" stop-opacity=".28"/>
+          <stop offset="100%" stop-color="#cf9d5f" stop-opacity=".18"/>
+        </linearGradient>
+      </defs>
+      <g fill="url(#palaceGrad)">
+        <rect x="0" y="140" width="800" height="160"/>
+        <path d="M40 140 v-60 a40 40 0 0 1 80 0 v60 z"/>
+        <path d="M160 140 v-90 a55 55 0 0 1 110 0 v90 z"/>
+        <path d="M310 140 v-130 a75 75 0 0 1 150 0 v130 z"/>
+        <path d="M500 140 v-90 a55 55 0 0 1 110 0 v90 z"/>
+        <path d="M650 140 v-60 a40 40 0 0 1 80 0 v60 z"/>
+        <rect x="380" y="0" width="10" height="30"/>
+        <circle cx="385" cy="-4" r="9"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<main>
+  <section class="hero">
+    <div class="medallion">
+      <div class="halo" aria-hidden="true"></div>
+      <div class="orbit" aria-hidden="true">
+        <span style="top:2%; left:48%;">&#10022;</span>
+        <span style="top:50%; left:96%;">&#10022;</span>
+        <span style="top:50%; left:0%;">&#10022;</span>
+        <span style="top:96%; left:48%;">&#10022;</span>
+        <span style="top:20%; left:85%;">&#183;</span>
+        <span style="top:78%; left:15%;">&#183;</span>
+      </div>
+      <div class="frame">
+        <span class="monogram">E</span>
+        <svg class="crown" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f1d9ab"/>
+              <stop offset="100%" stop-color="#a97a3f"/>
+            </linearGradient>
+          </defs>
+          <polygon points="10,90 10,40 55,70 100,20 145,70 190,40 190,90" fill="url(#goldGrad)" stroke="#a97a3f" stroke-width="2"/>
+          <rect x="6" y="88" width="188" height="22" rx="6" fill="url(#goldGrad)" stroke="#a97a3f" stroke-width="2"/>
+          <circle cx="10" cy="40" r="7" fill="#e18aa8"/>
+          <circle cx="190" cy="40" r="7" fill="#e18aa8"/>
+          <circle cx="100" cy="20" r="10" fill="#c15c82"/>
+          <rect x="93" y="92" width="14" height="14" rx="2" fill="#fbeadf" stroke="#c15c82" stroke-width="2" transform="rotate(45 100 99)"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">17 août &mdash; hommage &agrave; venir le 15 octobre</p>
+      <h1 class="headline">Joyeux Anniversaire</h1>
+      <p class="name">Edwige</p>
+      <p class="royal-title">La Reine du 15 Octobre</p>
+      <p class="message">Que cette nouvelle ann&eacute;e de ta vie soit aussi belle, lumineuse et exceptionnelle que toi.</p>
+      <button class="cta" id="scrollToGame" type="button">D&eacute;couvrir son jeu royal &#8595;</button>
+    </div>
+  </section>
+
+  <section class="game-panel" id="game">
+    <h2>La Chasse aux P&eacute;tales Royales</h2>
+    <p class="game-intro">R&eacute;colte des p&eacute;tales, des perles et des couronnes avant qu&rsquo;ils ne s&rsquo;&eacute;vanouissent, et fais rayonner Edwige.</p>
+
+    <div class="hud">
+      <div class="hud-item">Score <span id="score">0</span></div>
+      <div class="hud-item">Temps <span id="timer">30</span>s</div>
+    </div>
+
+    <div class="game-stage" id="gameStage">
+      <button class="cta" id="startBtn" type="button">&#10022; Commencer &#10022;</button>
+
+      <div class="finale hidden" id="finale">
+        <p class="tier" id="tierText"></p>
+        <p class="final-score" id="finalScoreText"></p>
+        <button class="cta ghost" id="replayBtn" type="button">Rejouer</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>Fait avec amour pour Edwige &middot; La Reine du 15 Octobre</footer>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Ambient petals & sparkles ---------- */
+  var stage = document.getElementById('stage');
+  if (!reduceMotion && stage) {
+    var petalCount = 20;
+    for (var i = 0; i < petalCount; i++) {
+      var p = document.createElement('div');
+      var sizeClass = Math.random() < .3 ? 'small' : (Math.random() < .6 ? '' : 'large');
+      var goldClass = Math.random() < .35 ? 'gold' : '';
+      p.className = ('petal ' + sizeClass + ' ' + goldClass).trim();
+      p.style.left = (Math.random() * 100) + 'vw';
+      var fallDur = 9 + Math.random() * 9;
+      var swayDur = 3 + Math.random() * 3;
+      p.style.animationDuration = fallDur + 's, ' + swayDur + 's';
+      p.style.animationDelay = (-Math.random() * fallDur) + 's, ' + (-Math.random() * swayDur) + 's';
+      stage.appendChild(p);
+    }
+
+    var sparkleGlyphs = ['✦', '✧', '·'];
+    var sparkleCount = 16;
+    for (var j = 0; j < sparkleCount; j++) {
+      var s = document.createElement('div');
+      s.className = 'sparkle';
+      s.textContent = sparkleGlyphs[Math.floor(Math.random() * sparkleGlyphs.length)];
+      s.style.left = (Math.random() * 100) + 'vw';
+      s.style.top = (Math.random() * 100) + 'vh';
+      var dur = 2.6 + Math.random() * 3;
+      s.style.animationDuration = dur + 's';
+      s.style.animationDelay = (-Math.random() * dur) + 's';
+      stage.appendChild(s);
+    }
+  }
+
+  /* ---------- Scroll to game ---------- */
+  var scrollBtn = document.getElementById('scrollToGame');
+  var gameSection = document.getElementById('game');
+  if (scrollBtn && gameSection) {
+    scrollBtn.addEventListener('click', function () {
+      gameSection.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    });
+  }
+
+  /* ---------- Game: La Chasse aux Pétales Royales ---------- */
+  var stageEl = document.getElementById('gameStage');
+  var startBtn = document.getElementById('startBtn');
+  var replayBtn = document.getElementById('replayBtn');
+  var finaleEl = document.getElementById('finale');
+  var tierText = document.getElementById('tierText');
+  var finalScoreText = document.getElementById('finalScoreText');
+  var scoreEl = document.getElementById('score');
+  var timerEl = document.getElementById('timer');
+
+  var ITEMS = [
+    { glyph: '🌹', points: 1, weight: 5 },
+    { glyph: '🌸', points: 1, weight: 4 },
+    { glyph: '💗', points: 2, weight: 3 },
+    { glyph: '💎', points: 3, weight: 2 },
+    { glyph: '👑', points: 5, weight: 1 }
+  ];
+  var weightedItems = [];
+  ITEMS.forEach(function (it) {
+    for (var w = 0; w < it.weight; w++) weightedItems.push(it);
+  });
+
+  var score = 0, timeLeft = 30, spawnTimer = null, countdownTimer = null, running = false;
+  var activeItems = [];
+
+  function pickItem(){
+    return weightedItems[Math.floor(Math.random() * weightedItems.length)];
+  }
+
+  function spawnItem(){
+    if (!running) return;
+    var def = pickItem();
+    var el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'fall-item';
+    el.textContent = def.glyph;
+    el.setAttribute('aria-label', 'Attraper');
+    var stageWidth = stageEl.clientWidth;
+    var left = 24 + Math.random() * (stageWidth - 60);
+    el.style.left = left + 'px';
+    var dur = 3.4 + Math.random() * 1.6;
+    el.style.animationDuration = dur + 's';
+
+    function cleanup(){
+      var idx = activeItems.indexOf(el);
+      if (idx > -1) activeItems.splice(idx, 1);
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }
+    el.addEventListener('animationend', cleanup);
+
+    el.addEventListener('click', function onClick(){
+      if (el.classList.contains('popped')) return;
+      el.classList.add('popped');
+      score += def.points;
+      scoreEl.textContent = String(score);
+
+      var pop = document.createElement('div');
+      pop.className = 'float-score';
+      pop.textContent = '+' + def.points;
+      pop.style.left = el.style.left;
+      pop.style.top = el.getBoundingClientRect().top - stageEl.getBoundingClientRect().top + 'px';
+      stageEl.appendChild(pop);
+      setTimeout(function(){ if (pop.parentNode) pop.parentNode.removeChild(pop); }, 850);
+
+      setTimeout(cleanup, 380);
+    });
+
+    stageEl.appendChild(el);
+    activeItems.push(el);
+  }
+
+  function tierFor(finalScore){
+    if (finalScore >= 30) return 'La Reine Suprême du 15 Octobre 👑🌹';
+    if (finalScore >= 20) return 'Une Reine Radieuse ✨';
+    if (finalScore >= 10) return 'Une Reine Éblouissante 💎';
+    return 'Une Reine Charmante 💗';
+  }
+
+  function launchConfetti(){
+    if (reduceMotion) return;
+    var colors = ['#e18aa8', '#cf9d5f', '#c15c82', '#f1d9ab', '#fbeadf'];
+    for (var i = 0; i < 46; i++) {
+      var c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = (Math.random() * 100) + '%';
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.borderRadius = Math.random() < .5 ? '50%' : '2px';
+      var dur = 1.6 + Math.random() * 1.2;
+      c.style.animationDuration = dur + 's';
+      c.style.animationDelay = (Math.random() * .4) + 's';
+      stageEl.appendChild(c);
+      (function(node, life){
+        setTimeout(function(){ if (node.parentNode) node.parentNode.removeChild(node); }, life * 1000 + 500);
+      })(c, dur + .4);
+    }
+  }
+
+  function endGame(){
+    running = false;
+    clearInterval(spawnTimer);
+    clearInterval(countdownTimer);
+    activeItems.slice().forEach(function(el){
+      if (el.parentNode) el.parentNode.removeChild(el);
+    });
+    activeItems = [];
+
+    tierText.textContent = tierFor(score);
+    finalScoreText.textContent = score + ' points récoltés';
+    finaleEl.classList.remove('hidden');
+    launchConfetti();
+  }
+
+  function startGame(){
+    score = 0;
+    timeLeft = 30;
+    scoreEl.textContent = '0';
+    timerEl.textContent = '30';
+    finaleEl.classList.add('hidden');
+    startBtn.style.display = 'none';
+    running = true;
+
+    spawnTimer = setInterval(spawnItem, 650);
+    countdownTimer = setInterval(function(){
+      timeLeft -= 1;
+      timerEl.textContent = String(Math.max(timeLeft, 0));
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+    spawnItem();
+  }
+
+  if (startBtn) startBtn.addEventListener('click', startGame);
+  if (replayBtn) replayBtn.addEventListener('click', function(){
+    finaleEl.classList.add('hidden');
+    startGame();
+  });
+})();
+</script>
+</body>
+</html>
