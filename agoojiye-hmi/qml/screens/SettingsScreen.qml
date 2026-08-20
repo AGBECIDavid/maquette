@@ -146,6 +146,7 @@ Item {
             Text { text: "À PROPOS DU SYSTÈME"; font.family: Theme.fontFamily; font.pixelSize: 17; font.weight: Font.Bold; font.letterSpacing: 1; color: Theme.textPrimary; topPadding: 8; bottomPadding: 4 }
             ImageAsset {
                 width: parent.width; height: 170; radius: 14
+                fillMode: Image.PreserveAspectFit
                 source: "qrc:/AgoojiyeHMI/assets/images/settings-car.png"
             }
             PanelCard {

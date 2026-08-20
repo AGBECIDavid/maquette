@@ -16,13 +16,17 @@ Item {
     // An open-sided shuttle has no boot, sunroof or four passenger doors, so
     // the callouts track what this vehicle actually has: a bonnet, the driver's
     // door, the open boarding sides, the charge flap and the battery bay.
+    //
+    // The render shows the shuttle three-quarter on with the cab to the RIGHT,
+    // so each label sits on the side of the panel its part is actually on.
+    // `tx`/`ty` are the anchor point on the vehicle, as a fraction of the panel.
     readonly property var callouts: [
-        { label: "Porte conducteur", status: "Fermée", x: 22, y: 20, align: "left" },
-        { label: "Capot", status: "Fermé", x: 22, yf: 0.44, align: "left" },
-        { label: "Accès passagers G", status: "Libre", x: 22, bottom: 22, align: "left" },
-        { label: "Trappe de charge", status: "Fermée", right: 22, yf: 0.28, align: "right" },
-        { label: "Accès passagers D", status: "Libre", right: 22, yf: 0.58, align: "right" },
-        { label: "Compartiment batterie", status: "Verrouillé", xf: 0.42, bottom: 22, align: "left" }
+        { label: "Trappe de charge",     status: "Fermée",     x: 22,     y: 20,      align: "left",  tx: 0.20, ty: 0.30 },
+        { label: "Accès passagers G",    status: "Libre",      x: 22,     yf: 0.50,   align: "left",  tx: 0.34, ty: 0.56 },
+        { label: "Compartiment batterie", status: "Verrouillé", x: 22,    bottom: 22, align: "left",  tx: 0.46, ty: 0.74 },
+        { label: "Porte conducteur",     status: "Fermée",     right: 22, y: 20,      align: "right", tx: 0.73, ty: 0.34 },
+        { label: "Capot",                status: "Fermé",      right: 22, yf: 0.50,   align: "right", tx: 0.86, ty: 0.58 },
+        { label: "Accès passagers D",    status: "Libre",      right: 22, bottom: 22, align: "right", tx: 0.64, ty: 0.70 }
     ]
 
     readonly property var statCards: [
@@ -87,17 +91,62 @@ Item {
                 ImageAsset {
                     id: carShot
                     anchors.fill: parent
-                    anchors.margins: 1
+                    // Inset so the callouts down each edge have clear space and
+                    // never land on the vehicle itself.
+                    anchors.leftMargin: 150
+                    anchors.rightMargin: 150
+                    anchors.topMargin: 46
+                    anchors.bottomMargin: 54
                     radius: 15
                     // Fit rather than crop so the whole vehicle stays visible;
-                    // the asset's baked alpha melts its edges into the panel.
+                    // the render carries its own transparency, so no scrim is
+                    // needed to blend it into the panel.
                     fillMode: Image.PreserveAspectFit
                     source: "qrc:/AgoojiyeHMI/assets/images/vehicule-car.png"
                 }
 
-                // The vehicle plate already carries the reference's own anchor
-                // dots and dotted leader lines, so the labels below just sit at
-                // the ends of them rather than drawing a second set.
+                // Dotted leader lines tying each label to its point on the
+                // vehicle. The render is a clean cut-out, so unlike the earlier
+                // reference plate there is no baked-in annotation to reuse.
+                Canvas {
+                    anchors.fill: parent
+                    onWidthChanged: requestPaint()
+                    onHeightChanged: requestPaint()
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.reset()
+                        ctx.lineWidth = 1
+                        ctx.strokeStyle = Theme.alpha(Theme.textMuted, 0.4)
+                        ctx.setLineDash([2, 4])
+
+                        for (var i = 0; i < root.callouts.length; i++) {
+                            var m = root.callouts[i]
+                            var right = m.align === "right"
+                            // Start just inboard of the label block.
+                            var sx = right ? width - 22 - 148 : 22 + 148
+                            var sy = m.y !== undefined ? m.y + 20
+                                   : (m.bottom !== undefined ? height - m.bottom - 18
+                                                             : height * m.yf + 20)
+                            var ex = width * m.tx
+                            var ey = height * m.ty
+
+                            ctx.beginPath()
+                            ctx.moveTo(sx, sy)
+                            ctx.lineTo(sx + (ex - sx) * 0.4, sy)
+                            ctx.lineTo(ex, ey)
+                            ctx.stroke()
+                        }
+
+                        ctx.setLineDash([])
+                        ctx.fillStyle = Theme.green
+                        for (var j = 0; j < root.callouts.length; j++) {
+                            var c = root.callouts[j]
+                            ctx.beginPath()
+                            ctx.arc(width * c.tx, height * c.ty, 3.5, 0, Math.PI * 2)
+                            ctx.fill()
+                        }
+                    }
+                }
 
                 Repeater {
                     model: root.callouts

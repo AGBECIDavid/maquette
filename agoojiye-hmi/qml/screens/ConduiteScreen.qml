@@ -89,7 +89,11 @@ Item {
                 radius: 16
                 ImageAsset {
                     anchors.fill: parent
+                    anchors.margins: 26
                     radius: 16
+                    // A transparent cut-out has to be fitted, not cropped, or
+                    // the panel zooms into the middle of the vehicle.
+                    fillMode: Image.PreserveAspectFit
                     source: "qrc:/AgoojiyeHMI/assets/images/conduite-car.png"
                 }
             }
