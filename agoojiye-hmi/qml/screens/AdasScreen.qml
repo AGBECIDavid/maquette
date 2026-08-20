@@ -16,7 +16,7 @@ Item {
         { label: "Voie détectée", icon: "ph-road-horizon", hot: false },
         { label: "Véhicule détecté", icon: "ph-car-simple", hot: true },
         { label: "Distance sûre", icon: "ph-arrows-out-line-horizontal", hot: false },
-        { label: "60 km/h — Limite", icon: "ph-gauge", hot: false }
+        { label: "30 km/h — Limite", icon: "ph-gauge", hot: false }
     ]
     readonly property var items: [
         { key: "acc", label: "Régulateur de vitesse adaptatif (ACC)", sub: "Maintient la distance avec le véhicule devant", icon: "ph-gauge" },

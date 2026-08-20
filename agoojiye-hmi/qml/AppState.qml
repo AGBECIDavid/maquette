@@ -19,9 +19,14 @@ QtObject {
     property string trac: "Standard"
     property var adas: ({ acc: true, lka: true, ldw: true, fcw: true, aeb: true, bsd: true })
 
-    // props (vitesse / batterie in the original $preview props)
-    property int speedValue: 120
+    // Vehicle figures. This is a low-speed electric shuttle, not a passenger
+    // car, so the cluster tops out around 25 km/h and the pack is sized for a
+    // campus/site duty cycle rather than motorway range.
+    property int speedValue: 25
     property int batteryValue: 82
+    // Manufacturer range at a full charge; what the cluster shows is this
+    // scaled by the current state of charge.
+    readonly property int rangeFullCharge: 120
 
     property Timer _clock: Timer {
         interval: 15000
@@ -49,7 +54,7 @@ QtObject {
     // ---- derived ----------------------------------------------------
     readonly property string batPct: String(batteryValue)
     readonly property real batteryFraction: batteryValue / 100
-    readonly property string range: String(Math.round(batteryValue * 5.02))
+    readonly property string range: String(Math.round(batteryFraction * rangeFullCharge))
     readonly property string speed: String(speedValue)
     readonly property bool showNavBar: screen !== "dash"
 

@@ -6,21 +6,23 @@ Item {
 
     readonly property var sideItems: [
         { label: "Aperçu", icon: "ph-car-simple", active: true },
-        { label: "Portes et ouvrants", icon: "ph-lock-simple-open", active: false },
+        { label: "Ouvrants et accès", icon: "ph-lock-simple-open", active: false },
         { label: "Pression des pneus", icon: "ph-tire", active: false },
         { label: "Énergie", icon: "ph-battery-charging", active: false },
         { label: "Températures", icon: "ph-thermometer-simple", active: false },
         { label: "Informations", icon: "ph-info", active: false }
     ]
 
+    // An open-sided shuttle has no boot, sunroof or four passenger doors, so
+    // the callouts track what this vehicle actually has: a bonnet, the driver's
+    // door, the open boarding sides, the charge flap and the battery bay.
     readonly property var callouts: [
-        { label: "Coffre", status: "Fermé", x: 22, y: 20, align: "left" },
-        { label: "Toit ouvrant", status: "Fermé", xf: 0.44, y: 20, align: "left" },
-        { label: "Capot", status: "Fermé", x: 22, yf: 0.42, align: "left" },
-        { label: "Porte avant G", status: "Fermée", x: 22, bottom: 22, align: "left" },
-        { label: "Porte avant D", status: "Fermée", right: 22, yf: 0.32, align: "right" },
-        { label: "Porte arrière D", status: "Fermée", right: 22, yf: 0.58, align: "right" },
-        { label: "Porte arrière G", status: "Fermée", xf: 0.44, bottom: 22, align: "left" }
+        { label: "Porte conducteur", status: "Fermée", x: 22, y: 20, align: "left" },
+        { label: "Capot", status: "Fermé", x: 22, yf: 0.44, align: "left" },
+        { label: "Accès passagers G", status: "Libre", x: 22, bottom: 22, align: "left" },
+        { label: "Trappe de charge", status: "Fermée", right: 22, yf: 0.28, align: "right" },
+        { label: "Accès passagers D", status: "Libre", right: 22, yf: 0.58, align: "right" },
+        { label: "Compartiment batterie", status: "Verrouillé", xf: 0.42, bottom: 22, align: "left" }
     ]
 
     readonly property var statCards: [

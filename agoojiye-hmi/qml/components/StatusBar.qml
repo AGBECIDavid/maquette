@@ -101,7 +101,7 @@ Item {
             border.width: 4
             border.color: Theme.redDeep
             anchors.verticalCenter: parent.verticalCenter
-            Text { anchors.centerIn: parent; text: "130"; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.Bold; color: "#0b1020" }
+            Text { anchors.centerIn: parent; text: "30"; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.Bold; color: "#0b1020" }
         }
         Row {
             spacing: 5

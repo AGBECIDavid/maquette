@@ -247,13 +247,13 @@ Item {
                 Rectangle { width: 1; height: parent.height * 0.6; anchors.verticalCenter: parent.verticalCenter; color: Theme.alpha(Theme.textMuted, 0.25) }
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
-                    Text { text: "85 km"; font.family: Theme.fontFamily; font.pixelSize: 19; font.weight: Font.Bold; color: Theme.textPrimary }
+                    Text { text: "4.2 km"; font.family: Theme.fontFamily; font.pixelSize: 19; font.weight: Font.Bold; color: Theme.textPrimary }
                     Text { text: "Restants"; font.family: Theme.fontFamily; font.pixelSize: 12; color: Theme.textMuted }
                 }
                 Rectangle { width: 1; height: parent.height * 0.6; anchors.verticalCenter: parent.verticalCenter; color: Theme.alpha(Theme.textMuted, 0.25) }
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
-                    Text { text: "1h 32"; font.family: Theme.fontFamily; font.pixelSize: 19; font.weight: Font.Bold; color: Theme.textPrimary }
+                    Text { text: "10 min"; font.family: Theme.fontFamily; font.pixelSize: 19; font.weight: Font.Bold; color: Theme.textPrimary }
                     Text { text: "Temps restant"; font.family: Theme.fontFamily; font.pixelSize: 12; color: Theme.textMuted }
                 }
                 Rectangle { width: 1; height: parent.height * 0.6; anchors.verticalCenter: parent.verticalCenter; color: Theme.alpha(Theme.textMuted, 0.25) }
