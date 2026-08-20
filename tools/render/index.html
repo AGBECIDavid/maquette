@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:transparent;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "/node_modules/three/build/three.module.js",
+    "three/addons/": "/node_modules/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const state = { ready: false, error: null };
+window.__state = state;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+// Deliberately underexposed: the vehicle has to sit in the HMI's night palette,
+// where it reads as dark steel picked out by a cool rim, not a studio white.
+renderer.toneMappingExposure = 0.52;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = null;
+
+// Neutral studio reflections so the brushed metal and glass read correctly.
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+// Keep reflections for the metal without letting the studio flood the body.
+scene.environmentIntensity = 0.30;
+
+// Night-themed key + cool rim: the rim is what separates the silhouette from
+// the dark HMI background, so it carries more weight than the key.
+const key = new THREE.DirectionalLight(0xdfe9ff, 1.5);
+key.position.set(3, 4, 4);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x7db0ff, 3.4);
+rim.position.set(-4, 2.2, -3);
+scene.add(rim);
+const rim2 = new THREE.DirectionalLight(0x6f9fff, 1.8);
+rim2.position.set(4, 1.6, -3.5);
+scene.add(rim2);
+const fill = new THREE.DirectionalLight(0x8fb4ff, 0.35);
+fill.position.set(-2, 1, 4);
+scene.add(fill);
+scene.add(new THREE.AmbientLight(0x24334d, 0.6));
+
+const camera = new THREE.PerspectiveCamera(28, 16 / 9, 0.01, 100);
+const pivot = new THREE.Group();
+scene.add(pivot);
+
+let radius = 5;
+let center = new THREE.Vector3();
+
+new GLTFLoader().load('/model.glb', (gltf) => {
+  const model = gltf.scene;
+
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const c = box.getCenter(new THREE.Vector3());
+  model.position.sub(c);            // centre at origin
+  pivot.add(model);
+
+  const maxDim = Math.max(size.x, size.y, size.z);
+  radius = maxDim * 2.2;
+  center.set(0, 0, 0);
+
+  state.size = { x: size.x, y: size.y, z: size.z };
+  state.ready = true;
+}, undefined, (err) => {
+  state.error = String(err);
+});
+
+// azimuth/elevation in degrees, dist as a multiple of the fitted radius
+window.__shoot = function (w, h, azimuth, elevation, dist, fov) {
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = fov || 28;
+  camera.updateProjectionMatrix();
+
+  const az = THREE.MathUtils.degToRad(azimuth);
+  const el = THREE.MathUtils.degToRad(elevation);
+  const r = radius * (dist || 1);
+  camera.position.set(
+    r * Math.cos(el) * Math.sin(az),
+    r * Math.sin(el),
+    r * Math.cos(el) * Math.cos(az)
+  );
+  camera.lookAt(center);
+
+  renderer.render(scene, camera);
+  return renderer.domElement.toDataURL('image/png');
+};
+</script>
+</body>
+</html>

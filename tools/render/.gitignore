@@ -1,0 +1,7 @@
+node_modules/
+model.glb
+out/
+probe/
+final/
+package-lock.json
+package.json
