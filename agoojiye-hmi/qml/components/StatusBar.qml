@@ -122,7 +122,7 @@ Item {
             size: 27
             color: Theme.textMuted
             anchors.verticalCenter: parent.verticalCenter
-            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("accueil") }
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("boot") }
         }
     }
 }

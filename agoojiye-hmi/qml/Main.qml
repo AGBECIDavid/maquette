@@ -30,14 +30,26 @@ Window {
 
             StatusBar {
                 width: parent.width
+                visible: AppState.showStatusBar
+                height: visible ? 66 : 0
             }
 
             Item {
                 id: content
                 width: parent.width
-                height: parent.height - 66 - (AppState.showNavBar ? bottomNav.height : 0)
+                height: parent.height
+                        - (AppState.showStatusBar ? 66 : 0)
+                        - (AppState.showNavBar ? bottomNav.height : 0)
 
-                AccueilScreen { anchors.fill: parent; visible: AppState.screen === "accueil" }
+                // La séquence de démarrage n'est pas une destination : elle se
+                // joue une fois et passe la main au tableau de bord.
+                Loader {
+                    anchors.fill: parent
+                    active: AppState.screen === "boot"
+                    sourceComponent: BootScreen {
+                        onFinished: AppState.go("dash")
+                    }
+                }
                 DashboardScreen { anchors.fill: parent; visible: AppState.screen === "dash" }
                 MenuScreen { anchors.fill: parent; visible: AppState.screen === "menu" }
                 VehiculeScreen { anchors.fill: parent; visible: AppState.screen === "veh" }

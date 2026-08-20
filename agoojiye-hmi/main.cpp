@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
         QObject *appState = accessorObj ? accessorObj->property("appState").value<QObject *>() : nullptr;
         if (window && appState) {
             static const QStringList screens = {
-                "accueil", "dash", "menu", "veh", "nav", "media",
+                "dash", "menu", "veh", "nav", "media",
                 "mediaNow", "adas", "conduite", "phone", "entretien", "parametres"
             };
             auto *index = new int(0);
@@ -57,6 +57,27 @@ int main(int argc, char *argv[])
                 }
                 QMetaObject::invokeMethod(appState, "go", Q_ARG(QVariant, screens[*index]));
                 (*index)++;
+            });
+            timer->start();
+        }
+    }
+
+    // Dev-only: HMI_BOOT_FRAMES=<dir> lets the startup animation play and grabs
+    // a frame every 400 ms, so the sequence can be reviewed without a display.
+    const QString bootDir = qEnvironmentVariable("HMI_BOOT_FRAMES");
+    if (!bootDir.isEmpty() && !engine.rootObjects().isEmpty()) {
+        auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+        if (window) {
+            auto *frame = new int(0);
+            auto *timer = new QTimer(&app);
+            timer->setInterval(400);
+            QObject::connect(timer, &QTimer::timeout, &app, [=, &app]() mutable {
+                window->grabWindow().save(
+                    QString("%1/frame%2.png").arg(bootDir).arg(*frame, 2, 10, QChar('0')));
+                if (++(*frame) >= 20) {
+                    timer->stop();
+                    app.quit();
+                }
             });
             timer->start();
         }

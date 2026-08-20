@@ -7,10 +7,22 @@ set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick)
 
+# Synthèse vocale : optionnelle. Sans elle l'application se construit et tourne
+# à l'identique — l'assistant reste affiché, il ne parle simplement pas.
+find_package(Qt6 QUIET COMPONENTS TextToSpeech)
+if(Qt6TextToSpeech_FOUND)
+    message(STATUS "Qt TextToSpeech trouvé : l'assistant vocal parlera.")
+else()
+    message(STATUS "Qt TextToSpeech absent : assistant vocal en affichage seul. "
+                   "Installer qt6-speech-dev pour activer la voix.")
+endif()
+
 qt_standard_project_setup()
 
 qt_add_executable(agoojiye-hmi
     main.cpp
+    voiceannouncer.h
+    voiceannouncer.cpp
 )
 
 set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
@@ -38,7 +50,7 @@ qt_add_qml_module(agoojiye-hmi
         qml/components/Glow.qml
         qml/components/BatteryArc.qml
         qml/components/Vignette.qml
-        qml/screens/AccueilScreen.qml
+        qml/screens/BootScreen.qml
         qml/screens/DashboardScreen.qml
         qml/screens/MenuScreen.qml
         qml/screens/VehiculeScreen.qml
@@ -58,8 +70,8 @@ qt_add_qml_module(agoojiye-hmi
         assets/fonts/inter/Inter-Medium.otf
         assets/fonts/inter/Inter-SemiBold.otf
         assets/fonts/inter/Inter-Bold.otf
-        assets/images/hero-car.png
         assets/images/dash-road.png
+        assets/images/boot-shuttle.png
         assets/images/vehicule-car.png
         assets/images/nav-map.jpg
         assets/images/album-blue.jpg
@@ -77,6 +89,11 @@ target_link_libraries(agoojiye-hmi
         Qt6::Qml
         Qt6::Quick
 )
+
+if(Qt6TextToSpeech_FOUND)
+    target_link_libraries(agoojiye-hmi PRIVATE Qt6::TextToSpeech)
+    target_compile_definitions(agoojiye-hmi PRIVATE AGOOJIYE_HAS_TTS)
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS agoojiye-hmi

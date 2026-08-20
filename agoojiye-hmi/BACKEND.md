@@ -91,3 +91,35 @@ remonter dans `VehicleData` quand leur format sera arrêté :
 - les étapes d'itinéraire (`NavigationScreen`)
 - les noms de rue, hérités des maquettes d'origine (parisiens) — à remplacer
   par le contexte de déploiement réel
+
+## Séquence de démarrage
+
+`qml/screens/BootScreen.qml` remplace l'ancien écran d'accueil. Elle se joue une
+fois au lancement, puis passe la main au tableau de bord — l'écran principal.
+
+Toute la chronologie tient dans le bloc `SequentialAnimation` nommé `timeline`,
+en fin de fichier : marque, approche du véhicule, annonce vocale, fondu. Régler
+le rythme se fait là et nulle part ailleurs.
+
+L'assistant vocal passe par `VoiceAnnouncer` (C++). **Qt TextToSpeech est une
+dépendance optionnelle** : sans elle, le projet compile et tourne pareil, la
+bulle et son onde restent affichées, seule la voix manque. CMake le signale au
+configure :
+
+```
+-- Qt TextToSpeech trouvé : l'assistant vocal parlera.
+-- Qt TextToSpeech absent : assistant vocal en affichage seul.
+```
+
+Pour activer la voix sur Debian/Kali/Ubuntu :
+
+```bash
+sudo apt install qt6-speech-dev speech-dispatcher
+```
+
+Un moteur de synthèse doit aussi être présent côté système (speech-dispatcher
+avec espeak-ng, par exemple), sinon Qt signale « No text-to-speech plug-ins
+were found » et l'assistant reste muet — sans planter.
+
+La phrase prononcée suit le nom du véhicule : elle se change via
+`VehicleData.vehicleName`, pas dans l'écran.

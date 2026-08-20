@@ -9,7 +9,9 @@ QtObject {
     id: root
 
     // ---- navigation entre écrans ---------------------------------------
-    property string screen: "accueil"
+    // L'application démarre sur la séquence d'accueil animée, qui passe la main
+    // au tableau de bord — l'écran principal une fois le véhicule en route.
+    property string screen: "boot"
     property string time: Qt.formatTime(new Date(), "HH:mm")
 
     // ---- préférences pilotées depuis l'interface ------------------------
@@ -46,19 +48,22 @@ QtObject {
     function setTrac(v) { trac = v }
 
     // ---- dérivé ------------------------------------------------------
-    readonly property bool showNavBar: screen !== "dash"
+    // La séquence de démarrage occupe tout l'écran ; le tableau de bord a sa
+    // propre barre de témoins et n'utilise pas la barre de navigation.
+    readonly property bool showNavBar: screen !== "dash" && screen !== "boot"
+    readonly property bool showStatusBar: screen !== "boot"
 
     readonly property var navItems: {
         var s = screen
         var accentByScreen = { veh: Theme.green, adas: Theme.green, conduite: Theme.green, mediaNow: Theme.purple }
         var acc = accentByScreen[s] || Theme.blue
         var activeKeyMap = {
-            accueil: "dash", dash: "dash", veh: "veh", nav: "nav", media: "media", mediaNow: "media",
+            dash: "dash", veh: "veh", nav: "nav", media: "media", mediaNow: "media",
             menu: "menu", phone: "menu", adas: "menu", conduite: "menu", entretien: "menu", parametres: "menu"
         }
         var activeKey = activeKeyMap[s]
         var defs = [
-            { key: "dash", label: s === "accueil" ? "Accueil" : "Dashboard", icon: s === "accueil" ? "ph-house-simple" : "ph-gauge" },
+            { key: "dash", label: "Dashboard", icon: "ph-gauge" },
             { key: "veh", label: "Véhicule", icon: "ph-car-simple" },
             { key: "nav", label: "Navigation", icon: "ph-navigation-arrow" },
             { key: "media", label: "Média", icon: "ph-music-notes" },

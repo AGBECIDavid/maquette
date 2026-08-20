@@ -285,7 +285,7 @@ Item {
                 Icon {
                     anchors.centerIn: parent; name: "ph-house-simple"; size: 24
                     color: homeHover.containsMouse ? Theme.textPrimary : Theme.textMuted
-                    MouseArea { id: homeHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("accueil") }
+                    MouseArea { id: homeHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("boot") }
                 }
             }
             Item {
