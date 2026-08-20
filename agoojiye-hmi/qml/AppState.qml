@@ -2,31 +2,23 @@ pragma Singleton
 import QtQuick
 import AgoojiyeHMI
 
-// Shared app state + derived data. Ports the DCLogic `state` +
-// `renderVals()` from the original prototype's script block.
+// État de l'interface : quel écran est ouvert, quelles options l'utilisateur a
+// basculées. Rien de métier ici — les valeurs du véhicule vivent dans
+// VehicleData, qui est le point de branchement du backend.
 QtObject {
     id: root
 
-    // ---- mutable state -----------------------------------------------
+    // ---- navigation entre écrans ---------------------------------------
     property string screen: "accueil"
     property string time: Qt.formatTime(new Date(), "HH:mm")
-    property bool playing: true
+
+    // ---- préférences pilotées depuis l'interface ------------------------
     property bool spatial: true
     property bool autoTime: true
-    property string driveMode: "eco"
     property string regen: "Moyenne"
     property string dir: "Standard"
     property string trac: "Standard"
     property var adas: ({ acc: true, lka: true, ldw: true, fcw: true, aeb: true, bsd: true })
-
-    // Vehicle figures. This is a low-speed electric shuttle, not a passenger
-    // car, so the cluster tops out around 25 km/h and the pack is sized for a
-    // campus/site duty cycle rather than motorway range.
-    property int speedValue: 25
-    property int batteryValue: 82
-    // Manufacturer range at a full charge; what the cluster shows is this
-    // scaled by the current state of charge.
-    readonly property int rangeFullCharge: 120
 
     property Timer _clock: Timer {
         interval: 15000
@@ -38,7 +30,7 @@ QtObject {
 
     // ---- actions --------------------------------------------------------
     function go(screenKey) { screen = screenKey }
-    function togglePlay() { playing = !playing }
+    function togglePlay() { VehicleData.mediaPlaying = !VehicleData.mediaPlaying }
     function toggleSpatial() { spatial = !spatial }
     function toggleAutoTime() { autoTime = !autoTime }
     function toggleAdas(key) {
@@ -46,16 +38,14 @@ QtObject {
         a[key] = !a[key]
         adas = a
     }
-    function setDriveMode(key) { driveMode = key }
+    // Le mode de conduite est un état du véhicule, pas de l'écran : il est
+    // poussé vers VehicleData pour que le backend le voie.
+    function setDriveMode(key) { VehicleData.driveMode = key.toUpperCase() }
     function setRegen(v) { regen = v }
     function setDir(v) { dir = v }
     function setTrac(v) { trac = v }
 
-    // ---- derived ----------------------------------------------------
-    readonly property string batPct: String(batteryValue)
-    readonly property real batteryFraction: batteryValue / 100
-    readonly property string range: String(Math.round(batteryFraction * rangeFullCharge))
-    readonly property string speed: String(speedValue)
+    // ---- dérivé ------------------------------------------------------
     readonly property bool showNavBar: screen !== "dash"
 
     readonly property var navItems: {

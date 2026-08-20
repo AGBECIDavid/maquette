@@ -186,13 +186,13 @@ Item {
                         Row {
                             spacing: 8
                             Icon { name: "ph-battery-high"; fill: true; size: 24; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
-                            Text { text: AppState.batPct + " %"; font.family: Theme.fontFamily; font.pixelSize: 24; font.weight: Font.Bold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
+                            Text { text: VehicleData.batteryLevel + " %"; font.family: Theme.fontFamily; font.pixelSize: 24; font.weight: Font.Bold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
                         }
                         Row {
                             width: parent.width
                             Text { text: "Autonomie"; font.family: Theme.fontFamily; font.pixelSize: 13; color: Theme.textMuted }
                             Item { width: parent.width - 130; height: 1 }
-                            Text { text: AppState.range + " km"; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.textPrimary }
+                            Text { text: VehicleData.range + " km"; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.textPrimary }
                         }
                     }
                 }

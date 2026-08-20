@@ -109,12 +109,13 @@ Item {
                 }
             }
             Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Bienvenue"; font.family: Theme.fontFamily; font.pixelSize: 44; font.weight: Font.Bold; font.letterSpacing: -0.4; color: Theme.textPrimary; topPadding: 8 }
-            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "dans votre véhicule"; font.family: Theme.fontFamily; font.pixelSize: 19; color: Theme.textDim }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "dans votre " + VehicleData.vehicleModel.toLowerCase(); font.family: Theme.fontFamily; font.pixelSize: 19; color: Theme.textDim }
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 topPadding: 6
-                Text { text: "AGOO"; font.family: Theme.fontFamily; font.pixelSize: 23; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.textPrimary }
-                Text { text: "JIYE"; font.family: Theme.fontFamily; font.pixelSize: 23; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.blue }
+                // Le nom se scinde en deux teintes : début neutre, fin en accent.
+                Text { text: VehicleData.vehicleName.slice(0, 4); font.family: Theme.fontFamily; font.pixelSize: 23; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.textPrimary }
+                Text { text: VehicleData.vehicleName.slice(4); font.family: Theme.fontFamily; font.pixelSize: 23; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.blue }
             }
 
             // Hero vehicle, dissolved into the page: the reference art has the
@@ -158,8 +159,19 @@ Item {
                     Row {
                         anchors.centerIn: parent
                         spacing: 12
-                        Text { text: "Démarrer"; font.family: Theme.fontFamily; font.pixelSize: 21; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
-                        Icon { name: "ph-caret-right"; size: 20; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                        // Le libellé suit l'état réel : on ne propose de partir
+                        // que si le véhicule est prêt.
+                        Text {
+                            text: VehicleData.systemReady ? "Démarrer" : "Préparation…"
+                            font.family: Theme.fontFamily; font.pixelSize: 21; font.weight: Font.DemiBold
+                            color: Theme.textPrimary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Icon {
+                            visible: VehicleData.systemReady
+                            name: "ph-caret-right"; size: 20; color: Theme.textPrimary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
                     MouseArea { id: startHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("dash") }
                 }

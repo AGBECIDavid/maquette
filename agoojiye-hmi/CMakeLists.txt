@@ -15,6 +15,7 @@ qt_add_executable(agoojiye-hmi
 
 set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 set_source_files_properties(qml/AppState.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(qml/VehicleData.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(agoojiye-hmi
     URI AgoojiyeHMI
@@ -23,6 +24,7 @@ qt_add_qml_module(agoojiye-hmi
         qml/Main.qml
         qml/Theme.qml
         qml/AppState.qml
+        qml/VehicleData.qml
         qml/components/Icon.qml
         qml/components/StatusBar.qml
         qml/components/BottomNav.qml

@@ -4,16 +4,31 @@ import AgoojiyeHMI
 Item {
     id: root
 
+    // Toutes les pastilles partagent l'accent de marque : le menu se lit d'un
+    // coup d'œil, et la couleur reste porteuse de sens ailleurs (vert = OK,
+    // rouge = alerte) au lieu d'être décorative ici.
+    //
+    // `badge` est une info vivante lue depuis VehicleData — c'est ce qui rendra
+    // le menu utile une fois le backend branché.
     readonly property var menuAll: [
-        { label: "VÉHICULE", icon: "ph-car-simple", c: Theme.green, sub: "État du véhicule et informations", go: "veh" },
-        { label: "NAVIGATION", icon: "ph-navigation-arrow", c: Theme.blue, sub: "Carte, itinéraire et guidage", go: "nav" },
-        { label: "MÉDIA", icon: "ph-music-notes", c: Theme.purple, sub: "Musique, radio et audio", go: "media" },
-        { label: "TÉLÉPHONE", icon: "ph-phone", c: Theme.green, sub: "Appels, contacts et Bluetooth", go: "phone" },
-        { label: "CONDUITE", icon: "ph-steering-wheel", c: Theme.orange, sub: "Modes de conduite et réglages", go: "conduite" },
-        { label: "ADAS", icon: "ph-shield-check", c: Theme.blue, sub: "Aides à la conduite et sécurité", go: "adas" },
-        { label: "ENTRETIEN", icon: "ph-wrench", c: Theme.yellow, sub: "Maintenance et diagnostics", go: "entretien" },
-        { label: "PARAMÈTRES", icon: "ph-gear-six", c: Theme.teal, sub: "Réglages système et préférences", go: "parametres" },
-        { label: "À PROPOS", icon: "ph-info", c: Theme.red, sub: "Informations système et version", go: "parametres" }
+        { label: "VÉHICULE", icon: "ph-car-simple", sub: "État du véhicule et informations", go: "veh",
+          badge: VehicleData.faultPresent ? "Défaut" : "", alert: true },
+        { label: "NAVIGATION", icon: "ph-navigation-arrow", sub: "Carte, itinéraire et guidage", go: "nav",
+          badge: VehicleData.navigationActive ? "En cours" : "", alert: false },
+        { label: "MÉDIA", icon: "ph-music-notes", sub: "Musique, radio et audio", go: "media",
+          badge: VehicleData.mediaPlaying ? "Lecture" : "", alert: false },
+        { label: "TÉLÉPHONE", icon: "ph-phone", sub: "Appels, contacts et Bluetooth", go: "phone",
+          badge: VehicleData.missedCallCount > 0 ? String(VehicleData.missedCallCount) : "", alert: true },
+        { label: "CONDUITE", icon: "ph-steering-wheel", sub: "Modes de conduite et réglages", go: "conduite",
+          badge: VehicleData.driveMode, alert: false },
+        { label: "ADAS", icon: "ph-shield-check", sub: "Aides à la conduite et sécurité", go: "adas",
+          badge: "", alert: false },
+        { label: "ENTRETIEN", icon: "ph-wrench", sub: "Maintenance et diagnostics", go: "entretien",
+          badge: VehicleData.serviceDueIn < 2000 ? "Bientôt" : "", alert: true },
+        { label: "PARAMÈTRES", icon: "ph-gear-six", sub: "Réglages système et préférences", go: "parametres",
+          badge: "", alert: false },
+        { label: "À PROPOS", icon: "ph-info", sub: "Informations système et version", go: "parametres",
+          badge: "", alert: false }
     ]
 
     Column {
@@ -43,7 +58,9 @@ Item {
                 delegate: MenuTile {
                     width: (parent.width - 16 * 4) / 5
                     height: 190
-                    iconName: modelData.icon; label: modelData.label; sub: modelData.sub; accentColor: modelData.c
+                    iconName: modelData.icon; label: modelData.label; sub: modelData.sub
+                    accentColor: Theme.blue
+                    badge: modelData.badge; badgeAlert: modelData.alert
                     onClicked: AppState.go(modelData.go)
                 }
             }
@@ -60,7 +77,9 @@ Item {
                 delegate: MenuTile {
                     width: (parent.width - 16 * 3) / 4
                     height: 190
-                    iconName: modelData.icon; label: modelData.label; sub: modelData.sub; accentColor: modelData.c
+                    iconName: modelData.icon; label: modelData.label; sub: modelData.sub
+                    accentColor: Theme.blue
+                    badge: modelData.badge; badgeAlert: modelData.alert
                     onClicked: AppState.go(modelData.go)
                 }
             }

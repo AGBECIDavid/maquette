@@ -25,7 +25,7 @@ Item {
             spacing: 8
             anchors.verticalCenter: parent.verticalCenter
             Icon { name: "ph-thermometer-simple"; size: 20; color: Theme.textMuted; anchors.verticalCenter: parent.verticalCenter }
-            Text { text: "23°C"; font.family: Theme.fontFamily; font.pixelSize: 19; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+            Text { text: VehicleData.outsideTemp + "°C"; font.family: Theme.fontFamily; font.pixelSize: 19; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
         }
         Rectangle { width: 1; height: 24; color: Theme.alpha(Theme.textMuted, 0.3); anchors.verticalCenter: parent.verticalCenter }
         Row {
@@ -83,8 +83,8 @@ Item {
         Column {
             anchors.centerIn: parent
             spacing: 0
-            Text { text: "D"; anchors.horizontalCenter: parent.horizontalCenter; font.family: Theme.fontFamily; font.pixelSize: 21; font.weight: Font.Bold; color: Theme.textPrimary }
-            Text { text: "READY"; anchors.horizontalCenter: parent.horizontalCenter; font.family: Theme.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.green }
+            Text { text: VehicleData.driveGear; anchors.horizontalCenter: parent.horizontalCenter; font.family: Theme.fontFamily; font.pixelSize: 21; font.weight: Font.Bold; color: Theme.textPrimary }
+            Text { text: VehicleData.systemReady ? "READY" : "STANDBY"; anchors.horizontalCenter: parent.horizontalCenter; font.family: Theme.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.green }
         }
     }
 
@@ -101,7 +101,7 @@ Item {
             border.width: 4
             border.color: Theme.redDeep
             anchors.verticalCenter: parent.verticalCenter
-            Text { anchors.centerIn: parent; text: "30"; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.Bold; color: "#0b1020" }
+            Text { anchors.centerIn: parent; text: VehicleData.speedLimit; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.Bold; color: "#0b1020" }
         }
         Row {
             spacing: 5
@@ -109,14 +109,14 @@ Item {
             Icon { name: "ph-headlights"; size: 22; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
             Text { text: "AUTO"; font.family: Theme.fontFamily; font.pixelSize: 11; font.weight: Font.DemiBold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
         }
-        Icon { name: "ph-bluetooth"; size: 20; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
+        Icon { name: "ph-bluetooth"; size: 20; color: VehicleData.bluetoothConnected ? Theme.blue : Theme.textDim; anchors.verticalCenter: parent.verticalCenter }
         Row {
             spacing: 4
             anchors.verticalCenter: parent.verticalCenter
-            Text { text: "4G"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textSecondary; anchors.verticalCenter: parent.verticalCenter }
+            Text { text: VehicleData.network; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textSecondary; anchors.verticalCenter: parent.verticalCenter }
             Icon { name: "ph-cell-signal-full"; size: 19; color: Theme.textSecondary; anchors.verticalCenter: parent.verticalCenter }
         }
-        Icon { name: "ph-wifi-high"; size: 20; color: Theme.textSecondary; anchors.verticalCenter: parent.verticalCenter }
+        Icon { name: "ph-wifi-high"; size: 20; color: VehicleData.wifiConnected ? Theme.textSecondary : Theme.textDim; anchors.verticalCenter: parent.verticalCenter }
         Icon {
             name: "ph-user-circle"
             size: 27

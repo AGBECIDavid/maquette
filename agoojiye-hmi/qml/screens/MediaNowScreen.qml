@@ -123,7 +123,7 @@ Item {
                             width: 72; height: 72; radius: 36
                             color: playHover.containsMouse ? Theme.alpha(Theme.purple, 0.12) : "transparent"
                             border.width: 2; border.color: Theme.purple
-                            Icon { anchors.centerIn: parent; name: AppState.playing ? "ph-pause" : "ph-play"; fill: true; size: 28; color: Theme.textPrimary }
+                            Icon { anchors.centerIn: parent; name: VehicleData.mediaPlaying ? "ph-pause" : "ph-play"; fill: true; size: 28; color: Theme.textPrimary }
                             MouseArea { id: playHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: AppState.togglePlay() }
                         }
                         Icon { name: "ph-skip-forward"; fill: true; size: 28; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
@@ -244,7 +244,7 @@ Item {
                         Rectangle {
                             width: 46; height: 46; radius: 23
                             border.width: 2; border.color: Theme.purple
-                            Icon { anchors.centerIn: parent; name: AppState.playing ? "ph-pause" : "ph-play"; fill: true; size: 18; color: Theme.textPrimary }
+                            Icon { anchors.centerIn: parent; name: VehicleData.mediaPlaying ? "ph-pause" : "ph-play"; fill: true; size: 18; color: Theme.textPrimary }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: AppState.togglePlay() }
                         }
                         Icon { name: "ph-skip-forward"; fill: true; size: 20; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }

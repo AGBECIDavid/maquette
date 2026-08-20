@@ -5,6 +5,11 @@ Item {
     id: root
     clip: true
 
+    // 12458 -> "12 458"
+    function formatKm(v) {
+        return String(v).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f")
+    }
+
     // Ground: a cool pool of light behind the road, darkening to the corners.
     Rectangle {
         anchors.fill: parent
@@ -69,7 +74,7 @@ Item {
                 Row {
                     spacing: 12
                     Icon { name: "ph-battery-high"; fill: true; size: 30; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: AppState.batPct + " %"; font.family: Theme.fontFamily; font.pixelSize: 30; font.weight: Font.Bold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: VehicleData.batteryLevel + " %"; font.family: Theme.fontFamily; font.pixelSize: 30; font.weight: Font.Bold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
             Divider { width: parent.width }
@@ -78,7 +83,7 @@ Item {
                 Text { text: "AUTONOMIE"; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold; font.letterSpacing: 1.6; color: Theme.textMuted }
                 Row {
                     spacing: 6
-                    Text { text: AppState.range; font.family: Theme.fontFamily; font.pixelSize: 28; font.weight: Font.Bold; color: Theme.textPrimary; anchors.baseline: kmLabel.baseline }
+                    Text { text: VehicleData.range; font.family: Theme.fontFamily; font.pixelSize: 28; font.weight: Font.Bold; color: Theme.textPrimary; anchors.baseline: kmLabel.baseline }
                     Text { id: kmLabel; text: "km"; font.family: Theme.fontFamily; font.pixelSize: 16; color: Theme.textMuted }
                 }
             }
@@ -88,7 +93,7 @@ Item {
                 Text { text: "CONSOMMATION"; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold; font.letterSpacing: 1.6; color: Theme.textMuted }
                 Row {
                     spacing: 6
-                    Text { text: "16.8"; font.family: Theme.fontFamily; font.pixelSize: 24; font.weight: Font.Bold; color: Theme.textPrimary; anchors.baseline: kwhLabel.baseline }
+                    Text { text: VehicleData.consumption.toFixed(1); font.family: Theme.fontFamily; font.pixelSize: 24; font.weight: Font.Bold; color: Theme.textPrimary; anchors.baseline: kwhLabel.baseline }
                     Text { id: kwhLabel; text: "kWh/100km"; font.family: Theme.fontFamily; font.pixelSize: 15; color: Theme.textMuted }
                 }
             }
@@ -121,7 +126,7 @@ Item {
             y: 26
             width: 92
             height: parent.height - 52
-            value: AppState.batteryFraction
+            value: VehicleData.batteryFraction
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -154,7 +159,7 @@ Item {
         spacing: 0
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: AppState.speed
+            text: VehicleData.speed
             font.family: Theme.fontFamily
             font.pixelSize: 172
             font.weight: Font.Bold
@@ -191,21 +196,21 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     Row {
                         spacing: 6
-                        Text { text: "1.2"; font.family: Theme.fontFamily; font.pixelSize: 28; font.weight: Font.Bold; color: Theme.textPrimary }
+                        Text { text: VehicleData.nextManeuverDistance.toFixed(1); font.family: Theme.fontFamily; font.pixelSize: 28; font.weight: Font.Bold; color: Theme.textPrimary }
                         Text { text: "km"; font.family: Theme.fontFamily; font.pixelSize: 16; color: Theme.textMuted; anchors.verticalCenter: parent.verticalCenter }
                     }
-                    Text { text: "Avenue des Champs-Élysées"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textSecondary }
+                    Text { text: VehicleData.nextManeuverStreet; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textSecondary }
                 }
             }
             Column {
                 spacing: 2
                 Text { text: "Puis"; font.family: Theme.fontFamily; font.pixelSize: 13; color: Theme.textMuted }
-                Text { text: "Boulevard Périphérique"; font.family: Theme.fontFamily; font.pixelSize: 15; color: Theme.textBright }
+                Text { text: VehicleData.followingStreet; font.family: Theme.fontFamily; font.pixelSize: 15; color: Theme.textBright }
             }
             Rectangle {
                 width: parent.width; height: 5; radius: 3; color: Theme.trackBg
                 Rectangle {
-                    width: parent.width * 0.42; height: parent.height; radius: 3
+                    width: parent.width * VehicleData.routeProgress; height: parent.height; radius: 3
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
                         GradientStop { position: 0.0; color: Theme.blueDeep }
@@ -217,9 +222,9 @@ Item {
                 width: parent.width
                 Repeater {
                     model: [
-                        { v: "16:04", l: "arrivée" },
-                        { v: "85 km", l: "restants" },
-                        { v: "1h 32", l: "temps" }
+                        { v: VehicleData.arrivalTime, l: "arrivée" },
+                        { v: VehicleData.distanceRemaining.toFixed(1) + " km", l: "restants" },
+                        { v: VehicleData.timeRemaining, l: "temps" }
                     ]
                     delegate: Item {
                         width: navCol.width / 3
@@ -255,7 +260,7 @@ Item {
                 spacing: 9
                 anchors.verticalCenter: parent.verticalCenter
                 Icon { name: "ph-gauge"; size: 24; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: "100 km/h"; font.family: Theme.fontFamily; font.pixelSize: 22; font.weight: Font.Bold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: VehicleData.cruiseSpeed + " km/h"; font.family: Theme.fontFamily; font.pixelSize: 22; font.weight: Font.Bold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
             }
             Icon { name: "ph-car-simple"; size: 26; color: Theme.textSecondary; anchors.verticalCenter: parent.verticalCenter }
         }
@@ -285,20 +290,23 @@ Item {
             }
             Item {
                 width: parent.width / 6; height: parent.height
-                Icon { anchors.centerIn: parent; name: "ph-seatbelt"; fill: true; size: 26; color: Theme.red }
+                Icon { anchors.centerIn: parent; name: "ph-seatbelt"; fill: true; size: 26;
+                       color: VehicleData.seatbeltWarning ? Theme.red : Theme.textDim }
             }
             Item {
                 width: parent.width / 6; height: parent.height
                 Rectangle {
                     anchors.centerIn: parent
                     width: 30; height: 30; radius: 15
-                    border.width: 2.5; border.color: Theme.red; color: "transparent"
-                    Text { anchors.centerIn: parent; text: "P"; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.Bold; color: Theme.red }
+                    border.width: 2.5; color: "transparent"
+                    border.color: VehicleData.parkingBrake ? Theme.red : Theme.textDim
+                    Text { anchors.centerIn: parent; text: "P"; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.Bold;
+                           color: VehicleData.parkingBrake ? Theme.red : Theme.textDim }
                 }
             }
             Item {
                 width: parent.width / 6; height: parent.height
-                Text { anchors.centerIn: parent; text: "ECO"; font.family: Theme.fontFamily; font.pixelSize: 19; font.weight: Font.Bold; font.letterSpacing: 1.5; color: Theme.green }
+                Text { anchors.centerIn: parent; text: VehicleData.driveMode; font.family: Theme.fontFamily; font.pixelSize: 19; font.weight: Font.Bold; font.letterSpacing: 1.5; color: Theme.green }
             }
             Item {
                 width: parent.width / 6; height: parent.height
@@ -306,7 +314,7 @@ Item {
                     anchors.centerIn: parent
                     spacing: 10
                     Text { text: "ODO"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted; font.letterSpacing: 1.1; anchors.baseline: odoVal.baseline }
-                    Text { id: odoVal; text: "12 458 km"; font.family: Theme.fontFamily; font.pixelSize: 19; font.weight: Font.DemiBold; color: Theme.textPrimary }
+                    Text { id: odoVal; text: root.formatKm(VehicleData.odometer) + " km"; font.family: Theme.fontFamily; font.pixelSize: 19; font.weight: Font.DemiBold; color: Theme.textPrimary }
                 }
             }
             Item {
@@ -314,8 +322,10 @@ Item {
                 Row {
                     anchors.centerIn: parent
                     spacing: 24
-                    Icon { name: "ph-tire"; size: 25; color: Theme.yellow; anchors.verticalCenter: parent.verticalCenter }
-                    Icon { name: "ph-headlights"; size: 25; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
+                    Icon { name: "ph-tire"; size: 25; anchors.verticalCenter: parent.verticalCenter
+                           color: VehicleData.tyrePressureWarning ? Theme.yellow : Theme.textDim }
+                    Icon { name: "ph-headlights"; size: 25; anchors.verticalCenter: parent.verticalCenter
+                           color: VehicleData.headlightsAuto ? Theme.blue : Theme.textDim }
                 }
             }
         }

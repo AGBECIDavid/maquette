@@ -7,6 +7,10 @@ PanelCard {
     property string label: ""
     property string sub: ""
     property color accentColor: Theme.blue
+    // Statut vivant affiché en haut de la tuile. Vide = pas de badge.
+    property string badge: ""
+    // true pour ce qui demande une action (défaut, appel manqué, échéance).
+    property bool badgeAlert: false
     signal clicked()
 
     border.color: hover.containsMouse ? Theme.alpha(Theme.panelBorder, 0.4) : Theme.alpha(Theme.panelBorder, 0.14)
@@ -69,6 +73,33 @@ PanelCard {
             name: "ph-caret-right"
             size: 14
             color: Theme.textMuted
+        }
+    }
+
+    // Badge d'état, aligné en haut à droite pour être lisible sans gêner l'icône.
+    Rectangle {
+        visible: root.badge.length > 0
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: 12
+        anchors.rightMargin: 12
+        width: badgeText.implicitWidth + 18
+        height: 22
+        radius: 11
+        color: root.badgeAlert ? Theme.alpha(Theme.orange, 0.16)
+                               : Theme.alpha(root.accentColor, 0.14)
+        border.width: 1
+        border.color: root.badgeAlert ? Theme.alpha(Theme.orange, 0.55)
+                                      : Theme.alpha(root.accentColor, 0.45)
+        Text {
+            id: badgeText
+            anchors.centerIn: parent
+            text: root.badge
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            font.weight: Font.DemiBold
+            font.letterSpacing: 0.4
+            color: root.badgeAlert ? Theme.orange : Theme.blueLighter
         }
     }
 

@@ -281,7 +281,7 @@ Item {
                         }
                         Row {
                             anchors.verticalCenter: parent.verticalCenter
-                            Text { text: AppState.batPct + " "; font.family: Theme.fontFamily; font.pixelSize: 30; font.weight: Font.Bold; color: Theme.green }
+                            Text { text: VehicleData.batteryLevel + " "; font.family: Theme.fontFamily; font.pixelSize: 30; font.weight: Font.Bold; color: Theme.green }
                             Text { text: "%"; font.family: Theme.fontFamily; font.pixelSize: 16; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
                         }
                     }

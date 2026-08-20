@@ -19,7 +19,7 @@ Item {
         { key: "comfort", label: "COMFORT", icon: "ph-armchair", c: Theme.purple, desc: "Souplesse et silence privilégiés pour les longs trajets." }
     ]
     function currentMode() {
-        for (var i = 0; i < modes.length; i++) if (modes[i].key === AppState.driveMode) return modes[i]
+        for (var i = 0; i < modes.length; i++) if (modes[i].key.toUpperCase() === VehicleData.driveMode) return modes[i]
         return modes[0]
     }
 
@@ -59,7 +59,7 @@ Item {
                 Repeater {
                     model: root.modes
                     delegate: Rectangle {
-                        readonly property bool active: modelData.key === AppState.driveMode
+                        readonly property bool active: modelData.key.toUpperCase() === VehicleData.driveMode
                         width: (parent.width - 12 * 3) / 4
                         height: 100
                         radius: 14
@@ -112,7 +112,7 @@ Item {
                     spacing: 8
                     Repeater {
                         model: root.modes
-                        delegate: Rectangle { width: 8; height: 8; radius: 4; color: modelData.key === AppState.driveMode ? root.currentMode().c : Theme.dotInactive }
+                        delegate: Rectangle { width: 8; height: 8; radius: 4; color: modelData.key.toUpperCase() === VehicleData.driveMode ? root.currentMode().c : Theme.dotInactive }
                     }
                 }
             }

@@ -112,7 +112,7 @@ Item {
                             width: 74; height: 74; radius: 37
                             color: playHover.containsMouse ? Theme.alpha(Theme.blue, 0.12) : "transparent"
                             border.width: 2; border.color: Theme.blue
-                            Icon { anchors.centerIn: parent; name: AppState.playing ? "ph-pause" : "ph-play"; fill: true; size: 30; color: Theme.textPrimary }
+                            Icon { anchors.centerIn: parent; name: VehicleData.mediaPlaying ? "ph-pause" : "ph-play"; fill: true; size: 30; color: Theme.textPrimary }
                             MouseArea { id: playHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: AppState.togglePlay() }
                         }
                         Icon { name: "ph-skip-forward"; fill: true; size: 28; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
