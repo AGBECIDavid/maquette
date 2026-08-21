@@ -157,25 +157,48 @@ La main se rend en deux temps — `handoff()` révèle le tableau de bord, puis
 `finished()` retire la couche de démarrage une fois son fondu terminé. Les deux
 se croisent, d'où l'enchaînement plutôt que la coupure.
 
-L'assistant vocal passe par `VoiceAnnouncer` (C++). **Qt TextToSpeech est une
-dépendance optionnelle** : sans elle, le projet compile et tourne pareil, la
-bulle et son onde restent affichées, seule la voix manque. CMake le signale au
-configure :
+## L'assistant vocal
+
+Il passe par `VoiceAnnouncer` (C++), et **toute la chaîne est optionnelle** :
+sans rien, le projet compile et tourne pareil, la bulle et son onde restent
+affichées, seule la voix manque.
+
+Trois couches doivent être en place pour entendre quelque chose, et c'est
+presque toujours celle du milieu qui manque :
 
 ```
--- Qt TextToSpeech trouvé : l'assistant vocal parlera.
--- Qt TextToSpeech absent : assistant vocal en affichage seul.
+  module Qt Speech   →   plugin de sortie Qt   →   speech-dispatcher + espeak-ng
+   (fait compiler)       (fait le pont)             (produit le son)
+   qt6-speech-dev        qt6-speech-speechd-plugin  speech-dispatcher
 ```
 
-Pour activer la voix sur Debian/Kali/Ubuntu :
+Trouver le module **ne suffit pas à faire du son**. C'est le piège : CMake
+annonce `Qt TextToSpeech trouvé`, l'application se lance, et reste muette en
+signalant `No text-to-speech plug-ins were found` — il manque le plugin.
+
+C'est pourquoi `VoiceAnnouncer` a deux chemins, essayés dans cet ordre :
+
+1. **Qt TextToSpeech**, quand le module et son plugin sont là. Chemin propre :
+   débit, volume, et l'état « parle » remonté par le moteur.
+2. **`spd-say`**, le client en ligne de commande de speech-dispatcher, lancé en
+   `QProcess`. Il rattrape le cas courant du plugin manquant. Règle simple :
+   **si `spd-say -l fr "test"` parle dans un terminal, l'assistant parlera.**
+
+Sur Debian/Kali/Ubuntu, tout activer :
 
 ```bash
-sudo apt install qt6-speech-dev speech-dispatcher
+sudo apt install speech-dispatcher speech-dispatcher-espeak-ng espeak-ng \
+                 qt6-speech-dev qt6-speech-speechd-plugin
 ```
 
-Un moteur de synthèse doit aussi être présent côté système (speech-dispatcher
-avec espeak-ng, par exemple), sinon Qt signale « No text-to-speech plug-ins
-were found » et l'assistant reste muet — sans planter.
+Les deux derniers ne concernent que le Qt système. Avec un Qt installé par
+l'installeur officiel (`~/Qt/`), les versions ne correspondent pas : le module
+et son plugin s'ajoutent par le Maintenance Tool (*Additional Libraries → Qt
+Speech*) — ou on s'en passe, le repli `spd-say` suffit.
+
+La voix française d'espeak-ng est très robotique ;
+`sudo apt install speech-dispatcher-pico` donne un rendu nettement plus naturel
+et sera choisi automatiquement, la sélection se faisant sur la langue.
 
 La phrase prononcée suit le nom du véhicule : elle se change via
 `VehicleData.vehicleName`, pas dans l'écran.

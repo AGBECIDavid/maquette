@@ -7,14 +7,20 @@ set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick)
 
-# Synthèse vocale : optionnelle. Sans elle l'application se construit et tourne
-# à l'identique — l'assistant reste affiché, il ne parle simplement pas.
+# Synthèse vocale : optionnelle, et doublée d'un repli. Sans rien du tout,
+# l'application se construit et tourne à l'identique — l'assistant reste
+# affiché, il ne parle simplement pas.
+#
+# Attention : trouver le module ne suffit pas à faire du son. Il faut aussi son
+# plugin de sortie (qt6-speech-speechd-plugin), qui manque souvent. C'est
+# pourquoi VoiceAnnouncer sait aussi passer par `spd-say`.
 find_package(Qt6 QUIET COMPONENTS TextToSpeech)
 if(Qt6TextToSpeech_FOUND)
-    message(STATUS "Qt TextToSpeech trouvé : l'assistant vocal parlera.")
+    message(STATUS "Qt TextToSpeech trouvé. S'il reste muet, le plugin de sortie "
+                   "manque : installer qt6-speech-speechd-plugin.")
 else()
-    message(STATUS "Qt TextToSpeech absent : assistant vocal en affichage seul. "
-                   "Installer qt6-speech-dev pour activer la voix.")
+    message(STATUS "Qt TextToSpeech absent : l'assistant passera par `spd-say` "
+                   "s'il est installé (paquet speech-dispatcher).")
 endif()
 
 qt_standard_project_setup()
