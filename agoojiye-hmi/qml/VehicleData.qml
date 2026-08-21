@@ -52,6 +52,23 @@ QtObject {
     readonly property real batteryFraction: batteryLevel / 100
     readonly property int range: Math.round(batteryFraction * rangeFullCharge)
 
+    // ---- Démarrage --------------------------------------------------------
+    // Contrôles joués par la séquence de démarrage, dans cet ordre. L'écran ne
+    // fait que les afficher : quand le backend existera, il remplacera `ok` par
+    // le résultat réel du diagnostic, et un `false` s'affichera en rouge sans
+    // qu'une ligne d'interface change.
+    property var startupChecks: [
+        { label: "Batterie", ok: true },
+        { label: "Connexion véhicule", ok: true },
+        { label: "Frein de stationnement", ok: true },
+        { label: "Portes", ok: true },
+        { label: "Capteurs", ok: true },
+        { label: "ADAS", ok: true },
+        { label: "GPS", ok: true },
+        { label: "Réseau", ok: true },
+        { label: "Système multimédia", ok: true }
+    ]
+
     // ---- Compteurs / entretien ------------------------------------------
     property int odometer: 12458            // km
     property int serviceDueIn: 12000        // km avant la prochaine révision

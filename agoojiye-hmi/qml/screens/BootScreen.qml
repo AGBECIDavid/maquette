@@ -10,7 +10,9 @@ import AgoojiyeHMI
 Item {
     id: root
 
-    // Émis quand la séquence est terminée (ou écourtée par l'utilisateur).
+    // La main se rend en deux temps : `handoff` révèle le tableau de bord
+    // derrière la séquence, `finished` retire la séquence une fois effacée.
+    signal handoff()
     signal finished()
 
     readonly property string welcomeLine:
@@ -22,10 +24,23 @@ Item {
     property bool assistantVisible: false
     property bool brandVisible: false
 
+    // ---- contrôles système -------------------------------------------------
+    // La liste vient de VehicleData : l'écran ne sait pas ce qu'il vérifie, il
+    // sait seulement l'afficher. Le backend la remplacera par de vrais
+    // diagnostics sans toucher à ce fichier.
+    readonly property var checks: VehicleData.startupChecks
+    property int checkIndex: -1        // -1 = pas encore commencé
+    property bool checksDone: false
+    readonly property bool checksVisible: checkIndex >= 0 && !assistantVisible
+    readonly property string currentCheck:
+        checkIndex >= 0 && checkIndex < checks.length ? checks[checkIndex].label : ""
+
     function skip() {
         timeline.stop()
+        checkLoop.stop()
         roadLoop.stop()
         VoiceAnnouncer.stop()
+        root.handoff()
         root.finished()
     }
 
@@ -189,6 +204,96 @@ Item {
         }
     }
 
+    // ---- contrôles système -------------------------------------------------
+    // Occupe la place que la bulle de l'assistant prendra ensuite : le regard
+    // n'a pas à se déplacer entre les deux étapes. Volontairement sobre — une
+    // ligne, une barre de jalons — plutôt qu'un journal technique déroulant.
+    Column {
+        id: initBlock
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 92
+        spacing: 15
+        opacity: root.checksVisible ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 420; easing.type: Easing.OutCubic } }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: root.checksDone ? "SYSTÈME VÉHICULE" : "INITIALISATION DU SYSTÈME"
+            font.family: Theme.fontFamily
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+            font.letterSpacing: 3
+            color: Theme.textMuted
+        }
+
+        // Un jalon par contrôle : l'avancement se lit sans lire.
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 6
+            Repeater {
+                model: root.checks
+                delegate: Rectangle {
+                    required property int index
+                    required property var modelData
+                    width: 30; height: 3; radius: 1.5
+                    color: index > root.checkIndex ? Theme.alpha(Theme.textMuted, 0.22)
+                                                   : (modelData.ok ? Theme.green : Theme.red)
+                    Behavior on color { ColorAnimation { duration: 260 } }
+                }
+            }
+        }
+
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            // La coche ne prend sa place qu'une fois acquise, sinon le libellé
+            // du contrôle en cours ne serait pas centré sous les jalons.
+            spacing: root.checksDone ? 9 : 0
+            Behavior on spacing { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+            Item {
+                width: root.checksDone ? 20 : 0
+                height: 20
+                anchors.verticalCenter: parent.verticalCenter
+                Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                Icon {
+                    anchors.centerIn: parent
+                    name: "ph-check-circle"
+                    fill: true
+                    size: 20
+                    color: Theme.green
+                    opacity: root.checksDone ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 300 } }
+                }
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.checksDone ? "Système prêt" : root.currentCheck
+                font.family: Theme.fontFamily
+                font.pixelSize: 18
+                font.weight: root.checksDone ? Font.DemiBold : Font.Normal
+                color: root.checksDone ? Theme.green : Theme.textSecondary
+            }
+        }
+    }
+
+    // Fait avancer les contrôles un par un. Ce n'est pas une attente réelle :
+    // quand le backend fournira les diagnostics, c'est lui qui cadencera
+    // `checkIndex` et ce minuteur disparaîtra.
+    Timer {
+        id: checkLoop
+        interval: 240
+        repeat: true
+        onTriggered: {
+            if (root.checkIndex + 1 < root.checks.length)
+                root.checkIndex++
+            else {
+                stop()
+                root.checksDone = true
+            }
+        }
+    }
+
     // ---- assistant vocal ---------------------------------------------------
     Item {
         id: assistant
@@ -285,27 +390,49 @@ Item {
         ScriptAction { script: root.brandVisible = true }
         PauseAnimation { duration: 550 }
 
-        // 2. Le véhicule approche.
-        NumberAnimation {
-            target: root; property: "approach"
-            from: 0; to: 1
-            duration: 2600
-            easing.type: Easing.InOutCubic
+        // 2. Le véhicule approche pendant que le système se contrôle. Les deux
+        //    vont ensemble : l'attente technique se passe derrière une image,
+        //    pas devant un écran figé.
+        ParallelAnimation {
+            ScriptAction {
+                script: {
+                    root.checkIndex = 0
+                    checkLoop.start()
+                }
+            }
+            NumberAnimation {
+                target: root; property: "approach"
+                from: 0; to: 1
+                duration: 2600
+                easing.type: Easing.InOutCubic
+            }
         }
 
-        // 3. L'assistant salue.
+        // 3. « Système prêt » a le temps d'être lu.
+        PauseAnimation { duration: 850 }
+
+        // 4. L'assistant salue.
         ScriptAction {
             script: {
                 root.assistantVisible = true
                 VoiceAnnouncer.speak(root.welcomeLine)
             }
         }
-        PauseAnimation { duration: 2900 }
+        PauseAnimation { duration: 2600 }
 
-        // 4. Fondu et passage au tableau de bord.
-        NumberAnimation {
-            target: root; property: "opacity"
-            to: 0; duration: 600; easing.type: Easing.InCubic
+        // 5. Passage au tableau de bord. Il se révèle *pendant* le fondu de la
+        //    séquence, pas après : les deux se croisent, la bascule ne se voit
+        //    pas comme une coupure.
+        ScriptAction { script: root.handoff() }
+        ParallelAnimation {
+            NumberAnimation {
+                target: root; property: "opacity"
+                to: 0; duration: 620; easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: root; property: "scale"
+                to: 1.04; duration: 620; easing.type: Easing.InCubic
+            }
         }
         ScriptAction {
             script: {

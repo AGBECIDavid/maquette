@@ -75,6 +75,7 @@ les vraies valeurs.
 | Navigation | `navigationActive`, `nextManeuverDistance`, `nextManeuverStreet`, `followingStreet`, `routeProgress`, `arrivalTime`, `distanceRemaining`, `timeRemaining`, `trafficCondition` |
 | Média | `mediaPlaying`, `trackTitle`, `trackArtist`, `trackAlbum`, `volume` |
 | Téléphone | `contactCount`, `recentCallCount`, `missedCallCount` |
+| Démarrage | `startupChecks` |
 
 Deux valeurs sont dérivées et n'ont pas à être alimentées :
 `batteryFraction` (= `batteryLevel / 100`) et `range`
@@ -92,14 +93,69 @@ remonter dans `VehicleData` quand leur format sera arrêté :
 - les noms de rue, hérités des maquettes d'origine (parisiens) — à remplacer
   par le contexte de déploiement réel
 
+## Navigation
+
+Trois niveaux, décrits en tête de `qml/AppState.qml` :
+
+```
+  démarrage  ─────►  accueil (tableau de bord)  ◄────►  applications
+   une fois           écran de référence            barre du bas
+```
+
+La barre du bas porte **sept destinations**, définies au même endroit dans
+`navSections` :
+
+| Bouton | Écran | Écrans secondaires rattachés |
+|---|---|---|
+| Accueil | `dash` | |
+| Navigation | `nav` | |
+| Véhicule | `veh` | `entretien` |
+| Conduite | `conduite` | |
+| ADAS | `adas` | |
+| Média | `media` | `mediaNow` |
+| Paramètres | `parametres` | |
+
+Un écran secondaire garde le bouton de sa section allumé : l'utilisateur voit
+toujours où il se trouve, et y revient d'un seul appui. Ajouter une destination,
+c'est ajouter une ligne à `navSections` — la barre s'ajuste seule.
+
+Le menu (`menu`) n'occupe aucun des sept boutons : c'est un tiroir, ouvert par
+l'icône en haut à droite, qui donne accès à ce qui n'a pas sa place dans la
+barre (téléphone, entretien, à propos). Le même bouton le referme.
+
+`AppState.go()` est le seul point d'entrée ; `AppState.back()` ramène à l'écran
+précédent. **La séquence de démarrage n'est pas un écran** : elle n'a pas de clé
+de navigation, donc aucun bouton ne peut y ramener — l'animation ne se rejoue
+jamais sur un changement de page.
+
 ## Séquence de démarrage
 
-`qml/screens/BootScreen.qml` remplace l'ancien écran d'accueil. Elle se joue une
-fois au lancement, puis passe la main au tableau de bord — l'écran principal.
+`qml/screens/BootScreen.qml` se joue une fois au lancement, puis passe la main au
+tableau de bord — l'écran principal.
 
 Toute la chronologie tient dans le bloc `SequentialAnimation` nommé `timeline`,
-en fin de fichier : marque, approche du véhicule, annonce vocale, fondu. Régler
-le rythme se fait là et nulle part ailleurs.
+en fin de fichier : marque, approche du véhicule pendant les contrôles système,
+« Système prêt », annonce vocale, fondu croisé. Régler le rythme se fait là et
+nulle part ailleurs.
+
+Les contrôles affichés viennent de `VehicleData.startupChecks` — l'écran ne sait
+pas ce qu'il vérifie, il sait seulement l'afficher :
+
+```qml
+property var startupChecks: [
+    { label: "Batterie", ok: true },
+    ...
+]
+```
+
+Un `ok: false` s'affiche en rouge sans qu'une ligne d'interface change. Le
+minuteur `checkLoop` de `BootScreen` ne fait que dérouler la liste : dès que le
+backend fournira de vrais diagnostics, c'est lui qui pilotera `checkIndex` et ce
+minuteur disparaîtra.
+
+La main se rend en deux temps — `handoff()` révèle le tableau de bord, puis
+`finished()` retire la couche de démarrage une fois son fondu terminé. Les deux
+se croisent, d'où l'enchaînement plutôt que la coupure.
 
 L'assistant vocal passe par `VoiceAnnouncer` (C++). **Qt TextToSpeech est une
 dépendance optionnelle** : sans elle, le projet compile et tourne pareil, la

@@ -46,7 +46,7 @@ Item {
                     color: Theme.alpha(Theme.panelBgTop, 0.9)
                     border.width: 1; border.color: Theme.alpha(Theme.panelBorder, 0.16)
                     Icon { anchors.centerIn: parent; name: "ph-arrow-left"; size: 19; color: Theme.textPrimary }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("menu") }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: AppState.back() }
                 }
                 Text { text: "ADAS"; font.family: Theme.fontFamily; font.pixelSize: 24; font.weight: Font.Bold; font.letterSpacing: 1.2; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
             }

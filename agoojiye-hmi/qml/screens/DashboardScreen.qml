@@ -5,6 +5,11 @@ Item {
     id: root
     clip: true
 
+    // Le bandeau de témoins du bas. Il partage désormais la place avec la barre
+    // de navigation, qui reste visible ici comme partout ailleurs : il ne porte
+    // plus que les voyants, la navigation n'est plus de son ressort.
+    readonly property int stripHeight: 62
+
     // 12458 -> "12 458"
     function formatKm(v) {
         return String(v).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f")
@@ -26,9 +31,9 @@ Item {
         id: road
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 78
+        anchors.bottomMargin: root.stripHeight
         width: 1200
-        height: 470
+        height: 420
         // The asset carries its own baked alpha falloff, so it dissolves into
         // whatever is behind it without assuming a backdrop colour.
         source: "qrc:/AgoojiyeHMI/assets/images/dash-road.png"
@@ -48,8 +53,8 @@ Item {
     Glow {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 60
-        width: 1100; height: 520
+        anchors.bottomMargin: root.stripHeight - 18
+        width: 1100; height: 500
         glowColor: Theme.blue
         intensity: 0.10
     }
@@ -106,7 +111,7 @@ Item {
         x: 348
         y: 36
         width: 104
-        height: 452
+        height: 424
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -148,20 +153,20 @@ Item {
     // ---- centre: speed ---------------------------------------------------
     Glow {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 24
-        width: 760; height: 380
+        y: 18
+        width: 760; height: 360
         glowColor: Theme.blue
         intensity: 0.20
     }
     Column {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 56
+        y: 44
         spacing: 0
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: VehicleData.speed
             font.family: Theme.fontFamily
-            font.pixelSize: 172
+            font.pixelSize: 160
             font.weight: Font.Bold
             font.letterSpacing: -3.4
             color: "#ffffff"
@@ -244,7 +249,7 @@ Item {
     // ---- cruise / limit pill --------------------------------------------
     Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height - 78 - 24 - 52
+        y: parent.height - root.stripHeight - 34 - 52
         height: 52
         width: limitRow.implicitWidth + 56
         radius: 16
@@ -266,12 +271,14 @@ Item {
         }
     }
 
-    // ---- telltale strip (stands in for the nav bar on this screen) -------
+    // ---- telltale strip ---------------------------------------------------
+    // Voyants seulement. Le bouton d'accueil qui vivait ici a disparu : la
+    // barre de navigation, désormais présente sur cet écran aussi, le porte.
     Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: 78
+        height: root.stripHeight
         color: Theme.alpha(Theme.navBg, 0.9)
         Rectangle { anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; height: 1; color: Theme.alpha(Theme.blue, 0.12) }
 
@@ -281,20 +288,12 @@ Item {
             anchors.rightMargin: 60
 
             Item {
-                width: parent.width / 6; height: parent.height
-                Icon {
-                    anchors.centerIn: parent; name: "ph-house-simple"; size: 24
-                    color: homeHover.containsMouse ? Theme.textPrimary : Theme.textMuted
-                    MouseArea { id: homeHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("boot") }
-                }
-            }
-            Item {
-                width: parent.width / 6; height: parent.height
+                width: parent.width / 5; height: parent.height
                 Icon { anchors.centerIn: parent; name: "ph-seatbelt"; fill: true; size: 26;
                        color: VehicleData.seatbeltWarning ? Theme.red : Theme.textDim }
             }
             Item {
-                width: parent.width / 6; height: parent.height
+                width: parent.width / 5; height: parent.height
                 Rectangle {
                     anchors.centerIn: parent
                     width: 30; height: 30; radius: 15
@@ -305,11 +304,11 @@ Item {
                 }
             }
             Item {
-                width: parent.width / 6; height: parent.height
+                width: parent.width / 5; height: parent.height
                 Text { anchors.centerIn: parent; text: VehicleData.driveMode; font.family: Theme.fontFamily; font.pixelSize: 19; font.weight: Font.Bold; font.letterSpacing: 1.5; color: Theme.green }
             }
             Item {
-                width: parent.width / 6; height: parent.height
+                width: parent.width / 5; height: parent.height
                 Row {
                     anchors.centerIn: parent
                     spacing: 10
@@ -318,7 +317,7 @@ Item {
                 }
             }
             Item {
-                width: parent.width / 6; height: parent.height
+                width: parent.width / 5; height: parent.height
                 Row {
                     anchors.centerIn: parent
                     spacing: 24

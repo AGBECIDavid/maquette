@@ -1,9 +1,13 @@
 import QtQuick
 import AgoojiyeHMI
 
+// Barre de navigation permanente : les sept destinations de premier niveau,
+// toujours au même endroit, toujours à un seul appui. Elle ne disparaît que
+// pendant la séquence de démarrage.
 Item {
     id: root
-    height: 86
+    height: 78
+    clip: true
 
     Rectangle {
         anchors.left: parent.left
@@ -20,7 +24,7 @@ Item {
 
     Row {
         anchors.centerIn: parent
-        spacing: 14
+        spacing: 8
 
         Repeater {
             model: AppState.navItems
@@ -29,7 +33,9 @@ Item {
                 id: navBtn
                 required property var modelData
                 height: 56
-                width: label.implicitWidth + icon.width + 30 + 24
+                // Chaque bouton se dimensionne sur son propre libellé : sept
+                // cases de largeur égale gaspilleraient la place des courts.
+                width: label.implicitWidth + icon.width + 12 + 36
                 radius: 14
                 color: modelData.active ? Theme.alpha(modelData.accent, 0.1) : (hover.containsMouse ? Theme.alpha(Theme.panelBgTop, 0.9) : "transparent")
                 border.width: 1

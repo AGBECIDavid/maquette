@@ -39,6 +39,8 @@ int main(int argc, char *argv[])
         QObject *accessorObj = appStateAccessor.create();
         QObject *appState = accessorObj ? accessorObj->property("appState").value<QObject *>() : nullptr;
         if (window && appState) {
+            // The sweep documents the screens, not the startup sequence.
+            QMetaObject::invokeMethod(appState, "skipBoot");
             static const QStringList screens = {
                 "dash", "menu", "veh", "nav", "media",
                 "mediaNow", "adas", "conduite", "phone", "entretien", "parametres"

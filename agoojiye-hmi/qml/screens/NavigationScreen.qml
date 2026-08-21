@@ -175,7 +175,7 @@ Item {
                     Text { text: "Fin du trajet"; font.family: Theme.fontFamily; font.pixelSize: 16; font.weight: Font.DemiBold; color: Theme.red; anchors.verticalCenter: parent.verticalCenter }
                     Icon { name: "ph-x"; size: 17; color: Theme.red; anchors.verticalCenter: parent.verticalCenter }
                 }
-                MouseArea { id: endHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("menu") }
+                MouseArea { id: endHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("dash") }
             }
         }
     }

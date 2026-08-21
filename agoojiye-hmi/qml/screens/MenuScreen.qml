@@ -31,13 +31,12 @@ Item {
           badge: "", alert: false }
     ]
 
+    // Centré verticalement : le tiroir ne remplit pas la hauteur, autant qu'il
+    // se pose au milieu de l'écran plutôt que de pendre sous la barre du haut.
     Column {
-        anchors.fill: parent
-        anchors.margins: 0
-        anchors.topMargin: 26
-        anchors.bottomMargin: 26
-        anchors.leftMargin: 56
-        anchors.rightMargin: 56
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width - 112
         spacing: 24
 
         Column {
@@ -45,7 +44,7 @@ Item {
             spacing: 6
             Text { anchors.horizontalCenter: parent.horizontalCenter; text: "MENU"; font.family: Theme.fontFamily; font.pixelSize: 32; font.weight: Font.Bold; font.letterSpacing: 2; color: Theme.textPrimary }
             Rectangle { anchors.horizontalCenter: parent.horizontalCenter; width: 44; height: 3; radius: 2; color: Theme.blue }
-            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Sélectionnez une fonction"; font.family: Theme.fontFamily; font.pixelSize: 16; color: Theme.textMuted; topPadding: 2 }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Toutes les fonctions du véhicule"; font.family: Theme.fontFamily; font.pixelSize: 16; color: Theme.textMuted; topPadding: 2 }
         }
 
         Grid {

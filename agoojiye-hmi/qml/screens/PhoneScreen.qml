@@ -23,7 +23,21 @@ Item {
             width: 330
             height: layout.height
             spacing: 12
-            Text { text: "TÉLÉPHONE"; font.family: Theme.fontFamily; font.pixelSize: 24; font.weight: Font.Bold; font.letterSpacing: 1.2; color: Theme.textPrimary; bottomPadding: 8; topPadding: 6 }
+            // Le téléphone n'appartient à aucune des sept sections de la barre
+            // du bas : il lui faut donc son propre retour.
+            Row {
+                spacing: 14
+                topPadding: 6
+                bottomPadding: 8
+                Rectangle {
+                    width: 42; height: 42; radius: 21
+                    color: Theme.alpha(Theme.panelBgTop, 0.9)
+                    border.width: 1; border.color: Theme.alpha(Theme.panelBorder, 0.16)
+                    Icon { anchors.centerIn: parent; name: "ph-arrow-left"; size: 19; color: Theme.textPrimary }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: AppState.back() }
+                }
+                Text { text: "TÉLÉPHONE"; font.family: Theme.fontFamily; font.pixelSize: 24; font.weight: Font.Bold; font.letterSpacing: 1.2; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+            }
 
             Rectangle {
                 width: parent.width; height: 88; radius: 14
