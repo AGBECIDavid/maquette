@@ -114,9 +114,17 @@ for r in rows:
     prev = (v, float(r["wall"]))
 
 # Accélération mesurée sur le temps réellement écoulé, comparée à la borne du
-# modèle (1,8 m/s² au freinage). La marge absorbe l'arrondi de la vitesse à
-# 0,1 km/h, pas une téléportation : à 2,5 m/s² une navette n'accélère plus,
-# elle saute.
+# modèle (1,8 m/s² au freinage).
+#
+# La marge n'est pas du confort : le pas du modèle (100 ms) et celui du relevé
+# (200 ms) ne sont pas alignés. Deux pas de modèle totalisant 0,22 s peuvent
+# tomber dans une fenêtre de 0,20 s, et le quotient affiche alors 1,8 × 1,1 ≈
+# 2,0 m/s² pour une physique parfaitement respectée. C'est un repliement de
+# l'échantillonnage, pas une faute du modèle — d'où des relevés qui oscillent
+# entre 1,8 et 2,0 d'une exécution à l'autre.
+#
+# 2,5 laisse passer cet artefact et arrête une vraie téléportation : à cette
+# valeur une navette n'accélère plus, elle saute.
 if jump > 2.5:
     problems.append(f"accélération de {jump:.2f} m/s², au-delà du modèle")
 if len(phases) < 3:
