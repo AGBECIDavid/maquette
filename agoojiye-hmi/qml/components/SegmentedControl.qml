@@ -37,7 +37,9 @@ Rectangle {
                     text: modelData
                     font.family: Theme.fontFamily
                     font.pixelSize: 14
-                    color: active ? "#d9f7e4" : Theme.textMuted
+                    // L'option retenue s'éclaircit dans la teinte de l'accent,
+                    // au lieu d'un vert figé qui jurait avec les autres.
+                    color: active ? Qt.lighter(root.accentColor, 1.6) : Theme.textMuted
                 }
 
                 MouseArea {

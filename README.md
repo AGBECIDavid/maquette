@@ -1,3 +1,10 @@
+> **Vous cherchez le projet ?** Il est dans [`agoojiye-hmi/`](agoojiye-hmi/) —
+> voir son [README](agoojiye-hmi/README.md) pour construire et lancer
+> l'interface. Le texte ci-dessous est la note de passation d'origine de
+> Claude Design, conservée pour mémoire.
+
+---
+
 # CODING AGENTS: READ THIS FIRST
 
 This is a **handoff bundle** from Claude Design (claude.ai/design).

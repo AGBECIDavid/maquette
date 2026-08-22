@@ -41,23 +41,40 @@ int main(int argc, char *argv[])
         if (window && appState) {
             // The sweep documents the screens, not the startup sequence.
             QMetaObject::invokeMethod(appState, "skipBoot");
-            static const QStringList screens = {
-                "dash", "menu", "veh", "nav", "media",
-                "mediaNow", "adas", "conduite", "phone", "entretien", "parametres"
+
+            // Every reachable panel, written as "screen" or "screen:section".
+            // Screens with a left rail contribute one entry per section, so a
+            // sweep covers the whole interface rather than its front pages.
+            static const QStringList views = {
+                "dash", "menu", "nav", "phone", "entretien",
+                "veh:0", "veh:1", "veh:2", "veh:3", "veh:4", "veh:5",
+                "conduite:0", "conduite:1", "conduite:2", "conduite:3", "conduite:4", "conduite:5",
+                "adas:0", "adas:1", "adas:2", "adas:3", "adas:4", "adas:5",
+                "media:0", "media:1", "media:2", "media:3", "media:4", "media:5",
+                "mediaNow:0", "mediaNow:1", "mediaNow:2", "mediaNow:3",
+                "parametres:0", "parametres:1", "parametres:2", "parametres:3", "parametres:4"
             };
             auto *index = new int(0);
             auto *timer = new QTimer(&app);
             timer->setInterval(250);
             QObject::connect(timer, &QTimer::timeout, &app, [=, &app]() mutable {
                 if (*index > 0) {
-                    window->grabWindow().save(screenshotDir + "/" + screens[*index - 1] + ".png");
+                    QString name = views[*index - 1];
+                    name.replace(':', '-');
+                    window->grabWindow().save(screenshotDir + "/" + name + ".png");
                 }
-                if (*index >= screens.size()) {
+                if (*index >= views.size()) {
                     timer->stop();
                     app.quit();
                     return;
                 }
-                QMetaObject::invokeMethod(appState, "go", Q_ARG(QVariant, screens[*index]));
+                const QStringList parts = views[*index].split(':');
+                QMetaObject::invokeMethod(appState, "go", Q_ARG(QVariant, parts.first()));
+                if (parts.size() > 1) {
+                    QMetaObject::invokeMethod(appState, "selectSection",
+                                              Q_ARG(QVariant, parts.first()),
+                                              Q_ARG(QVariant, parts.at(1).toInt()));
+                }
                 (*index)++;
             });
             timer->start();

@@ -51,6 +51,9 @@ qt_add_qml_module(agoojiye-hmi
         qml/components/SegmentedControl.qml
         qml/components/PanelCard.qml
         qml/components/MenuTile.qml
+        qml/components/SettingRow.qml
+        qml/components/StatTile.qml
+        qml/components/LevelBar.qml
         qml/components/ImageAsset.qml
         qml/components/Divider.qml
         qml/components/Glow.qml

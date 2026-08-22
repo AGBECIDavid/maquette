@@ -41,7 +41,7 @@ QtObject {
     property string storageUsed: "28.4 GB / 64 GB"
 
     // ---- Propulsion / énergie -------------------------------------------
-    property real speed: 25                 // km/h — vitesse instantanée
+    property real speed: 50                 // km/h — vitesse instantanée
     property int batteryLevel: 82           // %
     property real consumption: 11.4         // kWh/100 km
     property int rangeFullCharge: 120       // km d'autonomie à pleine charge
@@ -69,6 +69,38 @@ QtObject {
         { label: "Système multimédia", ok: true }
     ]
 
+    // ---- Ouvrants et accès -------------------------------------------------
+    // Une navette à flancs ouverts : pas de coffre ni de quatre portières, mais
+    // des accès passagers latéraux, un capot, une trappe de charge et un
+    // compartiment batterie.
+    property var openings: [
+        { label: "Porte conducteur", icon: "ph-car-profile", open: false },
+        { label: "Accès passagers G", icon: "ph-arrows-out-line-horizontal", open: true },
+        { label: "Accès passagers D", icon: "ph-arrows-out-line-horizontal", open: true },
+        { label: "Capot", icon: "ph-car-simple", open: false },
+        { label: "Trappe de charge", icon: "ph-lightning", open: false },
+        { label: "Compartiment batterie", icon: "ph-car-battery", open: false }
+    ]
+
+    // ---- Pneus -------------------------------------------------------------
+    property real tyreFrontLeft: 2.5        // bar
+    property real tyreFrontRight: 2.5
+    property real tyreRearLeft: 2.6
+    property real tyreRearRight: 2.6
+    property real tyreRecommended: 2.5
+
+    // ---- Températures ------------------------------------------------------
+    property int motorTemp: 90              // °C
+    property int batteryTemp: 28
+    property int cabinTemp: 22
+
+    // ---- Énergie détaillée -------------------------------------------------
+    property real power: 12.5               // kW appelés à l'instant
+    property real regenPower: 3.2           // kW récupérés
+    property string chargeStatus: "Non branché"
+    property int chargeCycles: 214
+    property string commissioningDate: "12 MARS 2026"
+
     // ---- Compteurs / entretien ------------------------------------------
     property int odometer: 12458            // km
     property int serviceDueIn: 12000        // km avant la prochaine révision
@@ -77,8 +109,8 @@ QtObject {
 
     // ---- Environnement / réglementaire ----------------------------------
     property int outsideTemp: 23            // °C
-    property int speedLimit: 30             // km/h — limite en vigueur
-    property int cruiseSpeed: 25            // km/h — consigne du régulateur
+    property int speedLimit: 50             // km/h — limite en vigueur
+    property int cruiseSpeed: 50            // km/h — consigne du régulateur
     property bool headlightsAuto: true
 
     // ---- Témoins ---------------------------------------------------------

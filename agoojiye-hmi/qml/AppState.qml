@@ -32,13 +32,55 @@ QtObject {
     // (lecteur média, téléphone, entretien…).
     property string previousScreen: "dash"
 
+    // ---- sections des barres latérales -----------------------------------
+    // Un index par écran, gardé en mémoire : partir ailleurs et revenir retombe
+    // sur la section qu'on avait ouverte, pas sur la première.
+    property var sections: ({ veh: 0, conduite: 0, adas: 0, media: 0, mediaNow: 0, parametres: 0 })
+
     // ---- préférences pilotées depuis l'interface ------------------------
+    // Réglages d'usage, pas des mesures du véhicule : ils appartiennent à
+    // l'interface et non à VehicleData.
     property bool spatial: true
     property bool autoTime: true
     property string regen: "Moyenne"
     property string dir: "Standard"
     property string trac: "Standard"
     property var adas: ({ acc: true, lka: true, ldw: true, fcw: true, aeb: true, bsd: true })
+
+    // affichage
+    property real brightness: 0.72
+    property bool autoBrightness: true
+    property string uiTheme: "Sombre"
+    property bool nightMode: false
+    property string textSize: "Normal"
+    property string screenTimeout: "Jamais"
+
+    // son
+    property real mediaVolume: 0.62
+    property real ringVolume: 0.45
+    property string balance: "Centré"
+    property bool alertSounds: true
+    property bool reverseBeep: true
+    property bool voiceGuidance: true
+
+    // véhicule
+    property bool autoLock: true
+    property bool welcomeLighting: true
+    property bool foldingMirrors: false
+    property string pressureUnit: "bar"
+
+    // conduite / ADAS (panneaux détaillés)
+    property string brakeFeel: "Standard"
+    property string suspension: "Confort"
+    property bool onePedal: true
+    property bool hillHold: true
+    property int accGap: 2
+    property bool parkSensors: true
+    property bool rearCamera: true
+    property bool autoPark: false
+    property bool blindSpotLight: true
+    property bool driverAlert: true
+    property int driverAlertLevel: 1
 
     property Timer _clock: Timer {
         interval: 15000
@@ -60,6 +102,18 @@ QtObject {
 
     // Retour depuis un sous-écran vers celui d'où l'on vient.
     function back() { go(previousScreen) }
+
+    // Section ouverte dans la barre latérale d'un écran.
+    function section(screenKey) {
+        return sections[screenKey] !== undefined ? sections[screenKey] : 0
+    }
+    function selectSection(screenKey, index) {
+        var next = sections
+        next[screenKey] = index
+        // Réassignation obligatoire : muter l'objet en place ne déclenche
+        // aucune notification, donc rien ne se rafraîchirait.
+        sections = next
+    }
 
     // La séquence rend la main : la coque se révèle…
     function bootReveal() { booting = false }
