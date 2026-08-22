@@ -10,6 +10,11 @@ Window {
     color: "#01030a"
     title: "AGOOJIYE HMI"
 
+    // Un singleton QML n'existe qu'au premier accès. Le nommer ici démarre la
+    // source de données ; c'est aussi le seul endroit à changer pour brancher
+    // une vraie source à la place du simulateur.
+    readonly property bool dataSourceRunning: VehicleSimulator.running
+
     Rectangle {
         id: frame
         anchors.fill: parent
@@ -42,10 +47,20 @@ Window {
                 Behavior on opacity { NumberAnimation { duration: 520; easing.type: Easing.OutCubic } }
             }
 
+            // Le bandeau d'alerte prend sa place dans la colonne plutôt que de
+            // se poser par-dessus : recouvrir un titre ou une commande au
+            // moment précis où le conducteur la cherchait est pire que de
+            // décaler l'écran de quelques dizaines de pixels.
+            AlertBanner {
+                id: alertBanner
+                width: parent.width
+                visible: !AppState.booting && height > 0
+            }
+
             Item {
                 id: content
                 width: parent.width
-                height: parent.height - statusBar.height - bottomNav.height
+                height: parent.height - statusBar.height - alertBanner.height - bottomNav.height
 
                 // Les écrans entrent en fondu et en léger glissement vers le
                 // haut quand la séquence de démarrage rend la main.

@@ -79,7 +79,7 @@ Item {
                 Row {
                     spacing: 12
                     Icon { name: "ph-battery-high"; fill: true; size: 30; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: VehicleData.batteryLevel + " %"; font.family: Theme.fontFamily; font.pixelSize: 30; font.weight: Font.Bold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: VehicleData.reading("battery", VehicleData.batteryLevel) + (VehicleData.valid("battery") ? " %" : ""); font.family: Theme.fontFamily; font.pixelSize: 30; font.weight: Font.Bold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
             Divider { width: parent.width }
@@ -88,7 +88,7 @@ Item {
                 Text { text: "AUTONOMIE"; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold; font.letterSpacing: 1.6; color: Theme.textMuted }
                 Row {
                     spacing: 6
-                    Text { text: VehicleData.range; font.family: Theme.fontFamily; font.pixelSize: 28; font.weight: Font.Bold; color: Theme.textPrimary; anchors.baseline: kmLabel.baseline }
+                    Text { text: VehicleData.reading("battery", VehicleData.range); font.family: Theme.fontFamily; font.pixelSize: 28; font.weight: Font.Bold; color: Theme.textPrimary; anchors.baseline: kmLabel.baseline }
                     Text { id: kmLabel; text: "km"; font.family: Theme.fontFamily; font.pixelSize: 16; color: Theme.textMuted }
                 }
             }
@@ -98,7 +98,7 @@ Item {
                 Text { text: "CONSOMMATION"; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold; font.letterSpacing: 1.6; color: Theme.textMuted }
                 Row {
                     spacing: 6
-                    Text { text: VehicleData.consumption.toFixed(1); font.family: Theme.fontFamily; font.pixelSize: 24; font.weight: Font.Bold; color: Theme.textPrimary; anchors.baseline: kwhLabel.baseline }
+                    Text { text: VehicleData.reading("consumption", VehicleData.consumption, 1); font.family: Theme.fontFamily; font.pixelSize: 24; font.weight: Font.Bold; color: Theme.textPrimary; anchors.baseline: kwhLabel.baseline }
                     Text { id: kwhLabel; text: "kWh/100km"; font.family: Theme.fontFamily; font.pixelSize: 15; color: Theme.textMuted }
                 }
             }
@@ -164,17 +164,21 @@ Item {
         spacing: 0
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: VehicleData.speed
+            text: VehicleData.reading("speed", Math.round(VehicleData.speed))
             font.family: Theme.fontFamily
-            font.pixelSize: 160
+            // Un tiret à 160 px se lit comme une barre pleine, donc comme un
+            // défaut d'affichage. Sans signal on réduit et on éteint : l'absence
+            // de valeur doit ressembler à une absence, pas à une panne d'écran.
+            font.pixelSize: VehicleData.valid("speed") ? 160 : 96
             font.weight: Font.Bold
-            font.letterSpacing: -3.4
-            color: "#ffffff"
+            font.letterSpacing: VehicleData.valid("speed") ? -3.4 : 4
+            color: VehicleData.valid("speed") ? "#ffffff" : Theme.textDim
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "km/h"
-            font.family: Theme.fontFamily; font.pixelSize: 22; color: Theme.textDim
+            text: VehicleData.valid("speed") ? "km/h" : "vitesse indisponible"
+            font.family: Theme.fontFamily; font.pixelSize: 22
+            color: VehicleData.valid("speed") ? Theme.textDim : Theme.yellow
             topPadding: 2
         }
     }
@@ -196,7 +200,7 @@ Item {
             Text { text: "NAVIGATION"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.Bold; font.letterSpacing: 1.4; color: Theme.blue }
             Row {
                 spacing: 14
-                Icon { name: "ph-arrow-bend-up-right"; size: 38; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
+                Icon { name: VehicleData.nextManeuverIcon; size: 38; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     Row {

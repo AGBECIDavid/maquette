@@ -394,9 +394,9 @@ Item {
                     columns: 4
                     columnSpacing: 14
                     topPadding: 6
-                    StatTile { width: (brakePane.width - 42) / 4; iconName: "ph-record"; label: "PLAQUETTES AV"; value: "92"; unit: "%"; valueColor: Theme.green }
-                    StatTile { width: (brakePane.width - 42) / 4; iconName: "ph-record"; label: "PLAQUETTES AR"; value: "88"; unit: "%"; valueColor: Theme.green }
-                    StatTile { width: (brakePane.width - 42) / 4; iconName: "ph-drop"; label: "LIQUIDE"; value: "OK"; valueColor: Theme.green }
+                    StatTile { width: (brakePane.width - 42) / 4; iconName: "ph-record"; label: "PLAQUETTES AV"; value: String(VehicleData.brakePadFront); unit: "%"; valueColor: VehicleData.brakePadFront < 25 ? Theme.red : Theme.green }
+                    StatTile { width: (brakePane.width - 42) / 4; iconName: "ph-record"; label: "PLAQUETTES AR"; value: String(VehicleData.brakePadRear); unit: "%"; valueColor: VehicleData.brakePadRear < 25 ? Theme.red : Theme.green }
+                    StatTile { width: (brakePane.width - 42) / 4; iconName: "ph-drop"; label: "LIQUIDE"; value: VehicleData.brakeFluid; valueColor: VehicleData.brakeFluid === "OK" ? Theme.green : Theme.red }
                     StatTile { width: (brakePane.width - 42) / 4; iconName: "ph-brake-warning"; label: "FREIN DE PARC"; value: VehicleData.parkingBrake ? "Serré" : "Desserré"; valueColor: VehicleData.parkingBrake ? Theme.red : Theme.green }
                 }
 

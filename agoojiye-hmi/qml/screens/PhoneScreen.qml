@@ -53,7 +53,7 @@ Item {
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
                         Text { text: "Contacts"; font.family: Theme.fontFamily; font.pixelSize: 17; font.weight: Font.DemiBold; color: Theme.textPrimary }
-                        Text { text: "245 contacts"; font.family: Theme.fontFamily; font.pixelSize: 14; color: "#93c5fd" }
+                        Text { text: VehicleData.contactCount + " contacts"; font.family: Theme.fontFamily; font.pixelSize: 14; color: "#93c5fd" }
                     }
                 }
                 Icon { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; name: "ph-caret-right"; size: 17; color: Theme.textMuted }
@@ -73,7 +73,7 @@ Item {
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
                         Text { text: "Récents"; font.family: Theme.fontFamily; font.pixelSize: 17; font.weight: Font.DemiBold; color: Theme.textPrimary }
-                        Text { text: "8 appels"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted }
+                        Text { text: VehicleData.recentCallCount + " appels"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted }
                     }
                 }
                 Icon { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; name: "ph-caret-right"; size: 17; color: Theme.textMuted }

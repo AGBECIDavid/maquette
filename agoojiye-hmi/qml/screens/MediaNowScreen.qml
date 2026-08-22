@@ -116,11 +116,11 @@ Item {
                                 spacing: 6
                                 Row {
                                     width: parent.width
-                                    Text { text: "Midnight Drive"; font.family: Theme.fontFamily; font.pixelSize: 34; font.weight: Font.Bold; color: Theme.textPrimary }
+                                    Text { text: VehicleData.trackTitle; font.family: Theme.fontFamily; font.pixelSize: 34; font.weight: Font.Bold; color: Theme.textPrimary }
                                     Item { width: parent.width - 260 - 26; height: 1 }
                                     Icon { name: "ph-heart"; fill: true; size: 26; color: Theme.purple }
                                 }
-                                Text { text: "Eclipse"; font.family: Theme.fontFamily; font.pixelSize: 18; color: Theme.textSecondary }
+                                Text { text: VehicleData.trackArtist; font.family: Theme.fontFamily; font.pixelSize: 18; color: Theme.textSecondary }
                                 Text { text: "Neon Horizon"; font.family: Theme.fontFamily; font.pixelSize: 15; color: Theme.purple }
                                 Row {
                                     topPadding: 8
@@ -181,7 +181,7 @@ Item {
                                     Rectangle { width: parent.width * 0.32; height: parent.height; radius: 3; color: Theme.purple }
                                     Rectangle { x: parent.width * 0.32 - 6.5; y: -4; width: 13; height: 13; radius: 6.5; color: "#c4b5fd" }
                                 }
-                                Text { text: "18"; font.family: Theme.fontFamily; font.pixelSize: 16; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: Math.round(AppState.mediaVolume * 100); font.family: Theme.fontFamily; font.pixelSize: 16; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
                             }
                         }
                     }
@@ -407,8 +407,8 @@ Item {
                     Column {
                         width: 170
                         anchors.verticalCenter: parent.verticalCenter
-                        Text { text: "Midnight Drive"; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.textPrimary }
-                        Text { text: "Eclipse"; font.family: Theme.fontFamily; font.pixelSize: 12; color: Theme.textMuted }
+                        Text { text: VehicleData.trackTitle; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.textPrimary }
+                        Text { text: VehicleData.trackArtist; font.family: Theme.fontFamily; font.pixelSize: 12; color: Theme.textMuted }
                     }
                     Rectangle { width: 1; height: parent.height - 28; color: Theme.alpha(Theme.textMuted, 0.2); anchors.verticalCenter: parent.verticalCenter }
                     Row {
@@ -427,7 +427,7 @@ Item {
                         spacing: 10
                         anchors.verticalCenter: parent.verticalCenter
                         Icon { name: "ph-speaker-high"; size: 19; color: Theme.textSecondary; anchors.verticalCenter: parent.verticalCenter }
-                        Text { text: "18"; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                        Text { text: Math.round(AppState.mediaVolume * 100); font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
                     }
                     Rectangle { width: 1; height: parent.height - 28; color: Theme.alpha(Theme.textMuted, 0.2); anchors.verticalCenter: parent.verticalCenter }
                     Row {

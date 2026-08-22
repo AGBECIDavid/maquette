@@ -9,13 +9,21 @@ Canvas {
 
     // Halo tint. Alpha of this color is ignored; use `intensity` instead.
     property color glowColor: "#3b82f6"
-    // Opacity at the very centre of the halo (0..1).
+    // Opacité au centre du halo (0..1).
+    //
+    // Le dégradé est peint UNE FOIS à pleine intensité, et `intensity` pilote
+    // l'opacité de l'élément. Repeindre était le choix évident, et le mauvais :
+    // sur l'écran de démarrage l'intensité s'anime pendant 2,6 s, ce qui
+    // redessinait un Canvas de 900 × 420 px à chaque image — environ 150 fois,
+    // au processeur, sur une cible sans accélération matérielle. Animer une
+    // opacité ne coûte rien et donne exactement le même rendu.
     property real intensity: 0.45
     // Fraction of the radius that stays at full intensity before falling off.
     property real core: 0.0
 
+    opacity: Math.max(0, Math.min(1, intensity))
+
     onGlowColorChanged: requestPaint()
-    onIntensityChanged: requestPaint()
     onCoreChanged: requestPaint()
 
     onPaint: {
@@ -32,13 +40,13 @@ Canvas {
         function stop(pos, a) {
             g.addColorStop(pos, Qt.rgba(c.r, c.g, c.b, a))
         }
-        stop(0.0, intensity)
+        stop(0.0, 1.0)
         if (core > 0 && core < 1)
-            stop(core, intensity)
+            stop(core, 1.0)
         // Gaussian-ish falloff: a few stops read much softer than a linear ramp.
         var span = 1.0 - Math.max(0, Math.min(core, 0.95))
-        stop(Math.min(core + span * 0.35, 0.99), intensity * 0.45)
-        stop(Math.min(core + span * 0.65, 0.995), intensity * 0.15)
+        stop(Math.min(core + span * 0.35, 0.99), 0.45)
+        stop(Math.min(core + span * 0.65, 0.995), 0.15)
         stop(1.0, 0.0)
 
         ctx.fillStyle = g

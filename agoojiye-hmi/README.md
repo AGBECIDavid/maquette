@@ -34,9 +34,11 @@ CMAKE_PREFIX_PATH=$HOME/Qt/6.8.3/gcc_64 ./run.sh
 ./test.sh
 ```
 
-Pas besoin d'écran : Qt tourne en mode *offscreen*, l'interface parcourt ses
-38 panneaux, joue la séquence de démarrage, et le script échoue si Qt émet le
-moindre avertissement QML ou si un panneau n'a pas pu s'afficher.
+Pas besoin d'écran : Qt tourne en mode *offscreen*. Le script échoue si un
+avertissement QML apparaît, si un des 38 panneaux ne s'affiche pas, si l'état
+véhicule viole une règle physique sur 30 s de simulation (frein de
+stationnement en roulant, vitesse qui se téléporte, autonomie négative), ou si
+une panne injectée ne remonte pas jusqu'au bandeau d'alerte.
 
 C'est ce qui attrape les vraies régressions : une dépendance circulaire ou une
 propriété inconnue ne casse pas la compilation, mais fait s'effondrer une mise
@@ -66,10 +68,14 @@ tools/render/         chaîne de rendu du modèle GLB vers les images
 
 ## Trois choses à savoir avant de toucher au code
 
-**Aucune valeur métier n'est écrite dans un écran.** Tout vient de
-`VehicleData.qml`. Un écran qui affiche `82 %` lit `VehicleData.batteryLevel` ;
-il ne connaît pas la valeur. Voir [BACKEND.md](BACKEND.md) pour brancher le
-backend — un seul fichier à modifier.
+**Trois couches, une direction : source → état → interface.**
+`VehicleSimulator.qml` produit, `VehicleData.qml` détient, les écrans lisent.
+Aucune valeur métier n'est écrite dans un écran. Brancher le vrai véhicule, c'est
+couper le simulateur et alimenter `VehicleData` — voir [BACKEND.md](BACKEND.md).
+
+**Une donnée absente s'affiche `- -`, jamais une valeur inventée.**
+`VehicleData.valid("speed")` et `reading()` portent cette notion, et un signal
+manquant lève une alerte de lui-même.
 
 **La navigation passe par `AppState.go()`, et par lui seul.** Sept destinations
 dans la barre du bas, décrites dans `navSections`. La séquence de démarrage
@@ -83,6 +89,14 @@ prévenir.
 
 ## Mode démo
 
-`VehicleData.demoMode` fait osciller la vitesse et décroître la batterie pour
-que la démo soit vivante sans backend. **À passer à `false` en production**,
-sinon il écrasera les vraies valeurs.
+`VehicleSimulator.running` pilote la source simulée : un modèle physique
+(accélération bornée, bilan d'énergie, thermique) qui fait vivre la maquette
+sans véhicule. **À passer à `false` en production**, sinon il écrasera les
+valeurs venues du bus.
+
+## Outils de recette
+
+```bash
+HMI_TRACE=30 ./build/agoojiye-hmi       # état véhicule en CSV, 30 s
+HMI_FAULT=tyre ./build/agoojiye-hmi     # injecte une panne (belt/tyre/battery/sensor/fault)
+```

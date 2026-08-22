@@ -122,7 +122,7 @@ Item {
 
             Row {
                 spacing: 16
-                Icon { name: "ph-arrow-bend-up-right"; size: 52; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
+                Icon { name: VehicleData.nextManeuverIcon; size: 52; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
                 Row {
                     spacing: 8
                     anchors.verticalCenter: parent.verticalCenter
@@ -263,7 +263,7 @@ Item {
                     Icon { name: "ph-traffic-cone"; size: 22; color: Theme.textSecondary; anchors.verticalCenter: parent.verticalCenter }
                     Column {
                         Text { text: "Trafic"; font.family: Theme.fontFamily; font.pixelSize: 13; color: Theme.textMuted }
-                        Text { text: "Fluide"; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.green }
+                        Text { text: VehicleData.trafficCondition; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold; color: VehicleData.trafficCondition === "Fluide" ? Theme.green : Theme.yellow }
                     }
                 }
             }

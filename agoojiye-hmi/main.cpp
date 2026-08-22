@@ -7,6 +7,8 @@
 #include <QQmlComponent>
 #include <QVariant>
 #include <QStringList>
+#include <QVariantList>
+#include <cstdio>
 
 int main(int argc, char *argv[])
 {
@@ -27,6 +29,21 @@ int main(int argc, char *argv[])
         &app, []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.load(QUrl(QStringLiteral("qrc:/AgoojiyeHMI/qml/Main.qml")));
+
+    // QA aid: HMI_FAULT=<kind> injects a vehicle condition at startup, so the
+    // alert chain can be exercised from the outside. It sits here rather than
+    // inside one capture mode because a fault is a property of the run, not of
+    // how the run happens to be observed.
+    const QString fault = qEnvironmentVariable("HMI_FAULT");
+    if (!fault.isEmpty() && !engine.rootObjects().isEmpty()) {
+        QQmlComponent simProbe(&engine);
+        simProbe.setData("import QtQml\nimport AgoojiyeHMI\n"
+                         "QtObject { property QtObject sim: VehicleSimulator }", QUrl());
+        QObject *simObj = simProbe.create();
+        QObject *simulator = simObj ? simObj->property("sim").value<QObject *>() : nullptr;
+        if (simulator)
+            QMetaObject::invokeMethod(simulator, "injectFault", Q_ARG(QVariant, fault));
+    }
 
     // Dev-only screenshot sweep: HMI_SCREENSHOT_DIR=<dir> walks every screen
     // and grabs a PNG per screen, then exits. Not used by the shipped app.
@@ -76,6 +93,58 @@ int main(int argc, char *argv[])
                                               Q_ARG(QVariant, parts.at(1).toInt()));
                 }
                 (*index)++;
+            });
+            timer->start();
+        }
+    }
+
+    // QA aid: HMI_TRACE=<seconds> prints one CSV row of vehicle state per
+    // 200 ms, then exits. It exists so the simulation can be checked as data
+    // rather than by watching the screen — a coherence rule like "the parking
+    // brake is never engaged while moving" is a column comparison here, and an
+    // argument otherwise.
+    const QString traceSeconds = qEnvironmentVariable("HMI_TRACE");
+    if (!traceSeconds.isEmpty() && !engine.rootObjects().isEmpty()) {
+        QQmlComponent probe(&engine);
+        probe.setData("import QtQml\nimport AgoojiyeHMI\n"
+                      "QtObject {\n"
+                      "  property QtObject data: VehicleData\n"
+                      "  property QtObject sim: VehicleSimulator\n"
+                      "}",
+                      QUrl());
+        QObject *probeObj = probe.create();
+        QObject *data = probeObj ? probeObj->property("data").value<QObject *>() : nullptr;
+        QObject *simulator = probeObj ? probeObj->property("sim").value<QObject *>() : nullptr;
+        if (data && simulator) {
+            printf("t,phase,speed,power,regen,battery,consumption,range,gear,"
+                   "parkingBrake,seatbeltWarning,tyreWarning,motorTemp,alerts,critical\n");
+            auto *elapsed = new int(0);
+            const int limit = traceSeconds.toInt() * 5;
+            auto *timer = new QTimer(&app);
+            timer->setInterval(200);
+            QObject::connect(timer, &QTimer::timeout, &app, [=, &app]() mutable {
+                const QVariantList alerts = data->property("activeAlerts").toList();
+                printf("%.1f,%s,%.1f,%.1f,%.1f,%d,%.1f,%d,%s,%d,%d,%d,%d,%lld,%d\n",
+                       *elapsed / 5.0,
+                       qPrintable(simulator->property("phase").toString()),
+                       data->property("speed").toDouble(),
+                       data->property("power").toDouble(),
+                       data->property("regenPower").toDouble(),
+                       data->property("batteryLevel").toInt(),
+                       data->property("consumption").toDouble(),
+                       data->property("range").toInt(),
+                       qPrintable(data->property("driveGear").toString()),
+                       data->property("parkingBrake").toBool() ? 1 : 0,
+                       data->property("seatbeltWarning").toBool() ? 1 : 0,
+                       data->property("tyrePressureWarning").toBool() ? 1 : 0,
+                       data->property("motorTemp").toInt(),
+                       static_cast<long long>(alerts.size()),
+                       data->property("hasCriticalAlert").toBool() ? 1 : 0);
+                fflush(stdout);
+                if (++(*elapsed) >= limit) {
+                    timer->stop();
+                    app.quit();
+                }
             });
             timer->start();
         }

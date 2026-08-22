@@ -76,7 +76,64 @@ QT_QPA_PLATFORM=offscreen HMI_BOOT_FRAMES="$BOOT" \
     || fail "la séquence de démarrage n'a pas produit ses 20 images"
 rm -rf "$BOOT"
 
+# ---- 5. cohérence physique de l'état véhicule ----------------------------
+# Un tableau de bord peut être silencieux et raconter n'importe quoi. Ces règles
+# valent pour un véhicule réel, donc elles doivent valoir pour la simulation.
+echo "· cohérence de l'état véhicule"
+TRACE="$(mktemp)"
+QT_QPA_PLATFORM=offscreen HMI_TRACE=30 ./build/agoojiye-hmi 2>/dev/null >"$TRACE" \
+    || fail "le relevé d'état s'est arrêté en erreur"
+
+python3 - "$TRACE" <<'PYCHECK' || fail "l'état véhicule viole une règle physique"
+import csv, sys
+rows = list(csv.DictReader(open(sys.argv[1])))
+if len(rows) < 100:
+    print("relevé trop court :", len(rows)); sys.exit(1)
+
+problems, prev, jump = [], None, 0.0
+phases = set()
+for r in rows:
+    v = float(r["speed"])
+    phases.add(r["phase"])
+    if v > 0.5 and r["parkingBrake"] == "1":
+        problems.append(f"t={r['t']} frein de stationnement serré à {v} km/h")
+    if v > 0.5 and r["gear"] == "P":
+        problems.append(f"t={r['t']} rapport P à {v} km/h")
+    if int(r["range"]) < 0:
+        problems.append(f"t={r['t']} autonomie négative")
+    if float(r["consumption"]) <= 0:
+        problems.append(f"t={r['t']} consommation nulle ou négative")
+    if r["tyreWarning"] == "1":
+        problems.append(f"t={r['t']} alerte pneus alors que les pressions sont nominales")
+    if prev is not None:
+        jump = max(jump, abs(v - prev))
+    prev = v
+
+# 200 ms entre deux relevés ; au-delà de 2 km/h l'écart trahit une téléportation.
+if jump > 2.0:
+    problems.append(f"saut de vitesse de {jump:.1f} km/h en 200 ms")
+if len(phases) < 3:
+    problems.append(f"scénario incomplet, phases vues : {sorted(phases)}")
+
+for p in problems[:5]:
+    print("  ✗", p)
+print(f"  accélération max observée : {jump/0.2/3.6:.2f} m/s²")
+sys.exit(1 if problems else 0)
+PYCHECK
+rm -f "$TRACE"
+
+# ---- 6. chaîne d'alerte --------------------------------------------------
+# Une alerte qu'on ne sait pas déclencher est une alerte qu'on ne sait pas
+# tester. Chaque panne injectée doit remonter jusqu'au bandeau.
+echo "· chaîne d'alerte"
+for kind in tyre battery fault sensor; do
+    OUT="$(QT_QPA_PLATFORM=offscreen HMI_FAULT=$kind HMI_TRACE=2 \
+           ./build/agoojiye-hmi 2>/dev/null | tail -1)"
+    COUNT="$(echo "$OUT" | cut -d, -f14)"
+    [ "${COUNT:-0}" -ge 1 ] || fail "la panne « $kind » n'a levé aucune alerte"
+done
+
 echo
-echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement."
+echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent."
 [ -n "$KEEP_DIR" ] && echo "Captures : $KEEP_DIR"
 exit 0

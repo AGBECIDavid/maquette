@@ -28,20 +28,14 @@ Item {
     // so each label sits on the side of the panel its part is actually on.
     // `tx`/`ty` are the anchor point on the vehicle, as a fraction of the panel.
     readonly property var callouts: [
-        { label: "Trappe de charge",     status: "Fermée",     x: 22,     y: 20,      align: "left",  tx: 0.20, ty: 0.30 },
-        { label: "Accès passagers G",    status: "Libre",      x: 22,     yf: 0.50,   align: "left",  tx: 0.34, ty: 0.56 },
-        { label: "Compartiment batterie", status: "Verrouillé", x: 22,    bottom: 22, align: "left",  tx: 0.46, ty: 0.74 },
-        { label: "Porte conducteur",     status: "Fermée",     right: 22, y: 20,      align: "right", tx: 0.73, ty: 0.34 },
-        { label: "Capot",                status: "Fermé",      right: 22, yf: 0.50,   align: "right", tx: 0.86, ty: 0.58 },
-        { label: "Accès passagers D",    status: "Libre",      right: 22, bottom: 22, align: "right", tx: 0.64, ty: 0.70 }
+        { label: "Trappe de charge",      open: 4, x: 22,     y: 20,      align: "left",  tx: 0.20, ty: 0.30 },
+        { label: "Accès passagers G",     open: 1, x: 22,     yf: 0.50,   align: "left",  tx: 0.34, ty: 0.56 },
+        { label: "Compartiment batterie", open: 5, x: 22,     bottom: 22, align: "left",  tx: 0.46, ty: 0.74 },
+        { label: "Porte conducteur",      open: 0, right: 22, y: 20,      align: "right", tx: 0.73, ty: 0.34 },
+        { label: "Capot",                 open: 3, right: 22, yf: 0.50,   align: "right", tx: 0.86, ty: 0.58 },
+        { label: "Accès passagers D",     open: 2, right: 22, bottom: 22, align: "right", tx: 0.64, ty: 0.70 }
     ]
 
-    readonly property var statCards: [
-        { title: "Kilométrage", icon: "ph-chart-line-up" },
-        { title: "Pression des pneus", icon: "" },
-        { title: "Températures", icon: "" },
-        { title: "Niveau de liquide", icon: "" }
-    ]
 
     Row {
         id: layout
@@ -175,7 +169,7 @@ Item {
                             model: root.callouts
                             delegate: Column {
                                 property var m: modelData
-                                x: m.x !== undefined ? m.x : (m.right !== undefined ? parent.width - m.right - width : parent.width * m.xf)
+                                x: m.x !== undefined ? m.x : parent.width - m.right - width
                                 y: m.y !== undefined ? m.y : (m.bottom !== undefined ? parent.height - m.bottom - height : parent.height * m.yf)
                                 spacing: 2
                                 Text {
@@ -187,8 +181,17 @@ Item {
                                     spacing: 5
                                     anchors.right: m.align === "right" ? parent.right : undefined
                                     layoutDirection: m.align === "right" ? Qt.RightToLeft : Qt.LeftToRight
-                                    Text { text: m.status; font.family: Theme.fontFamily; font.pixelSize: 12; color: Theme.textMuted }
-                                    Text { text: "●"; font.family: Theme.fontFamily; font.pixelSize: 10; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
+                                    Text {
+                                        // `open` désigne l'ouvrant dans VehicleData : l'état montré
+                                        // ici et celui du panneau « Ouvrants » ne peuvent plus diverger.
+                                        text: VehicleData.openings[m.open].open ? "Ouvert" : "Fermé"
+                                        font.family: Theme.fontFamily; font.pixelSize: 12; color: Theme.textMuted
+                                    }
+                                    Text {
+                                        text: "●"; font.family: Theme.fontFamily; font.pixelSize: 10
+                                        color: VehicleData.openings[m.open].open ? Theme.yellow : Theme.green
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
                                 }
                             }
                         }
@@ -230,14 +233,14 @@ Item {
                                     spacing: 8
                                     Column {
                                         width: (parent.width - 34) / 2
-                                        Text { anchors.right: parent.right; text: "2.5 bar"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
-                                        Text { anchors.right: parent.right; topPadding: 10; text: "2.6 bar"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
+                                        Text { anchors.right: parent.right; text: VehicleData.tyreFrontLeft.toFixed(1) + " bar"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
+                                        Text { anchors.right: parent.right; topPadding: 10; text: VehicleData.tyreRearLeft.toFixed(1) + " bar"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
                                     }
                                     Rectangle { width: 34; height: 62; radius: 16; color: "#101a2c"; border.width: 1; border.color: Theme.alpha(Theme.panelBorder, 0.25) }
                                     Column {
                                         width: (parent.width - 34) / 2
-                                        Text { text: "2.5 bar"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
-                                        Text { topPadding: 10; text: "2.6 bar"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
+                                        Text { text: VehicleData.tyreFrontRight.toFixed(1) + " bar"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
+                                        Text { topPadding: 10; text: VehicleData.tyreRearRight.toFixed(1) + " bar"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
                                     }
                                 }
                             }
@@ -252,16 +255,16 @@ Item {
                                     width: parent.width; spacing: 10
                                     Icon { name: "ph-thermometer-simple"; size: 18; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
                                     Text { text: "Moteur"; width: parent.width - 90; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted; anchors.verticalCenter: parent.verticalCenter }
-                                    Text { text: "90 °C"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                                    Text { text: VehicleData.motorTemp + " °C"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
                                 }
-                                Rectangle { width: parent.width; height: 4; radius: 2; color: "#0d1a2e"; Rectangle { width: parent.width * 0.62; height: parent.height; radius: 2; color: Theme.blue } }
+                                Rectangle { width: parent.width; height: 4; radius: 2; color: "#0d1a2e"; Rectangle { width: parent.width * Math.max(0, Math.min(1, VehicleData.motorTemp / 120)); height: parent.height; radius: 2; color: VehicleData.motorTemp > 105 ? Theme.red : Theme.blue } }
                                 Row {
                                     width: parent.width; spacing: 10
                                     Icon { name: "ph-car-battery"; size: 18; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
                                     Text { text: "Batterie"; width: parent.width - 90; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted; anchors.verticalCenter: parent.verticalCenter }
-                                    Text { text: "28 °C"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                                    Text { text: VehicleData.batteryTemp + " °C"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
                                 }
-                                Rectangle { width: parent.width; height: 4; radius: 2; color: "#0d1a2e"; Rectangle { width: parent.width * 0.35; height: parent.height; radius: 2; color: Theme.blue } }
+                                Rectangle { width: parent.width; height: 4; radius: 2; color: "#0d1a2e"; Rectangle { width: parent.width * Math.max(0, Math.min(1, VehicleData.batteryTemp / 60)); height: parent.height; radius: 2; color: VehicleData.batteryTemp > 45 ? Theme.red : Theme.blue } }
                             }
                         }
                         PanelCard {
@@ -311,7 +314,7 @@ Item {
                                 Text { text: "Kilométrage"; font.family: Theme.fontFamily; font.pixelSize: 13; color: Theme.textMuted }
                                 Row {
                                     spacing: 6
-                                    Text { text: "12 458"; font.family: Theme.fontFamily; font.pixelSize: 22; font.weight: Font.Bold; color: Theme.textPrimary }
+                                    Text { text: root.formatKm(VehicleData.odometer); font.family: Theme.fontFamily; font.pixelSize: 22; font.weight: Font.Bold; color: Theme.textPrimary }
                                     Text { text: "km"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted; anchors.verticalCenter: parent.verticalCenter }
                                 }
                             }
@@ -327,7 +330,7 @@ Item {
                             Row {
                                 spacing: 8
                                 Icon { name: "ph-check-circle"; size: 20; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
-                                Text { text: "Aucun défaut"; font.family: Theme.fontFamily; font.pixelSize: 16; font.weight: Font.DemiBold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: VehicleData.faultPresent ? "Défaut détecté" : "Aucun défaut"; font.family: Theme.fontFamily; font.pixelSize: 16; font.weight: Font.DemiBold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
                             }
                         }
                     }
@@ -338,7 +341,7 @@ Item {
                             Column {
                                 width: parent.width - 24
                                 Text { text: "Prochaine révision"; font.family: Theme.fontFamily; font.pixelSize: 13; color: Theme.textMuted }
-                                Text { text: "Dans 12 000 km"; font.family: Theme.fontFamily; font.pixelSize: 18; font.weight: Font.DemiBold; color: Theme.textPrimary }
+                                Text { text: "Dans " + root.formatKm(VehicleData.serviceDueIn) + " km"; font.family: Theme.fontFamily; font.pixelSize: 18; font.weight: Font.DemiBold; color: Theme.textPrimary }
                             }
                             Icon { name: "ph-calendar-blank"; size: 24; color: Theme.blue }
                         }
@@ -350,7 +353,7 @@ Item {
                             Column {
                                 width: parent.width - 24
                                 Text { text: "VIN"; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.blue }
-                                Text { text: "VR3D1A23XKY123456"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
+                                Text { text: VehicleData.vin; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary }
                             }
                             Icon { name: "ph-copy"; size: 22; color: Theme.textMuted }
                         }
@@ -476,7 +479,17 @@ Item {
                     columns: 4
                     columnSpacing: 14
                     StatTile { width: (energyPane.width - 42) / 4; iconName: "ph-battery-high"; label: "BATTERIE"; value: String(VehicleData.batteryLevel); unit: "%"; valueColor: Theme.green }
-                    StatTile { width: (energyPane.width - 42) / 4; iconName: "ph-road-horizon"; label: "AUTONOMIE"; value: String(VehicleData.range); unit: "km" }
+                    StatTile {
+                        width: (energyPane.width - 42) / 4
+                        iconName: "ph-road-horizon"
+                        label: "AUTONOMIE"
+                        value: String(VehicleData.range)
+                        unit: "km"
+                        // Vert tant que la consommation constatée tient la
+                        // promesse du catalogue, ambre quand elle la dépasse.
+                        valueColor: VehicleData.range >= VehicleData.rangeFullCharge * VehicleData.batteryFraction * 0.9
+                                    ? Theme.green : Theme.yellow
+                    }
                     StatTile { width: (energyPane.width - 42) / 4; iconName: "ph-lightning"; label: "PUISSANCE"; value: VehicleData.power.toFixed(1); unit: "kW"; valueColor: Theme.blue }
                     StatTile { width: (energyPane.width - 42) / 4; iconName: "ph-leaf"; label: "RÉCUPÉRATION"; value: VehicleData.regenPower.toFixed(1); unit: "kW"; valueColor: Theme.green }
                 }

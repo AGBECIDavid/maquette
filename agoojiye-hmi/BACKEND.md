@@ -1,23 +1,37 @@
 # Brancher le backend
 
-L'interface ne contient **aucune valeur métier en dur**. Tout ce qui s'affiche
-vient de `qml/VehicleData.qml`, un singleton QML qui sert de point de
-branchement unique.
+L'interface ne contient **aucune valeur métier en dur**. Trois couches, et une
+seule direction :
 
 ```
-   backend (CAN / MQTT / socket / C++)
-              │
-              ▼
-      qml/VehicleData.qml      ← le seul fichier à modifier
-              │
-   ┌──────────┼──────────┬─────────────┐
-   ▼          ▼          ▼             ▼
- Accueil  Tableau de  Menu      les 9 autres écrans
-            bord
+   source                        état                     interface
+   ──────                        ────                     ─────────
+
+   VehicleSimulator.qml  ─┐
+   CAN / ECU / capteurs  ─┼──►   VehicleData.qml   ──►    12 écrans
+   GPS / API / socket    ─┘      (ne produit rien,        38 panneaux
+                                  détient tout)           alertes, témoins
 ```
 
-`qml/AppState.qml` est séparé : il ne porte que l'état d'interface (écran
-courant, bascules utilisateur). Le backend n'a pas à y toucher.
+**`VehicleData.qml` ne calcule ni ne simule rien** : il détient l'état. Une
+source écrit dedans, l'interface le lit. Aujourd'hui la source est
+`VehicleSimulator.qml` ; demain c'est le lien véhicule, et pas une ligne
+d'écran ne change.
+
+`qml/AppState.qml` est à part : il ne porte que l'état d'interface (écran
+courant, section ouverte, préférences d'usage). Le backend n'a pas à y toucher.
+
+## Remplacer le simulateur par le véhicule
+
+Une seule ligne suffit à rendre la main :
+
+```qml
+// qml/VehicleSimulator.qml
+property bool running: false
+```
+
+Puis alimentez `VehicleData` depuis votre source, de l'une des trois façons
+décrites plus bas. Aucun écran, aucun composant, aucune alerte ne bouge.
 
 ## Les trois façons de brancher
 
@@ -55,43 +69,133 @@ VehicleData.batteryLevel = 74
 property real speed: telemetry.lastFrame.speed
 ```
 
+## Ce que simule VehicleSimulator
+
+Pas des chiffres au hasard : un modèle. Une valeur qui saute trahit la maquette
+immédiatement, et un tableau de bord se juge d'abord à la crédibilité de ses
+variations.
+
+| Grandeur | Comment elle est produite |
+|---|---|
+| Vitesse | accélération bornée à 1,1 m/s² au départ, 1,8 m/s² au freinage — jamais de téléportation |
+| Puissance | roulement + aérodynamique + inertie, divisée par le rendement de chaîne |
+| Récupération | au lever de pied et au freinage, à 55 % de rendement |
+| Consommation | moyenne glissante réelle sur ~5 km, pas une constante |
+| Autonomie | énergie restante ÷ consommation constatée — rouler vite la fait baisser plus vite |
+| Batterie | bilan d'énergie ; sous 8 % la navette passe en charge au lieu de reboucler |
+| Températures | montée sous charge, retombée au repos, avec inertie |
+| Rapport / frein | `P` + frein serré à l'arrêt, `D` + frein desserré en roulant |
+
+Le scénario joué est celui d'une navette en service : départ d'arrêt, vitesse de
+croisière, ralentissement, arrêt, redépart.
+
+## Qualité des signaux
+
+Un bus véhicule perd des trames. Sans cette notion, l'interface affiche la
+dernière valeur connue comme si elle était fraîche — le mensonge le plus
+dangereux qu'un tableau de bord puisse faire.
+
+```qml
+VehicleData.setQuality("speed", "MISSING")   // depuis la source
+VehicleData.valid("speed")                   // depuis un écran
+VehicleData.reading("speed", valeur, 1)      // "50.0" ou "- -"
+```
+
+Trois états : `OK` (fraîche), `STALE` (dernière connue), `MISSING` (rien à
+afficher). Un signal `MISSING` fait afficher `- -` et lève automatiquement une
+alerte : le conducteur sait que la valeur manque, il ne la devine pas.
+
+## Alertes
+
+`VehicleData.activeAlerts` est **dérivée de l'état**, jamais posée à la main :
+une alerte qui survit à sa cause est pire que pas d'alerte du tout.
+
+| Niveau | Comportement |
+|---|---|
+| `CRITICAL` | rouge, pulsation lente, **non masquable** tant que la cause dure |
+| `WARNING` | ambre, fixe, masquable |
+| `INFO` | bleu, discret, masquable |
+
+Le bandeau (`components/AlertBanner.qml`) prend sa place dans la colonne au lieu
+de se poser par-dessus : recouvrir une commande à l'instant où le conducteur la
+cherche est pire que décaler l'écran de quelques dizaines de pixels.
+
+Règles couvertes : frein de stationnement en roulant, ceinture, défaut système,
+batterie faible puis critique, pression des pneus, dépassement de la limite,
+ouvrant non fermé, signal indisponible.
+
+## Outils de recette
+
+```bash
+HMI_TRACE=30 ./build/agoojiye-hmi          # 30 s d'état véhicule en CSV
+HMI_FAULT=tyre ./build/agoojiye-hmi        # injecte une panne au démarrage
+```
+
+Pannes disponibles : `belt`, `tyre`, `battery`, `sensor`, `fault`.
+
+« Frein serré en roulant » ne figure pas dans la liste : le modèle l'interdit
+désormais par construction, et c'est précisément le correctif.
+
+`./test.sh` s'appuie sur les deux : il vérifie qu'aucune règle physique n'est
+violée sur 30 s, et que chaque panne injectée remonte bien jusqu'au bandeau.
+
 ## Avant la mise en production
 
-Passer `demoMode` à `false` dans `VehicleData.qml`. Il pilote un timer qui fait
-osciller la vitesse et décroître la batterie, uniquement pour que la démo soit
-vivante sans backend. Une fois branché, il doit être coupé, sinon il écrasera
-les vraies valeurs.
+Passer `VehicleSimulator.running` à `false`. Tant qu'il tourne, il écrase les
+valeurs venues du véhicule.
 
 ## Ce que contient VehicleData
 
-| Groupe | Propriétés |
+| Groupe | Propriétés à alimenter |
 |---|---|
-| Identité | `vehicleName`, `vehicleModel`, `vin`, `softwareVersion`, `uiVersion`, `storageUsed` |
-| Propulsion | `speed`, `batteryLevel`, `consumption`, `rangeFullCharge`, `charging`, `driveGear`, `systemReady` |
+| Identité | `vehicleName`, `vehicleModel`, `vin`, `softwareVersion`, `uiVersion`, `storageUsed`, `commissioningDate` |
+| Propulsion | `speed`, `batteryLevel`, `consumption`, `batteryCapacity`, `rangeFullCharge`, `charging`, `chargeStatus`, `chargeCycles`, `power`, `regenPower`, `driveGear`, `systemReady` |
+| Ouvrants | `openings` |
+| Pneus | `tyreFrontLeft`, `tyreFrontRight`, `tyreRearLeft`, `tyreRearRight`, `tyreRecommended` |
+| Températures | `motorTemp`, `batteryTemp`, `cabinTemp`, `outsideTemp` |
+| Usure | `brakePadFront`, `brakePadRear`, `brakeFluid`, `washerFluid`, `lastInspection`, `serviceHistory` |
 | Compteurs | `odometer`, `serviceDueIn`, `serviceDueDate`, `faultPresent` |
-| Environnement | `outsideTemp`, `speedLimit`, `cruiseSpeed`, `headlightsAuto` |
-| Témoins | `seatbeltWarning`, `parkingBrake`, `tyrePressureWarning`, `driveMode` |
+| Réglementaire | `speedLimit`, `cruiseSpeed`, `headlightsAuto` |
+| Témoins | `seatbeltFastened`, `parkingBrake`, `driveMode` |
 | Connectivité | `network`, `wifiConnected`, `bluetoothConnected` |
-| Navigation | `navigationActive`, `nextManeuverDistance`, `nextManeuverStreet`, `followingStreet`, `routeProgress`, `arrivalTime`, `distanceRemaining`, `timeRemaining`, `trafficCondition` |
-| Média | `mediaPlaying`, `trackTitle`, `trackArtist`, `trackAlbum`, `volume` |
+| Navigation | `navigationActive`, `nextManeuverDistance`, `nextManeuverStreet`, `nextManeuverIcon`, `followingStreet`, `routeProgress`, `arrivalTime`, `distanceRemaining`, `timeRemaining`, `trafficCondition` |
+| Média | `mediaPlaying`, `trackTitle`, `trackArtist`, `trackAlbum` |
 | Téléphone | `contactCount`, `recentCallCount`, `missedCallCount` |
 | Démarrage | `startupChecks` |
+| Qualité | `signalState` (via `setQuality()`) |
 
-Deux valeurs sont dérivées et n'ont pas à être alimentées :
-`batteryFraction` (= `batteryLevel / 100`) et `range`
-(= `batteryFraction × rangeFullCharge`).
+**Ne pas alimenter les valeurs dérivées** — elles se calculent seules, et les
+écrire à la main est précisément ce qui produisait des écrans qui se
+contredisaient :
+
+| Dérivée | Règle |
+|---|---|
+| `batteryFraction` | `batteryLevel / 100` |
+| `range` | énergie restante ÷ consommation constatée |
+| `moving` | `speed > 0,5` |
+| `seatbeltWarning` | en roulant **et** ceinture non bouclée |
+| `tyrePressureWarning` | écart > 0,3 bar à la consigne sur une roue |
+| `activeAlerts`, `topAlert`, `hasCriticalAlert` | dérivées de l'état complet |
+
+Le volume média appartient à l'interface, pas au véhicule : il vit dans
+`AppState.mediaVolume`.
 
 ## Points encore en dur
 
 Ces listes restent dans leurs écrans, faute de modèle backend défini. À
 remonter dans `VehicleData` quand leur format sera arrêté :
 
-- la playlist et la file d'attente (`MediaScreen`, `MediaNowScreen`)
-- le journal d'appels (`PhoneScreen`)
-- l'historique d'entretien et l'état des composants (`EntretienScreen`)
-- les étapes d'itinéraire (`NavigationScreen`)
+- la playlist, la file d'attente et les stations radio (`MediaScreen`,
+  `MediaNowScreen`)
+- le journal d'appels et le contact affiché (`PhoneScreen`)
+- les étapes d'itinéraire et les libellés de la carte (`NavigationScreen`)
+- les appareils Bluetooth appairés (`MediaScreen`)
 - les noms de rue, hérités des maquettes d'origine (parisiens) — à remplacer
   par le contexte de déploiement réel
+
+L'historique d'entretien, l'usure des plaquettes et l'état des composants sont
+remontés dans `VehicleData` depuis la reprise : ils figuraient en dur dans deux
+écrans à la fois, avec des valeurs qui avaient déjà divergé.
 
 ## Navigation
 

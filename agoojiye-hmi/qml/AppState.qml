@@ -78,7 +78,6 @@ QtObject {
     property bool parkSensors: true
     property bool rearCamera: true
     property bool autoPark: false
-    property bool blindSpotLight: true
     property bool driverAlert: true
     property int driverAlertLevel: 1
 
@@ -123,7 +122,6 @@ QtObject {
     function skipBoot() { booting = false; bootPlaying = false }
     function togglePlay() { VehicleData.mediaPlaying = !VehicleData.mediaPlaying }
     function toggleSpatial() { spatial = !spatial }
-    function toggleAutoTime() { autoTime = !autoTime }
     function toggleAdas(key) {
         var a = adas
         a[key] = !a[key]

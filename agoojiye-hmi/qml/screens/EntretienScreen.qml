@@ -4,17 +4,18 @@ import AgoojiyeHMI
 Item {
     id: root
 
+    // 12458 -> "12 458"
+    function formatKm(v) {
+        return String(v).replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+    }
+
     readonly property var okRows: [
         { label: "Batterie", icon: "ph-car-battery" },
         { label: "Freins", icon: "ph-record" },
         { label: "Pneus", icon: "ph-tire" },
         { label: "Liquides", icon: "ph-drop" }
     ]
-    readonly property var histRows: [
-        { date: "15/03/2026", label: "Contrôle général" },
-        { date: "12/01/2026", label: "Pneus" },
-        { date: "20/09/2025", label: "Révision" }
-    ]
+    readonly property var histRows: VehicleData.serviceHistory
 
     Column {
         id: layout
@@ -69,7 +70,7 @@ Item {
                                 }
                             }
                         }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Dernière vérification : Aujourd'hui 08:42"; font.family: Theme.fontFamily; font.pixelSize: 12; color: Theme.textMuted }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Dernière vérification : " + VehicleData.lastInspection; font.family: Theme.fontFamily; font.pixelSize: 12; color: Theme.textMuted }
                     }
                 }
             }
@@ -136,7 +137,7 @@ Item {
                                     anchors.centerIn: parent
                                     spacing: 2
                                     Text { anchors.horizontalCenter: parent.horizontalCenter; text: "DANS"; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.textMuted }
-                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: "12 450"; font.family: Theme.fontFamily; font.pixelSize: 44; font.weight: Font.Bold; color: Theme.textPrimary }
+                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: root.formatKm(VehicleData.serviceDueIn); font.family: Theme.fontFamily; font.pixelSize: 44; font.weight: Font.Bold; color: Theme.textPrimary }
                                     Text { anchors.horizontalCenter: parent.horizontalCenter; text: "km"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted }
                                     Item { width: 1; height: 7 }
                                     Rectangle { anchors.horizontalCenter: parent.horizontalCenter; width: 110; height: 1; color: Theme.alpha(Theme.textMuted, 0.3) }
@@ -144,15 +145,15 @@ Item {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         topPadding: 7
                                         spacing: 5
-                                        Text { text: "1 850"; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.Bold; color: Theme.green }
-                                        Text { text: "km restants"; font.family: Theme.fontFamily; font.pixelSize: 15; color: Theme.textDim }
+                                        Text { text: root.formatKm(VehicleData.odometer); font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.Bold; color: Theme.green }
+                                        Text { text: "km au compteur"; font.family: Theme.fontFamily; font.pixelSize: 15; color: Theme.textDim }
                                     }
                                     Row {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         topPadding: 6
                                         spacing: 8
                                         Icon { name: "ph-calendar-blank"; size: 16; color: Theme.textMuted; anchors.verticalCenter: parent.verticalCenter }
-                                        Text { text: "15 SEPT. 2026"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                                        Text { text: VehicleData.serviceDueDate; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
                                     }
                                     Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Entretien prévu"; font.family: Theme.fontFamily; font.pixelSize: 12; color: Theme.textMuted }
                                 }
@@ -251,13 +252,13 @@ Item {
                                 width: parent.width; spacing: 10
                                 Text { text: "Avant"; width: 52; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted }
                                 Rectangle { width: parent.width - 52 - 10 - 40; height: 5; radius: 3; color: "#0d1a2e"; anchors.verticalCenter: parent.verticalCenter; Rectangle { width: parent.width * 0.92; height: parent.height; radius: 3; color: Theme.green } }
-                                Text { text: "92 %"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textPrimary }
+                                Text { text: VehicleData.brakePadFront + " %"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textPrimary }
                             }
                             Row {
                                 width: parent.width; spacing: 10
                                 Text { text: "Arrière"; width: 52; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted }
                                 Rectangle { width: parent.width - 52 - 10 - 40; height: 5; radius: 3; color: "#0d1a2e"; anchors.verticalCenter: parent.verticalCenter; Rectangle { width: parent.width * 0.88; height: parent.height; radius: 3; color: Theme.green } }
-                                Text { text: "88 %"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textPrimary }
+                                Text { text: VehicleData.brakePadRear + " %"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textPrimary }
                             }
                         }
                     }

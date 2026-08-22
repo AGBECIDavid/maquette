@@ -55,7 +55,7 @@ Item {
             spacing: 6
             anchors.verticalCenter: parent.verticalCenter
             visible: AppState.screen !== "dash"
-            Text { text: Math.round(VehicleData.speed); font.family: Theme.fontFamily; font.pixelSize: 21; font.weight: Font.Bold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+            Text { text: VehicleData.reading("speed", Math.round(VehicleData.speed)); font.family: Theme.fontFamily; font.pixelSize: 21; font.weight: Font.Bold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
             Text { text: "km/h"; font.family: Theme.fontFamily; font.pixelSize: 13; color: Theme.textMuted; anchors.verticalCenter: parent.verticalCenter }
         }
     }
@@ -138,7 +138,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
             }
             Text {
-                text: VehicleData.batteryLevel + "%"
+                text: VehicleData.reading("battery", VehicleData.batteryLevel) + (VehicleData.valid("battery") ? "%" : "")
                 font.family: Theme.fontFamily; font.pixelSize: 17; font.weight: Font.DemiBold
                 color: VehicleData.batteryLevel <= 15 ? Theme.red : Theme.textPrimary
                 anchors.verticalCenter: parent.verticalCenter
