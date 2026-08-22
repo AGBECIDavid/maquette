@@ -34,10 +34,27 @@ QtObject {
     // véhicule alimente `VehicleData` pour de bon.
     property bool running: true
 
-    // Pas de simulation. 100 ms suffit pour que l'œil lise un mouvement
-    // continu, sans réveiller le processeur inutilement sur cible embarquée.
+    // Cadence visée. 100 ms suffit pour que l'œil lise un mouvement continu,
+    // sans réveiller le processeur inutilement sur cible embarquée.
     readonly property int stepMs: 100
-    readonly property real dt: stepMs / 1000.0
+
+    // Le pas d'intégration est le temps *réellement* écoulé, pas la cadence
+    // visée. Un minuteur Qt n'est pas ponctuel : sous charge, en rendu logiciel
+    // ou après un ramasse-miettes, il arrive en retard. Supposer 100 ms fixes
+    // ferait avancer le modèle moins vite que le monde — le véhicule simulé
+    // dériverait du réel, d'autant plus que la cible est modeste.
+    property real lastTickMs: 0
+
+    // Plafond du pas : après une longue interruption on ne rattrape pas d'un
+    // bond, ce qui téléporterait la navette. On repart de la cadence normale.
+    readonly property real maxStepSeconds: 0.35
+
+    // ---- déterminisme pour la recette -------------------------------------
+    // Les durées de phase sont tirées au hasard, ce qui rend la démo vivante
+    // mais un test instable : selon le tirage, 30 s de relevé peuvent ne jamais
+    // contenir de freinage. En mode déterministe le cycle est fixe et court,
+    // donc une mesure voit toujours les trois phases.
+    property bool deterministic: false
 
     // ---- paramètres physiques de la navette ------------------------------
     readonly property real maxAccel: 1.1        // m/s²  — départ en charge
@@ -109,8 +126,8 @@ QtObject {
         if (phase === "arret") {
             phase = "roulage"
             // Une navette urbaine ne roule pas toujours à la même allure.
-            targetSpeed = 28 + Math.random() * 22        // 28 à 50 km/h
-            phaseTimer = 14 + Math.random() * 16         // 14 à 30 s de roulage
+            targetSpeed = deterministic ? 40 : 28 + Math.random() * 22
+            phaseTimer = deterministic ? 12 : 14 + Math.random() * 16
         } else if (phase === "roulage") {
             phase = "ralentissement"
             targetSpeed = 0
@@ -118,7 +135,7 @@ QtObject {
         } else {
             phase = "arret"
             targetSpeed = 0
-            phaseTimer = 4 + Math.random() * 5           // 4 à 9 s à quai
+            phaseTimer = deterministic ? 3 : 4 + Math.random() * 5
         }
     }
 
@@ -128,17 +145,26 @@ QtObject {
         repeat: true
 
         onTriggered: {
+            // Temps réellement écoulé depuis le tick précédent, borné.
+            var now = Date.now()
+            var dt = sim.lastTickMs > 0
+                ? Math.min(sim.maxStepSeconds, (now - sim.lastTickMs) / 1000.0)
+                : sim.stepMs / 1000.0
+            sim.lastTickMs = now
+            if (dt <= 0)
+                return
+
             var v = VehicleData.speed / 3.6                   // m/s
             var target = sim.targetSpeed / 3.6
 
             // ---- 1. vitesse : approche bornée de la consigne --------------
             var accel = 0
             if (target > v + 0.05)
-                accel = Math.min(sim.maxAccel, (target - v) / sim.dt)
+                accel = Math.min(sim.maxAccel, (target - v) / dt)
             else if (target < v - 0.05)
-                accel = -Math.min(sim.maxBrake, (v - target) / sim.dt)
+                accel = -Math.min(sim.maxBrake, (v - target) / dt)
 
-            v = Math.max(0, v + accel * sim.dt)
+            v = Math.max(0, v + accel * dt)
             VehicleData.speed = Math.round(v * 3.6 * 10) / 10
 
             // ---- 2. puissance : traction, roulement, aéro, auxiliaires ----
@@ -160,8 +186,8 @@ QtObject {
             VehicleData.power = Math.round(draw * 10) / 10
 
             // ---- 3. énergie et autonomie ---------------------------------
-            var dEnergy = draw * sim.dt / 3600.0               // kWh
-            var dDist = v * sim.dt / 1000.0                    // km
+            var dEnergy = draw * dt / 3600.0               // kWh
+            var dDist = v * dt / 1000.0                    // km
 
             sim.windowEnergy = Math.max(0, sim.windowEnergy + dEnergy)
             sim.windowDistance += dDist
@@ -191,13 +217,13 @@ QtObject {
                 // repasser magiquement à 82 %.
                 VehicleData.charging = true
                 VehicleData.chargeStatus = "En charge — 7,4 kW"
-                pct = sim._battPct + 7.4 * sim.dt / 3600.0
+                pct = sim._battPct + 7.4 * dt / 3600.0
                              / VehicleData.batteryCapacity * 100 * 60
             } else if (VehicleData.charging && pct >= 80) {
                 VehicleData.charging = false
                 VehicleData.chargeStatus = "Non branché"
             } else if (VehicleData.charging) {
-                pct = sim._battPct + 7.4 * sim.dt / 3600.0
+                pct = sim._battPct + 7.4 * dt / 3600.0
                              / VehicleData.batteryCapacity * 100 * 60
             }
             sim._battPct = Math.max(0, Math.min(100, pct))
@@ -216,11 +242,11 @@ QtObject {
             // Le moteur suit la charge avec de l'inertie ; la batterie chauffe
             // plus lentement et se refroidit de même.
             var motorTarget = 35 + Math.min(55, Math.abs(draw) * 3.2)
-            sim._motorTemp += (motorTarget - sim._motorTemp) * 0.004
+            sim._motorTemp += (motorTarget - sim._motorTemp) * Math.min(1, 0.04 * dt)
             VehicleData.motorTemp = Math.round(sim._motorTemp)
 
             var battTarget = VehicleData.outsideTemp + 4 + Math.min(18, Math.abs(draw) * 0.9)
-            sim._battTemp += (battTarget - sim._battTemp) * 0.002
+            sim._battTemp += (battTarget - sim._battTemp) * Math.min(1, 0.02 * dt)
             VehicleData.batteryTemp = Math.round(sim._battTemp)
 
             // ---- 6. états cohérents ---------------------------------------
@@ -241,7 +267,7 @@ QtObject {
                 VehicleData.cruiseSpeed = Math.round(sim.targetSpeed)
 
             // ---- 7. avancement du scénario --------------------------------
-            sim.phaseTimer -= sim.dt
+            sim.phaseTimer -= dt
             if (sim.phase === "ralentissement" && VehicleData.speed < 0.5)
                 sim.nextPhase()
             else if (sim.phaseTimer <= 0)

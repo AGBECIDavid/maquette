@@ -106,18 +106,25 @@ for r in rows:
     if r["tyreWarning"] == "1":
         problems.append(f"t={r['t']} alerte pneus alors que les pressions sont nominales")
     if prev is not None:
-        jump = max(jump, abs(v - prev))
-    prev = v
+        dt = float(r["wall"]) - prev[1]
+        # Deux relevés trop rapprochés : l'arrondi de la vitesse à 0,1 km/h
+        # dominerait la division et fabriquerait une accélération imaginaire.
+        if dt >= 0.05:
+            jump = max(jump, abs(v - prev[0]) / 3.6 / dt)
+    prev = (v, float(r["wall"]))
 
-# 200 ms entre deux relevés ; au-delà de 2 km/h l'écart trahit une téléportation.
-if jump > 2.0:
-    problems.append(f"saut de vitesse de {jump:.1f} km/h en 200 ms")
+# Accélération mesurée sur le temps réellement écoulé, comparée à la borne du
+# modèle (1,8 m/s² au freinage). La marge absorbe l'arrondi de la vitesse à
+# 0,1 km/h, pas une téléportation : à 2,5 m/s² une navette n'accélère plus,
+# elle saute.
+if jump > 2.5:
+    problems.append(f"accélération de {jump:.2f} m/s², au-delà du modèle")
 if len(phases) < 3:
     problems.append(f"scénario incomplet, phases vues : {sorted(phases)}")
 
 for p in problems[:5]:
     print("  ✗", p)
-print(f"  accélération max observée : {jump/0.2/3.6:.2f} m/s²")
+print(f"  accélération max observée : {jump:.2f} m/s² (borne du modèle : 1,80)")
 sys.exit(1 if problems else 0)
 PYCHECK
 rm -f "$TRACE"
@@ -129,7 +136,7 @@ echo "· chaîne d'alerte"
 for kind in tyre battery fault sensor; do
     OUT="$(QT_QPA_PLATFORM=offscreen HMI_FAULT=$kind HMI_TRACE=2 \
            ./build/agoojiye-hmi 2>/dev/null | tail -1)"
-    COUNT="$(echo "$OUT" | cut -d, -f14)"
+    COUNT="$(echo "$OUT" | cut -d, -f15)"
     [ "${COUNT:-0}" -ge 1 ] || fail "la panne « $kind » n'a levé aucune alerte"
 done
 

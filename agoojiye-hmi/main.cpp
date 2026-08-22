@@ -9,6 +9,7 @@
 #include <QStringList>
 #include <QVariantList>
 #include <cstdio>
+#include <QElapsedTimer>
 
 int main(int argc, char *argv[])
 {
@@ -116,16 +117,29 @@ int main(int argc, char *argv[])
         QObject *data = probeObj ? probeObj->property("data").value<QObject *>() : nullptr;
         QObject *simulator = probeObj ? probeObj->property("sim").value<QObject *>() : nullptr;
         if (data && simulator) {
-            printf("t,phase,speed,power,regen,battery,consumption,range,gear,"
+            // A trace is a measurement, and a measurement must be repeatable:
+            // the random phase durations that keep the demo lively also make a
+            // fixed-length trace hit different parts of the cycle each run.
+            simulator->setProperty("deterministic", true);
+            QMetaObject::invokeMethod(simulator, "nextPhase");
+
+            // `wall` porte le temps réellement écoulé. Sans lui, une accélération
+            // se déduit de l'intervalle *visé* entre deux relevés — or ce relevé
+            // peut lui aussi arriver en retard, et le contrôle accuserait la
+            // physique d'un défaut qui n'appartient qu'à l'échantillonnage.
+            printf("t,wall,phase,speed,power,regen,battery,consumption,range,gear,"
                    "parkingBrake,seatbeltWarning,tyreWarning,motorTemp,alerts,critical\n");
+            auto *started = new QElapsedTimer();
+            started->start();
             auto *elapsed = new int(0);
             const int limit = traceSeconds.toInt() * 5;
             auto *timer = new QTimer(&app);
             timer->setInterval(200);
             QObject::connect(timer, &QTimer::timeout, &app, [=, &app]() mutable {
                 const QVariantList alerts = data->property("activeAlerts").toList();
-                printf("%.1f,%s,%.1f,%.1f,%.1f,%d,%.1f,%d,%s,%d,%d,%d,%d,%lld,%d\n",
+                printf("%.1f,%.3f,%s,%.1f,%.1f,%.1f,%d,%.1f,%d,%s,%d,%d,%d,%d,%lld,%d\n",
                        *elapsed / 5.0,
+                       started->elapsed() / 1000.0,
                        qPrintable(simulator->property("phase").toString()),
                        data->property("speed").toDouble(),
                        data->property("power").toDouble(),

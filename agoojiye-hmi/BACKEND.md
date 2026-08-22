@@ -89,6 +89,18 @@ variations.
 Le scénario joué est celui d'une navette en service : départ d'arrêt, vitesse de
 croisière, ralentissement, arrêt, redépart.
 
+**Le pas d'intégration est le temps réellement écoulé**, pas la cadence visée du
+minuteur. Un minuteur Qt n'est pas ponctuel : sous charge, en rendu logiciel ou
+après un ramasse-miettes, il arrive en retard. Supposer 100 ms fixes ferait
+avancer le modèle moins vite que le monde, et la navette simulée dériverait du
+réel — d'autant plus que la cible embarquée est modeste. Le pas est plafonné à
+350 ms pour qu'une longue interruption ne se rattrape pas d'un bond.
+
+**Mode déterministe.** `VehicleSimulator.deterministic` fixe les durées de phase
+au lieu de les tirer au hasard. Le hasard rend la démo vivante mais un test
+instable : selon le tirage, 30 s de relevé peuvent ne contenir aucun freinage.
+`HMI_TRACE` l'active automatiquement — une mesure doit être répétable.
+
 ## Qualité des signaux
 
 Un bus véhicule perd des trames. Sans cette notion, l'interface affiche la

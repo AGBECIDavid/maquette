@@ -40,6 +40,10 @@ véhicule viole une règle physique sur 30 s de simulation (frein de
 stationnement en roulant, vitesse qui se téléporte, autonomie négative), ou si
 une panne injectée ne remonte pas jusqu'au bandeau d'alerte.
 
+Le relevé passe le simulateur en mode déterministe : sans cela les durées de
+phase sont tirées au hasard, et le test réussirait ou échouerait selon le
+tirage plutôt que selon l'état du code.
+
 C'est ce qui attrape les vraies régressions : une dépendance circulaire ou une
 propriété inconnue ne casse pas la compilation, mais fait s'effondrer une mise
 en page en silence.
