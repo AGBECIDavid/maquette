@@ -143,10 +143,11 @@ property string hvTestPattern: "00000"
 | `10000` | défaut d'isolement → écran rouge, **démarrage refusé** |
 | `11111` | toute la chaîne au tapis |
 
-Modifier puis `./run.sh`. Pour changer de cas sans recompiler :
+Modifier puis `./run.sh`. Mais pour une démonstration, le plus simple est de
+passer le motif en argument — rien à recompiler, rien à retenir :
 
 ```bash
-HMI_HV=10000 ./build/agoojiye-hmi
+./run.sh 10000
 ```
 
 Un motif trop court ou mal tapé vaut conforme sur les positions manquantes :
@@ -204,10 +205,16 @@ ouvrant non fermé, signal indisponible.
 ## Outils de recette
 
 ```bash
+./run.sh 10000                             # défaut de la chaîne HT
+./run.sh tyre                              # injecte une panne au démarrage
+./run.sh 01000 tyre                        # les deux
+./run.sh --help                            # tous les scénarios
+
 HMI_TRACE=30 ./build/agoojiye-hmi          # 30 s d'état véhicule en CSV
-HMI_FAULT=tyre ./build/agoojiye-hmi        # injecte une panne au démarrage
-HMI_HV=10000 ./build/agoojiye-hmi          # force un défaut de la chaîne HT
 ```
+
+`run.sh` ne fait que poser `HMI_HV` et `HMI_FAULT` dans l'environnement ; les
+deux restent utilisables directement si un script en a besoin.
 
 Pannes disponibles : `belt`, `tyre`, `battery`, `sensor`, `fault`.
 

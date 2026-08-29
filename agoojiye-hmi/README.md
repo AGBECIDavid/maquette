@@ -98,13 +98,35 @@ prévenir.
 sans véhicule. **À passer à `false` en production**, sinon il écrasera les
 valeurs venues du bus.
 
+## Rejouer un scénario
+
+Le scénario se passe en argument, pas en variable d'environnement : il n'y a
+aucun nom à retenir, et `./run.sh --help` les liste tous.
+
+```bash
+./run.sh 00000        # chaîne haute tension saine
+./run.sh 01000        # batterie de traction en défaut → contournable
+./run.sh 10000        # isolement châssis → démarrage refusé
+./run.sh 11111        # toute la chaîne au tapis
+
+./run.sh tyre         # pression des pneus        ./run.sh sensor   # capteur muet
+./run.sh belt         # ceinture non bouclée      ./run.sh fault    # défaut système
+./run.sh battery      # batterie critique
+
+./run.sh 01000 tyre   # les deux à la fois
+```
+
+Un argument mal tapé est refusé avec la liste des valeurs valides, plutôt
+qu'absorbé en silence — au niveau du shell, une faute de frappe est délibérée.
+
 ## Outils de recette
 
 ```bash
 HMI_TRACE=30 ./build/agoojiye-hmi       # état véhicule en CSV, 30 s
-HMI_FAULT=tyre ./build/agoojiye-hmi     # injecte une panne (belt/tyre/battery/sensor/fault)
-HMI_HV=10000 ./build/agoojiye-hmi       # force un défaut de la chaîne haute tension
 ```
+
+Les variables `HMI_HV` et `HMI_FAULT` restent lisibles par le binaire ; les
+arguments de `run.sh` ne font que les poser pour toi.
 
 ## Chaîne haute tension
 
