@@ -101,6 +101,71 @@ au lieu de les tirer au hasard. Le hasard rend la démo vivante mais un test
 instable : selon le tirage, 30 s de relevé peuvent ne contenir aucun freinage.
 `HMI_TRACE` l'active automatiquement — une mesure doit être répétable.
 
+## Chaîne haute tension
+
+Cinq organes contrôlés au démarrage, **avant tout le reste**. Sur un véhicule
+électrique ils conditionnent la mise sous tension : tant qu'ils n'ont pas
+répondu, rien ne sert de vérifier le GPS.
+
+| Organe | `id` | Bloquant |
+|---|---|---|
+| NON-Contact Châssis — Circuit HT | `isolation` | **oui** |
+| Batterie de traction | `pack` | non |
+| BMS | `bms` | non |
+| OBC | `obc` | non |
+| Moteur | `motor` | non |
+
+Chaque entrée porte `fault`, qui vaut **0 (conforme)** ou **1 (en défaut)** —
+la convention des bits de défaut d'un bus véhicule. C'est ce que la source
+écrit, via `VehicleData.setHvFault(id, faulty)`.
+
+**Le défaut d'isolement est le seul qui bloque.** Un circuit haute tension en
+contact avec la caisse met le châssis sous tension, donc les passagers : ce
+n'est pas un voyant à ignorer, c'est un refus de démarrage. Les quatre autres
+affichent l'écran rouge avec un bouton « Continuer malgré tout ».
+
+Le verrou vit dans `AppState.dismissHvDiagnostic()`, pas dans l'écran : ainsi
+aucun autre appelant ne peut le contourner.
+
+### Régler les cinq valeurs
+
+Une ligne dans `qml/VehicleSimulator.qml`, un chiffre par organe, dans l'ordre
+du tableau ci-dessus :
+
+```qml
+property string hvTestPattern: "00000"
+```
+
+| Motif | Effet |
+|---|---|
+| `00000` | tout est sain, démarrage normal |
+| `01000` | batterie de traction en défaut → écran rouge, contournable |
+| `10000` | défaut d'isolement → écran rouge, **démarrage refusé** |
+| `11111` | toute la chaîne au tapis |
+
+Modifier puis `./run.sh`. Pour changer de cas sans recompiler :
+
+```bash
+HMI_HV=10000 ./build/agoojiye-hmi
+```
+
+Un motif trop court ou mal tapé vaut conforme sur les positions manquantes :
+une erreur de frappe peut faire manquer une panne, jamais en inventer une.
+
+### Ce qui se passe au démarrage
+
+La séquence joue deux étapes — `CONTRÔLE HAUTE TENSION`, puis
+`SYSTÈMES DE BORD`. Si la première échoue, la séquence **s'arrête là** : pas
+d'approche du véhicule, pas de « bienvenue ». Une navette dont l'isolement est
+douteux n'accueille personne, elle refuse de démarrer.
+
+La chronologie tient dans trois animations en fin de `BootScreen.qml` :
+`bootIntro`, puis `bootRest` ou `abortSequence` selon l'issue. L'aiguillage
+tient dans `stageComplete()`.
+
+Un défaut haute tension remonte aussi dans `activeAlerts`, en tête et au niveau
+`CRITICAL`.
+
 ## Qualité des signaux
 
 Un bus véhicule perd des trames. Sans cette notion, l'interface affiche la
@@ -141,6 +206,7 @@ ouvrant non fermé, signal indisponible.
 ```bash
 HMI_TRACE=30 ./build/agoojiye-hmi          # 30 s d'état véhicule en CSV
 HMI_FAULT=tyre ./build/agoojiye-hmi        # injecte une panne au démarrage
+HMI_HV=10000 ./build/agoojiye-hmi          # force un défaut de la chaîne HT
 ```
 
 Pannes disponibles : `belt`, `tyre`, `battery`, `sensor`, `fault`.
@@ -162,6 +228,7 @@ valeurs venues du véhicule.
 |---|---|
 | Identité | `vehicleName`, `vehicleModel`, `vin`, `softwareVersion`, `uiVersion`, `storageUsed`, `commissioningDate` |
 | Propulsion | `speed`, `batteryLevel`, `consumption`, `batteryCapacity`, `rangeFullCharge`, `charging`, `chargeStatus`, `chargeCycles`, `power`, `regenPower`, `driveGear`, `systemReady` |
+| Chaîne HT | `hvChain` (via `setHvFault()`) |
 | Ouvrants | `openings` |
 | Pneus | `tyreFrontLeft`, `tyreFrontRight`, `tyreRearLeft`, `tyreRearRight`, `tyreRecommended` |
 | Températures | `motorTemp`, `batteryTemp`, `cabinTemp`, `outsideTemp` |
@@ -187,6 +254,7 @@ contredisaient :
 | `moving` | `speed > 0,5` |
 | `seatbeltWarning` | en roulant **et** ceinture non bouclée |
 | `tyrePressureWarning` | écart > 0,3 bar à la consigne sur une roue |
+| `hvFaults`, `hvFaultPresent`, `hvBlocking` | déduits des bits `fault` de la chaîne |
 | `activeAlerts`, `topAlert`, `hasCriticalAlert` | dérivées de l'état complet |
 
 Le volume média appartient à l'interface, pas au véhicule : il vit dans

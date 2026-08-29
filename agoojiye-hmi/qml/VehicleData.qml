@@ -85,6 +85,57 @@ QtObject {
         { label: "Système multimédia", ok: true }
     ]
 
+    // ---- Chaîne haute tension ----------------------------------------------
+    // Verrou de sécurité contrôlé au démarrage, avant tout le reste. Sur un
+    // véhicule électrique, ces cinq organes conditionnent la mise sous tension :
+    // tant qu'ils ne répondent pas tous, le véhicule ne doit pas rouler.
+    //
+    // `fault` vaut 0 (conforme) ou 1 (en défaut) — c'est la convention des bits
+    // de défaut d'un bus véhicule, et c'est ce que la source écrit ici.
+    //
+    // `blocking` distingue ce qui interdit de rouler de ce qui se signale. Le
+    // défaut d'isolement en fait partie : un circuit haute tension en contact
+    // avec la caisse met le châssis sous tension, donc les passagers. Ce n'est
+    // pas un voyant à ignorer, c'est un refus de démarrage.
+    property var hvChain: [
+        { id: "isolation", label: "NON-Contact Châssis — Circuit HT",
+          detail: "Isolement entre le circuit haute tension et la caisse",
+          icon: "ph-lightning", fault: 0, blocking: true },
+        { id: "pack", label: "Batterie de traction",
+          detail: "Pack, contacteurs de puissance et précharge",
+          icon: "ph-car-battery", fault: 0, blocking: false },
+        { id: "bms", label: "BMS",
+          detail: "Gestion des cellules, équilibrage et température",
+          icon: "ph-chart-bar", fault: 0, blocking: false },
+        { id: "obc", label: "OBC",
+          detail: "Chargeur embarqué et liaison au réseau",
+          icon: "ph-battery-charging", fault: 0, blocking: false },
+        { id: "motor", label: "Moteur",
+          detail: "Onduleur, machine de traction et capteur de position",
+          icon: "ph-gauge", fault: 0, blocking: false }
+    ]
+
+    readonly property var hvFaults: hvChain.filter(function (e) { return e.fault === 1 })
+    readonly property bool hvFaultPresent: hvFaults.length > 0
+
+    // Vrai dès qu'un défaut interdit de rouler. C'est la seule condition qui
+    // rend l'écran de diagnostic incontournable.
+    readonly property bool hvBlocking:
+        hvFaults.some(function (e) { return e.blocking })
+
+    // Positionne le bit de défaut d'un organe. Réassignation obligatoire :
+    // muter le tableau en place ne notifie personne.
+    function setHvFault(id, faulty) {
+        var next = []
+        for (var i = 0; i < hvChain.length; i++) {
+            var e = hvChain[i]
+            next.push({ id: e.id, label: e.label, detail: e.detail, icon: e.icon,
+                        fault: e.id === id ? (faulty ? 1 : 0) : e.fault,
+                        blocking: e.blocking })
+        }
+        hvChain = next
+    }
+
     // ---- Ouvrants et accès -------------------------------------------------
     // Une navette à flancs ouverts : pas de coffre ni de quatre portières, mais
     // des accès passagers latéraux, un capot, une trappe de charge et un
@@ -249,6 +300,15 @@ QtObject {
             out.push({ id: "belt", level: "CRITICAL", icon: "ph-seatbelt",
                        label: "Ceinture non bouclée",
                        detail: "Bouclez la ceinture conducteur." })
+
+        // La chaîne haute tension passe avant tout le reste : c'est le seul
+        // défaut qui met physiquement les passagers en danger.
+        for (var h = 0; h < hvFaults.length; h++) {
+            out.push({ id: "hv-" + hvFaults[h].id, level: "CRITICAL",
+                       icon: hvFaults[h].icon,
+                       label: "Haute tension : " + hvFaults[h].label,
+                       detail: hvFaults[h].detail })
+        }
 
         if (faultPresent)
             out.push({ id: "fault", level: "CRITICAL", icon: "ph-brake-warning",

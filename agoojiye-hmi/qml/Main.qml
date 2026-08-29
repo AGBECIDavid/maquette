@@ -113,6 +113,21 @@ Window {
                 // se joue par-dessus : les deux se croisent.
                 onHandoff: AppState.bootReveal()
                 onFinished: AppState.bootDone()
+                // La chaîne haute tension a refusé : on ne révèle rien, on
+                // remplace la séquence par le diagnostic.
+                onHvFault: AppState.openHvDiagnostic()
+            }
+        }
+
+        // Diagnostic haute tension. Au-dessus de tout le reste, barre du haut
+        // comprise : à cet instant il n'y a rien d'autre à faire que lire ce
+        // qui ne va pas.
+        Loader {
+            anchors.fill: parent
+            z: 6
+            active: AppState.hvDiagnosticOpen
+            sourceComponent: HvDiagnosticScreen {
+                onDismissed: AppState.dismissHvDiagnostic()
             }
         }
 

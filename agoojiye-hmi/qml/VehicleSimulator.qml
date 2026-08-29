@@ -85,6 +85,38 @@ QtObject {
     property real _battTemp: 27
     property real _odoFraction: 0
 
+    // ---- contrôle de la chaîne haute tension ------------------------------
+    // Un chiffre par organe, dans l'ordre de `VehicleData.hvChain` :
+    //
+    //     isolement châssis · batterie de traction · BMS · OBC · moteur
+    //
+    //     0 = conforme        1 = en défaut
+    //
+    // Modifier cette ligne puis relancer `./run.sh` rejoue n'importe quel
+    // scénario de panne. Exemples :
+    //
+    //     "00000"   tout est sain, démarrage normal
+    //     "01000"   batterie de traction en défaut → écran rouge, contournable
+    //     "10000"   défaut d'isolement → écran rouge, démarrage refusé
+    //     "11111"   toute la chaîne au tapis
+    //
+    // `HMI_HV=01000 ./build/agoojiye-hmi` surcharge cette valeur au lancement,
+    // pour passer d'un cas à l'autre en démonstration sans recompiler.
+    property string hvTestPattern: "00000"
+
+    // Applique un motif à la chaîne. Tout caractère autre que « 1 » vaut
+    // conforme : un motif trop court ou mal tapé ne doit jamais inventer une
+    // panne, seulement en manquer une.
+    function applyHvPattern(pattern) {
+        if (pattern === undefined || pattern === null)
+            return
+        for (var i = 0; i < VehicleData.hvChain.length; i++)
+            VehicleData.setHvFault(VehicleData.hvChain[i].id,
+                                   pattern.charAt(i) === "1")
+    }
+
+    Component.onCompleted: applyHvPattern(hvTestPattern)
+
     // ---- injection de pannes ----------------------------------------------
     // Une chaîne d'alerte qu'on ne sait pas déclencher est une chaîne d'alerte
     // qu'on ne sait pas tester. Ces scénarios servent à la démonstration et à

@@ -28,6 +28,12 @@ QtObject {
     property bool booting: true
     property bool bootPlaying: true
 
+    // Couche de diagnostic haute tension. Posée par la séquence de démarrage
+    // quand la chaîne HT refuse la mise en route, retirée seulement par une
+    // action explicite du conducteur — et jamais tant qu'un défaut interdit de
+    // rouler.
+    property bool hvDiagnosticOpen: false
+
     // Écran quitté juste avant l'actuel, pour le retour des sous-écrans
     // (lecteur média, téléphone, entretien…).
     property string previousScreen: "dash"
@@ -120,6 +126,23 @@ QtObject {
     function bootDone() { bootPlaying = false }
     // Raccourci (bouton « Passer », captures de développement).
     function skipBoot() { booting = false; bootPlaying = false }
+
+    // La chaîne haute tension a refusé : la coque reste masquée derrière le
+    // diagnostic, et le démarrage ne s'achève pas.
+    function openHvDiagnostic() {
+        bootPlaying = false
+        hvDiagnosticOpen = true
+    }
+
+    // Sortie du diagnostic. Un défaut bloquant ne se contourne pas : la
+    // vérification est ici, pas dans l'écran, pour qu'aucun autre appelant ne
+    // puisse la sauter.
+    function dismissHvDiagnostic() {
+        if (VehicleData.hvBlocking)
+            return
+        hvDiagnosticOpen = false
+        booting = false
+    }
     function togglePlay() { VehicleData.mediaPlaying = !VehicleData.mediaPlaying }
     function toggleSpatial() { spatial = !spatial }
     function toggleAdas(key) {

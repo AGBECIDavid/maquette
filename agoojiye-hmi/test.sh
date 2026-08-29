@@ -148,7 +148,27 @@ for kind in tyre battery fault sensor; do
     [ "${COUNT:-0}" -ge 1 ] || fail "la panne « $kind » n'a levé aucune alerte"
 done
 
+# ---- 7. verrou de la chaîne haute tension --------------------------------
+# Cinq organes contrôlés au démarrage, chacun à 0 ou 1. Ce qui compte n'est pas
+# que l'écran rouge s'affiche, c'est qu'il s'affiche pour les bonnes raisons et
+# qu'il refuse de s'effacer quand le défaut interdit de rouler.
+echo "· verrou haute tension"
+
+hv_probe() {   # motif → "nb_défauts,bloquant"
+    QT_QPA_PLATFORM=offscreen HMI_HV="$1" HMI_TRACE=2 ./build/agoojiye-hmi 2>/dev/null \
+        | tail -1 | cut -d, -f17,18
+}
+
+[ "$(hv_probe 00000)" = "0,0" ] || fail "chaîne saine signalée en défaut"
+[ "$(hv_probe 01000)" = "1,0" ] || fail "défaut batterie de traction mal rapporté, ou bloquant à tort"
+[ "$(hv_probe 10000)" = "1,1" ] || fail "défaut d'isolement non bloquant — le verrou de sécurité ne tient pas"
+[ "$(hv_probe 11111)" = "5,1" ] || fail "chaîne entière en défaut mal rapportée"
+
+# Un motif tronqué ou mal tapé ne doit jamais inventer une panne.
+[ "$(hv_probe 1)" = "1,1" ] || fail "motif court mal interprété"
+[ "$(hv_probe xxxxx)" = "0,0" ] || fail "un motif invalide fabrique des pannes"
+
 echo
-echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent."
+echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif."
 [ -n "$KEEP_DIR" ] && echo "Captures : $KEEP_DIR"
 exit 0

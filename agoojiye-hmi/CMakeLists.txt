@@ -63,6 +63,7 @@ qt_add_qml_module(agoojiye-hmi
         qml/components/BatteryArc.qml
         qml/components/Vignette.qml
         qml/screens/BootScreen.qml
+        qml/screens/HvDiagnosticScreen.qml
         qml/screens/DashboardScreen.qml
         qml/screens/MenuScreen.qml
         qml/screens/VehiculeScreen.qml

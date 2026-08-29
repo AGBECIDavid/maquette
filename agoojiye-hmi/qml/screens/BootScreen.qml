@@ -1,12 +1,16 @@
 import QtQuick
 import AgoojiyeHMI
 
-// Séquence de démarrage. Le véhicule approche sur une route qui défile, un
-// assistant vocal souhaite la bienvenue, puis la main passe automatiquement au
-// tableau de bord.
+// Séquence de démarrage.
 //
-// Toute la chronologie tient dans `timeline` ci-dessous : une seule animation
-// séquentielle, pour que le rythme se lise et se règle d'un seul endroit.
+// Elle contrôle d'abord la chaîne haute tension. Si elle répond, le véhicule
+// approche sur une route qui défile, un assistant vocal souhaite la bienvenue,
+// et la main passe au tableau de bord. Sinon la séquence s'arrête et ouvre le
+// diagnostic haute tension.
+//
+// La chronologie tient dans les trois animations en fin de fichier —
+// `bootIntro`, puis `bootRest` ou `abortSequence` selon l'issue du contrôle.
+// Le rythme se règle là et nulle part ailleurs.
 Item {
     id: root
 
@@ -24,27 +28,90 @@ Item {
     property bool assistantVisible: false
     property bool brandVisible: false
 
+    // Émis quand la chaîne haute tension refuse la mise en route.
+    signal hvFault()
+
     // ---- contrôles système -------------------------------------------------
-    // La liste vient de VehicleData : l'écran ne sait pas ce qu'il vérifie, il
-    // sait seulement l'afficher. Le backend la remplacera par de vrais
-    // diagnostics sans toucher à ce fichier.
-    readonly property var checks: VehicleData.startupChecks
+    // Deux étapes, jouées dans l'ordre où un véhicule électrique les enchaîne :
+    //
+    //   1. « hv »    la chaîne haute tension — un verrou. Elle conditionne la
+    //                mise sous tension, donc rien ne sert de vérifier le GPS
+    //                tant qu'elle n'a pas répondu.
+    //   2. « bord »  les systèmes de bord, informatifs.
+    //
+    // Les deux listes viennent de VehicleData : l'écran ne sait pas ce qu'il
+    // vérifie, il sait seulement l'afficher.
+    property string stage: "idle"      // idle | hv | bord | pret | defaut
     property int checkIndex: -1        // -1 = pas encore commencé
     property bool checksDone: false
+
+    readonly property var checks:
+        stage === "hv" ? VehicleData.hvChain
+      : stage === "defaut" ? VehicleData.hvChain
+      : VehicleData.startupChecks
+
     readonly property bool checksVisible: checkIndex >= 0 && !assistantVisible
+
+    readonly property string stageTitle:
+        stage === "defaut" ? "DÉFAUT HAUTE TENSION"
+      : stage === "pret" ? "SYSTÈME VÉHICULE"
+      : stage === "hv" ? "CONTRÔLE HAUTE TENSION"
+      : "SYSTÈMES DE BORD"
+
     readonly property string currentCheck:
         checkIndex >= 0 && checkIndex < checks.length ? checks[checkIndex].label : ""
 
+    // Un jalon est vert quand l'organe répond, rouge quand il est en défaut.
+    // Les contrôles de bord portent `ok`, la chaîne haute tension porte `fault` :
+    // les deux conventions se rejoignent ici, une seule fois.
+    function checkPassed(entry) {
+        return entry.fault !== undefined ? entry.fault === 0 : entry.ok
+    }
+
+    function beginStage(name) {
+        stage = name
+        checkIndex = 0
+        checkLoop.start()
+    }
+
+    // Appelé quand la liste en cours est épuisée. C'est ici que la chaîne haute
+    // tension décide si le véhicule a le droit de démarrer.
+    function stageComplete() {
+        if (stage === "hv") {
+            if (VehicleData.hvFaultPresent) {
+                stage = "defaut"
+                abortSequence.start()
+            } else {
+                bootRest.start()
+            }
+        } else {
+            stage = "pret"
+            checksDone = true
+        }
+    }
+
     function skip() {
-        timeline.stop()
+        bootIntro.stop()
+        bootRest.stop()
+        abortSequence.stop()
         checkLoop.stop()
         roadLoop.stop()
         VoiceAnnouncer.stop()
+
+        // « Passer » saute la mise en scène, pas le contrôle de sécurité. Sans
+        // cette vérification, un appui suffirait à franchir un défaut
+        // d'isolement — et un verrou qu'un bouton contourne n'est pas un verrou.
+        if (VehicleData.hvFaultPresent) {
+            stage = "defaut"
+            root.hvFault()
+            return
+        }
+
         root.handoff()
         root.finished()
     }
 
-    Component.onCompleted: timeline.start()
+    Component.onCompleted: bootIntro.start()
 
     // ---- fond ------------------------------------------------------------
     Rectangle {
@@ -219,12 +286,12 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: root.checksDone ? "SYSTÈME VÉHICULE" : "INITIALISATION DU SYSTÈME"
+            text: root.stageTitle
             font.family: Theme.fontFamily
             font.pixelSize: 13
             font.weight: Font.DemiBold
             font.letterSpacing: 3
-            color: Theme.textMuted
+            color: root.stage === "defaut" ? Theme.red : Theme.textMuted
         }
 
         // Un jalon par contrôle : l'avancement se lit sans lire.
@@ -238,7 +305,7 @@ Item {
                     required property var modelData
                     width: 30; height: 3; radius: 1.5
                     color: index > root.checkIndex ? Theme.alpha(Theme.textMuted, 0.22)
-                                                   : (modelData.ok ? Theme.green : Theme.red)
+                                                   : (root.checkPassed(modelData) ? Theme.green : Theme.red)
                     Behavior on color { ColorAnimation { duration: 260 } }
                 }
             }
@@ -248,31 +315,35 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             // La coche ne prend sa place qu'une fois acquise, sinon le libellé
             // du contrôle en cours ne serait pas centré sous les jalons.
-            spacing: root.checksDone ? 9 : 0
+            spacing: (root.checksDone || root.stage === "defaut") ? 9 : 0
             Behavior on spacing { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
 
             Item {
-                width: root.checksDone ? 20 : 0
+                width: (root.checksDone || root.stage === "defaut") ? 20 : 0
                 height: 20
                 anchors.verticalCenter: parent.verticalCenter
                 Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
                 Icon {
                     anchors.centerIn: parent
-                    name: "ph-check-circle"
+                    name: root.stage === "defaut" ? "ph-warning-diamond" : "ph-check-circle"
                     fill: true
                     size: 20
-                    color: Theme.green
-                    opacity: root.checksDone ? 1 : 0
+                    color: root.stage === "defaut" ? Theme.red : Theme.green
+                    opacity: (root.checksDone || root.stage === "defaut") ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 300 } }
                 }
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: root.checksDone ? "Système prêt" : root.currentCheck
+                text: root.stage === "defaut" ? "Démarrage refusé"
+                    : root.checksDone ? "Système prêt"
+                    : root.currentCheck
                 font.family: Theme.fontFamily
                 font.pixelSize: 18
-                font.weight: root.checksDone ? Font.DemiBold : Font.Normal
-                color: root.checksDone ? Theme.green : Theme.textSecondary
+                font.weight: (root.checksDone || root.stage === "defaut") ? Font.DemiBold : Font.Normal
+                color: root.stage === "defaut" ? Theme.red
+                     : root.checksDone ? Theme.green
+                     : Theme.textSecondary
             }
         }
     }
@@ -289,7 +360,7 @@ Item {
                 root.checkIndex++
             else {
                 stop()
-                root.checksDone = true
+                root.stageComplete()
             }
         }
     }
@@ -371,6 +442,9 @@ Item {
         anchors.margins: 26
         text: "Passer"
         font.family: Theme.fontFamily; font.pixelSize: 14; font.letterSpacing: 1
+        // Masqué pendant le contrôle haute tension et sur son échec : proposer
+        // de « passer » un verrou de sécurité serait une invitation à le forcer.
+        visible: root.stage !== "hv" && root.stage !== "defaut"
         color: skipHover.containsMouse ? Theme.textPrimary : Theme.textDim
         MouseArea {
             id: skipHover
@@ -383,23 +457,27 @@ Item {
     }
 
     // ---- chronologie -------------------------------------------------------
-    SequentialAnimation {
-        id: timeline
+    // Trois animations plutôt qu'une : la chaîne haute tension décide, au
+    // milieu, si la suite a lieu. Une seule séquentielle aurait dû s'arrêter
+    // elle-même en cours d'exécution, ce qui est fragile ; ici chaque issue a
+    // sa propre suite, et l'aiguillage tient dans `stageComplete()`.
 
-        // 1. La marque apparaît.
+    // 1. Marque, puis contrôle de la chaîne haute tension.
+    SequentialAnimation {
+        id: bootIntro
         ScriptAction { script: root.brandVisible = true }
         PauseAnimation { duration: 550 }
+        ScriptAction { script: root.beginStage("hv") }
+    }
 
-        // 2. Le véhicule approche pendant que le système se contrôle. Les deux
-        //    vont ensemble : l'attente technique se passe derrière une image,
-        //    pas devant un écran figé.
+    // 2a. Chaîne saine : le véhicule approche pendant les contrôles de bord.
+    //     L'attente technique se passe derrière une image, pas devant un écran
+    //     figé.
+    SequentialAnimation {
+        id: bootRest
+
         ParallelAnimation {
-            ScriptAction {
-                script: {
-                    root.checkIndex = 0
-                    checkLoop.start()
-                }
-            }
+            ScriptAction { script: root.beginStage("bord") }
             NumberAnimation {
                 target: root; property: "approach"
                 from: 0; to: 1
@@ -408,10 +486,10 @@ Item {
             }
         }
 
-        // 3. « Système prêt » a le temps d'être lu.
+        // « Système prêt » a le temps d'être lu.
         PauseAnimation { duration: 850 }
 
-        // 4. L'assistant salue.
+        // L'assistant salue.
         ScriptAction {
             script: {
                 root.assistantVisible = true
@@ -420,9 +498,9 @@ Item {
         }
         PauseAnimation { duration: 2600 }
 
-        // 5. Passage au tableau de bord. Il se révèle *pendant* le fondu de la
-        //    séquence, pas après : les deux se croisent, la bascule ne se voit
-        //    pas comme une coupure.
+        // Passage au tableau de bord. Il se révèle *pendant* le fondu de la
+        // séquence, pas après : les deux se croisent, la bascule ne se voit pas
+        // comme une coupure.
         ScriptAction { script: root.handoff() }
         ParallelAnimation {
             NumberAnimation {
@@ -438,6 +516,27 @@ Item {
             script: {
                 roadLoop.stop()
                 root.finished()
+            }
+        }
+    }
+
+    // 2b. Chaîne en défaut : la séquence s'arrête là. Pas d'approche du
+    //     véhicule, pas de « bienvenue » — une navette dont l'isolement haute
+    //     tension est douteux n'accueille personne, elle refuse de démarrer.
+    SequentialAnimation {
+        id: abortSequence
+
+        // Le refus a le temps d'être lu avant que le diagnostic ne s'ouvre.
+        PauseAnimation { duration: 1400 }
+        NumberAnimation {
+            target: root; property: "opacity"
+            to: 0; duration: 420; easing.type: Easing.InCubic
+        }
+        ScriptAction {
+            script: {
+                roadLoop.stop()
+                VoiceAnnouncer.stop()
+                root.hvFault()
             }
         }
     }

@@ -31,6 +31,21 @@ int main(int argc, char *argv[])
         Qt::QueuedConnection);
     engine.load(QUrl(QStringLiteral("qrc:/AgoojiyeHMI/qml/Main.qml")));
 
+    // HMI_HV=<5 digits> overrides the high-voltage test pattern baked into
+    // VehicleSimulator, so a demo can move between fault scenarios without a
+    // rebuild. Digit order matches VehicleData.hvChain: isolation, traction
+    // pack, BMS, OBC, motor. 1 = faulty.
+    const QString hvPattern = qEnvironmentVariable("HMI_HV");
+    if (!hvPattern.isEmpty() && !engine.rootObjects().isEmpty()) {
+        QQmlComponent hvProbe(&engine);
+        hvProbe.setData("import QtQml\nimport AgoojiyeHMI\n"
+                        "QtObject { property QtObject sim: VehicleSimulator }", QUrl());
+        QObject *hvObj = hvProbe.create();
+        QObject *simulator = hvObj ? hvObj->property("sim").value<QObject *>() : nullptr;
+        if (simulator)
+            QMetaObject::invokeMethod(simulator, "applyHvPattern", Q_ARG(QVariant, hvPattern));
+    }
+
     // QA aid: HMI_FAULT=<kind> injects a vehicle condition at startup, so the
     // alert chain can be exercised from the outside. It sits here rather than
     // inside one capture mode because a fault is a property of the run, not of
@@ -128,7 +143,8 @@ int main(int argc, char *argv[])
             // peut lui aussi arriver en retard, et le contrôle accuserait la
             // physique d'un défaut qui n'appartient qu'à l'échantillonnage.
             printf("t,wall,phase,speed,power,regen,battery,consumption,range,gear,"
-                   "parkingBrake,seatbeltWarning,tyreWarning,motorTemp,alerts,critical\n");
+                   "parkingBrake,seatbeltWarning,tyreWarning,motorTemp,alerts,critical,"
+                   "hvFaults,hvBlocking\n");
             auto *started = new QElapsedTimer();
             started->start();
             auto *elapsed = new int(0);
@@ -137,7 +153,8 @@ int main(int argc, char *argv[])
             timer->setInterval(200);
             QObject::connect(timer, &QTimer::timeout, &app, [=, &app]() mutable {
                 const QVariantList alerts = data->property("activeAlerts").toList();
-                printf("%.1f,%.3f,%s,%.1f,%.1f,%.1f,%d,%.1f,%d,%s,%d,%d,%d,%d,%lld,%d\n",
+                const QVariantList hv = data->property("hvFaults").toList();
+                printf("%.1f,%.3f,%s,%.1f,%.1f,%.1f,%d,%.1f,%d,%s,%d,%d,%d,%d,%lld,%d,%lld,%d\n",
                        *elapsed / 5.0,
                        started->elapsed() / 1000.0,
                        qPrintable(simulator->property("phase").toString()),
@@ -153,7 +170,9 @@ int main(int argc, char *argv[])
                        data->property("tyrePressureWarning").toBool() ? 1 : 0,
                        data->property("motorTemp").toInt(),
                        static_cast<long long>(alerts.size()),
-                       data->property("hasCriticalAlert").toBool() ? 1 : 0);
+                       data->property("hasCriticalAlert").toBool() ? 1 : 0,
+                       static_cast<long long>(hv.size()),
+                       data->property("hvBlocking").toBool() ? 1 : 0);
                 fflush(stdout);
                 if (++(*elapsed) >= limit) {
                     timer->stop();

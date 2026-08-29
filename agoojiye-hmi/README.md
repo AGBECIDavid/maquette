@@ -103,4 +103,16 @@ valeurs venues du bus.
 ```bash
 HMI_TRACE=30 ./build/agoojiye-hmi       # état véhicule en CSV, 30 s
 HMI_FAULT=tyre ./build/agoojiye-hmi     # injecte une panne (belt/tyre/battery/sensor/fault)
+HMI_HV=10000 ./build/agoojiye-hmi       # force un défaut de la chaîne haute tension
 ```
+
+## Chaîne haute tension
+
+Cinq organes contrôlés au démarrage : isolement châssis/HT, batterie de
+traction, BMS, OBC, moteur. Un chiffre par organe dans
+`VehicleSimulator.hvTestPattern` — `0` conforme, `1` en défaut.
+
+Un défaut ouvre un écran de diagnostic rouge à la place du tableau de bord.
+**Le défaut d'isolement bloque le démarrage** et ne se contourne pas : un
+circuit haute tension en contact avec la caisse met les passagers sous tension.
+Voir [BACKEND.md](BACKEND.md).
