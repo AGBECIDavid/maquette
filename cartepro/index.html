@@ -1,0 +1,3195 @@
+<title>CartePro</title>
+<meta name="description" content="Démonstrateur du dispositif CartePro — espaces salarié, partenaire et administration.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+/* ============================================================================
+   CartePro — démonstrateur fonctionnel
+   Ministère du Job et Bonheur / Direction du Numérique et de l'Innovation
+   Réf. JEB/DNI/2026-002
+
+   Parti pris visuel : la page est un service public en plein jour. Elle assume
+   un seul thème, entièrement peint, plutôt qu'une inversion approximative.
+   ========================================================================= */
+
+:root {
+  --ink:        #12172b;
+  --ink-2:      #3d4460;
+  --ink-3:      #6b7291;
+  --ink-4:      #969cb4;
+
+  --paper:      #eef0f6;   /* plan de travail */
+  --surface:    #ffffff;
+  --surface-2:  #f7f8fc;
+  --surface-3:  #eceef6;
+
+  --line:       #e0e3ee;
+  --line-2:     #cbd0e0;
+
+  --brand:      #000091;   /* bleu France */
+  --brand-2:    #1a1aa8;
+  --brand-wash: #ebebf8;
+  --marianne:   #e1000f;
+
+  --data:       #2a78d6;   /* encre des graphiques */
+  --data-wash:  #e7f0fc;
+  --data-200:   #9ec5f4;
+  --data-600:   #184f95;
+
+  --good:       #0ca30c;
+  --good-wash:  #e6f6e6;
+  --warn:       #fab219;
+  --warn-wash:  #fdf3e0;
+  --serious:    #ec835a;
+  --critical:   #d03b3b;
+  --crit-wash:  #fbeaea;
+
+  --r-card: 10px;
+  --r-ctl: 7px;
+  --shadow-1: 0 1px 2px rgba(18,23,43,.07);
+  --shadow-2: 0 1px 2px rgba(18,23,43,.06), 0 10px 28px -16px rgba(18,23,43,.35);
+  --shadow-3: 0 2px 6px rgba(18,23,43,.08), 0 28px 60px -24px rgba(18,23,43,.45);
+
+  --ui: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --rail-w: 236px;
+  --dock-h: 52px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: var(--dock-h);
+}
+
+h1, h2, h3, h4 { margin: 0; font-weight: 600; text-wrap: balance; letter-spacing: -.01em; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 3px; }
+
+.mono { font-family: var(--mono); font-variant-ligatures: none; }
+.num  { font-variant-numeric: tabular-nums; }
+.vh {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ── Bandeau institutionnel ─────────────────────────────────────────────── */
+
+.tricolore { display: flex; height: 3px; }
+.tricolore i { flex: 1; }
+.tricolore i:nth-child(1) { background: var(--brand); }
+.tricolore i:nth-child(2) { background: #ffffff; }
+.tricolore i:nth-child(3) { background: var(--marianne); }
+
+.masthead {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.masthead__in {
+  display: flex; align-items: center; gap: 24px;
+  padding: 12px 22px;
+  max-width: 1560px; margin: 0 auto;
+}
+.crest { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.crest__mark {
+  width: 40px; height: 40px; flex: none; border-radius: 3px;
+  background: var(--brand); color: #fff;
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 15px; letter-spacing: -.03em;
+}
+.crest__txt { min-width: 0; }
+.crest__ministry {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-2); line-height: 1.35;
+}
+.crest__dir { font-size: 11px; color: var(--ink-4); line-height: 1.35; }
+
+.wordmark {
+  display: flex; align-items: baseline; gap: 8px;
+  padding-left: 24px; border-left: 1px solid var(--line);
+}
+.wordmark b { font-size: 19px; font-weight: 700; letter-spacing: -.025em; }
+.wordmark span { font-size: 11px; color: var(--ink-4); }
+
+.masthead__spacer { flex: 1; }
+
+.envpill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px; border-radius: 100px;
+  background: var(--warn-wash); border: 1px solid #f0dcb4;
+  font-size: 11px; font-weight: 600; color: #7a5502; white-space: nowrap;
+}
+.envpill::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--warn); flex: none;
+}
+
+.whoami { display: flex; align-items: center; gap: 10px; }
+.whoami__av {
+  width: 32px; height: 32px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; color: #fff; background: var(--ink-2);
+}
+.whoami__n { font-size: 12.5px; font-weight: 600; line-height: 1.25; }
+.whoami__r { font-size: 11px; color: var(--ink-4); line-height: 1.25; }
+
+/* ── Ossature ───────────────────────────────────────────────────────────── */
+
+.workspace {
+  display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  max-width: 1560px; margin: 0 auto; min-height: calc(100vh - 120px);
+}
+.rail {
+  border-right: 1px solid var(--line);
+  padding: 20px 14px 40px;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+}
+.rail__label {
+  font-size: 10px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
+  color: var(--ink-4); padding: 0 10px; margin: 0 0 10px;
+}
+.rail__group + .rail__group { margin-top: 26px; }
+.navitem {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 9px 10px; margin-bottom: 2px;
+  border: 0; border-radius: var(--r-ctl); background: none;
+  font-size: 13.5px; font-weight: 500; color: var(--ink-2);
+  text-align: left; cursor: pointer;
+}
+.navitem:hover { background: var(--surface-3); color: var(--ink); }
+.navitem[aria-current="true"] { background: var(--brand-wash); color: var(--brand); font-weight: 600; }
+.navitem[aria-current="true"] .navitem__ico { color: var(--brand); }
+.navitem__ico { width: 18px; height: 18px; flex: none; color: var(--ink-4); }
+.navitem__badge {
+  margin-left: auto; min-width: 20px; padding: 1px 6px; border-radius: 100px;
+  background: var(--critical); color: #fff;
+  font-size: 10.5px; font-weight: 700; text-align: center;
+}
+
+.stage { padding: 26px 30px 60px; min-width: 0; }
+.stage--bench {
+  background:
+    radial-gradient(120% 90% at 50% -10%, #f7f8fd 0%, transparent 60%),
+    repeating-linear-gradient(45deg, transparent 0 11px, rgba(18,23,43,.016) 11px 22px),
+    var(--paper);
+  display: grid; place-items: start center;
+}
+
+.pagehead { display: flex; align-items: flex-end; gap: 20px; margin-bottom: 22px; flex-wrap: wrap; }
+.pagehead h1 { font-size: 23px; letter-spacing: -.022em; }
+.pagehead p { font-size: 13px; color: var(--ink-3); margin-top: 3px; max-width: 62ch; }
+.pagehead__act { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Primitives ─────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-card); box-shadow: var(--shadow-1);
+}
+.card__hd {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; border-bottom: 1px solid var(--line);
+}
+.card__hd h3 { font-size: 14px; }
+.card__hd .sub { font-size: 12px; color: var(--ink-4); }
+.card__hd .act { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.card__bd { padding: 18px; }
+.card__ft {
+  padding: 12px 18px; border-top: 1px solid var(--line);
+  background: var(--surface-2); border-radius: 0 0 var(--r-card) var(--r-card);
+  font-size: 12px; color: var(--ink-3);
+}
+
+.grid { display: grid; gap: 16px; }
+.g-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.g-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.g-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.g-main { grid-template-columns: minmax(0,1.62fr) minmax(0,1fr); align-items: start; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 14px; border-radius: var(--r-ctl);
+  border: 1px solid var(--line-2); background: var(--surface); color: var(--ink);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, transform .12s ease;
+}
+.btn:hover { background: var(--surface-2); border-color: var(--ink-4); }
+.btn:active { transform: translateY(1px); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
+.btn--primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn--primary:hover { background: var(--brand-2); border-color: var(--brand-2); }
+.btn--danger { background: var(--critical); border-color: var(--critical); color: #fff; }
+.btn--danger:hover { background: #b93232; border-color: #b93232; }
+.btn--ghost { background: none; border-color: transparent; color: var(--ink-2); }
+.btn--ghost:hover { background: var(--surface-3); border-color: transparent; }
+.btn--lg { padding: 12px 20px; font-size: 14.5px; width: 100%; }
+.btn__ico { width: 16px; height: 16px; flex: none; }
+
+.field { display: block; margin-bottom: 14px; }
+.field__lb {
+  display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 5px;
+}
+.field__hint { font-size: 11.5px; color: var(--ink-4); margin-top: 4px; }
+.input, .select {
+  width: 100%; padding: 9px 11px;
+  border: 1px solid var(--line-2); border-radius: var(--r-ctl);
+  background: var(--surface); font-size: 13.5px;
+}
+.input:focus, .select:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: var(--brand); }
+.input--big { font-size: 26px; font-weight: 600; padding: 12px 14px; font-variant-numeric: tabular-nums; }
+.input::placeholder { color: var(--ink-4); }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px; border-radius: 100px;
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.pill--good { background: var(--good-wash); color: #0a7a0a; }
+.pill--warn { background: var(--warn-wash); color: #8a5f04; }
+.pill--crit { background: var(--crit-wash); color: #a92e2e; }
+.pill--mute { background: var(--surface-3); color: var(--ink-3); }
+.pill--info { background: var(--data-wash); color: var(--data-600); }
+
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th {
+  text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-4);
+  padding: 0 14px 8px; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.tbl td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl tbody tr:hover { background: var(--surface-2); }
+.tbl .r { text-align: right; }
+.tblwrap { overflow-x: auto; }
+
+.empty { padding: 40px 20px; text-align: center; color: var(--ink-4); font-size: 13px; }
+.empty svg { width: 30px; height: 30px; margin-bottom: 10px; opacity: .5; }
+
+.sep { height: 1px; background: var(--line); margin: 16px 0; border: 0; }
+
+.note {
+  display: flex; gap: 11px; padding: 12px 14px; border-radius: var(--r-ctl);
+  background: var(--data-wash); border: 1px solid #cfe1f8;
+  font-size: 12.5px; color: #1c4f8c; line-height: 1.45;
+}
+.note--warn { background: var(--warn-wash); border-color: #f0dcb4; color: #7a5502; }
+.note svg { width: 17px; height: 17px; flex: none; margin-top: 1px; }
+.note b { font-weight: 700; }
+
+/* ── Tuiles de statistique ──────────────────────────────────────────────── */
+
+.stat { padding: 16px 18px; }
+.stat__lb { font-size: 12px; color: var(--ink-3); }
+.stat__v { font-size: 27px; font-weight: 600; letter-spacing: -.02em; margin-top: 4px; line-height: 1.1; }
+.stat__d { font-size: 12px; margin-top: 5px; color: var(--ink-4); display: flex; align-items: center; gap: 5px; }
+.stat__d svg { width: 14px; height: 14px; flex: none; }
+.stat__d b { font-weight: 600; }
+.stat__d--up b { color: #006300; }
+.stat__d--down b { color: var(--critical); }
+.stat__spark { margin-top: 10px; display: block; }
+
+.hero-fig { font-size: 52px; font-weight: 600; letter-spacing: -.035em; line-height: 1; }
+</style>
+
+<style>
+/* ── Espace salarié : le téléphone sur le plan de travail ───────────────── */
+
+.device {
+  width: 392px; max-width: 100%;
+  border-radius: 46px; padding: 11px;
+  background: linear-gradient(160deg, #2b3149 0%, #161a2b 42%, #0d1020 100%);
+  box-shadow: var(--shadow-3), inset 0 1px 0 rgba(255,255,255,.16);
+  margin-top: 6px;
+}
+.device__screen {
+  position: relative; overflow: hidden;
+  border-radius: 36px; background: var(--surface-2);
+  height: 748px; display: flex; flex-direction: column;
+}
+.device__island {
+  position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+  width: 104px; height: 26px; border-radius: 100px; background: #0d1020; z-index: 6;
+}
+.device__caption {
+  text-align: center; font-size: 11.5px; color: var(--ink-4); margin-top: 12px;
+}
+
+.phone__status {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 24px 6px; font-size: 12px; font-weight: 600; flex: none;
+}
+.phone__status .sigs { display: flex; gap: 4px; align-items: center; color: var(--ink-2); }
+.phone__body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 8px 18px 20px; }
+.phone__body::-webkit-scrollbar { width: 0; }
+.phone__tabs {
+  flex: none; display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--line); background: var(--surface);
+  padding: 7px 6px 12px;
+}
+.ptab {
+  border: 0; background: none; cursor: pointer; padding: 6px 2px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-size: 10.5px; font-weight: 600; color: var(--ink-4); border-radius: 8px;
+}
+.ptab svg { width: 21px; height: 21px; }
+.ptab[aria-current="true"] { color: var(--brand); }
+
+.phone__h {
+  display: flex; align-items: center; gap: 10px; padding: 6px 2px 14px;
+}
+.phone__h h2 { font-size: 19px; letter-spacing: -.02em; }
+.phone__h .act { margin-left: auto; }
+
+/* La carte : le seul objet où le dessin prend le pas sur l'information. */
+.paycard {
+  position: relative; overflow: hidden;
+  border-radius: 16px; padding: 18px;
+  color: #fff;
+  background:
+    radial-gradient(120% 150% at 12% 0%, #2b2bb8 0%, transparent 55%),
+    linear-gradient(148deg, #14146b 0%, #000091 46%, #060632 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 14px 30px -14px rgba(0,0,80,.7);
+}
+.paycard::after {           /* guilloche : trame gravée, purement décorative */
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .14;
+  background:
+    repeating-linear-gradient(58deg, transparent 0 6px, rgba(255,255,255,.55) 6px 6.6px),
+    repeating-linear-gradient(-58deg, transparent 0 9px, rgba(255,255,255,.4) 9px 9.5px);
+  -webkit-mask-image: radial-gradient(90% 120% at 82% 8%, #000 0%, transparent 72%);
+          mask-image: radial-gradient(90% 120% at 82% 8%, #000 0%, transparent 72%);
+}
+.paycard__top { display: flex; align-items: flex-start; gap: 12px; position: relative; }
+.paycard__brand { font-size: 12.5px; font-weight: 700; letter-spacing: .04em; }
+.paycard__min { font-size: 9.5px; opacity: .72; letter-spacing: .05em; text-transform: uppercase; margin-top: 2px; }
+.paycard__chip {
+  margin-left: auto; width: 34px; height: 26px; border-radius: 5px;
+  background: linear-gradient(150deg, #f7d67a 0%, #c99b47 44%, #e8cf95 100%);
+}
+.paycard__bal { position: relative; margin-top: 22px; }
+.paycard__bal .lb { font-size: 10.5px; opacity: .74; letter-spacing: .06em; text-transform: uppercase; }
+.paycard__bal .v { font-size: 40px; font-weight: 600; letter-spacing: -.03em; line-height: 1.05; }
+.paycard__foot {
+  position: relative; margin-top: 18px; display: flex; align-items: flex-end; gap: 14px;
+  font-size: 11px; opacity: .8;
+}
+.paycard__foot .num { letter-spacing: .12em; }
+
+.qbtns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.qbtn {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 13px 6px; border-radius: var(--r-ctl);
+  border: 1px solid var(--line); background: var(--surface); cursor: pointer;
+  font-size: 11.5px; font-weight: 600; color: var(--ink-2);
+}
+.qbtn:hover { border-color: var(--brand); color: var(--brand); }
+.qbtn svg { width: 20px; height: 20px; }
+
+.txnrow {
+  display: flex; align-items: center; gap: 12px; padding: 11px 2px;
+  border-bottom: 1px solid var(--line); width: 100%; text-align: left;
+  background: none; border-left: 0; border-right: 0; border-top: 0; cursor: default;
+}
+.txnrow__ico {
+  width: 36px; height: 36px; border-radius: 9px; flex: none;
+  display: grid; place-items: center; background: var(--surface-3); color: var(--ink-2);
+}
+.txnrow__ico svg { width: 18px; height: 18px; }
+.txnrow__ico--in { background: var(--good-wash); color: #0a7a0a; }
+.txnrow__m { min-width: 0; flex: 1; }
+.txnrow__t { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.txnrow__s { font-size: 11.5px; color: var(--ink-4); }
+.txnrow__a { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.txnrow__a--in { color: #006300; }
+
+/* ── QR de paiement ─────────────────────────────────────────────────────── */
+
+.qrstage { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.qrframe {
+  position: relative; padding: 16px; border-radius: 18px;
+  background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-2);
+}
+.qrframe canvas { display: block; width: 232px; height: 232px; image-rendering: pixelated; }
+.qrframe--dead canvas { opacity: .12; filter: grayscale(1); }
+.qrframe__over {
+  position: absolute; inset: 0; display: none; place-items: center; padding: 24px;
+  border-radius: 18px; background: rgba(255,255,255,.86); text-align: center;
+}
+.qrframe--dead .qrframe__over { display: grid; }
+
+.qrtimer { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.qrtimer__ring { width: 34px; height: 34px; flex: none; }
+.qrtimer__t { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.qrtimer__s { font-size: 11.5px; color: var(--ink-4); }
+
+.qrtoken {
+  margin-top: 14px; padding: 9px 12px; border-radius: var(--r-ctl);
+  background: var(--surface-3); font-family: var(--mono); font-size: 11.5px;
+  color: var(--ink-2); word-break: break-all; text-align: left; line-height: 1.5;
+}
+
+.paid {
+  display: grid; place-items: center; gap: 14px; padding: 40px 10px; text-align: center;
+}
+.paid__mark {
+  width: 74px; height: 74px; border-radius: 50%; background: var(--good-wash);
+  display: grid; place-items: center; color: #0a7a0a;
+  animation: pop .42s cubic-bezier(.2,.8,.2,1) both;
+}
+.paid__mark svg { width: 36px; height: 36px; }
+@keyframes pop { from { transform: scale(.55); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ── Partenaires : liste et carte ───────────────────────────────────────── */
+
+.plist { display: flex; flex-direction: column; }
+.pitem {
+  display: flex; align-items: center; gap: 12px; padding: 12px 2px;
+  border-bottom: 1px solid var(--line); text-align: left;
+  background: none; border-top: 0; border-left: 0; border-right: 0;
+  width: 100%; cursor: pointer;
+}
+.pitem:hover { background: var(--surface-2); }
+.pitem__ico {
+  width: 38px; height: 38px; border-radius: 10px; flex: none;
+  display: grid; place-items: center; background: var(--brand-wash); color: var(--brand);
+}
+.pitem__ico svg { width: 19px; height: 19px; }
+.pitem__m { flex: 1; min-width: 0; }
+.pitem__t { font-size: 13.5px; font-weight: 600; }
+.pitem__s { font-size: 11.5px; color: var(--ink-4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pitem__d { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.mapbox {
+  position: relative; border-radius: var(--r-card); overflow: hidden;
+  border: 1px solid var(--line); background: #eaeef7;
+}
+.mapbox svg { display: block; width: 100%; height: auto; }
+.mappin { cursor: pointer; }
+.mappin circle.hit { fill: transparent; }
+.maplegend {
+  position: absolute; left: 10px; bottom: 10px;
+  background: rgba(255,255,255,.92); border: 1px solid var(--line);
+  border-radius: var(--r-ctl); padding: 7px 10px; font-size: 11px; color: var(--ink-3);
+}
+
+.pager { display: flex; align-items: center; gap: 8px; }
+.pager__i { font-size: 12px; color: var(--ink-3); margin-right: auto; }
+.pgbtn {
+  min-width: 30px; height: 30px; padding: 0 8px; border-radius: 6px;
+  border: 1px solid var(--line-2); background: var(--surface);
+  font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.pgbtn[aria-current="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+.pgbtn[disabled] { opacity: .4; cursor: not-allowed; }
+
+/* ── Bandeau défilant des transactions (admin) ──────────────────────────── */
+
+.ticker {
+  display: flex; align-items: stretch; overflow: hidden;
+  border-radius: var(--r-card); border: 1px solid var(--line); background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.ticker__lb {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 0 16px; border-right: 1px solid var(--line); background: var(--surface-2);
+  font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--ink-3); white-space: nowrap;
+}
+.ticker__lb::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good);
+  box-shadow: 0 0 0 3px rgba(12,163,12,.16);
+}
+.ticker__win {
+  flex: 1; min-width: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 92%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 3%, #000 92%, transparent);
+}
+.ticker__track {
+  display: flex; gap: 34px; width: max-content; padding: 11px 0;
+  animation: tickerscroll 46s linear infinite;
+}
+.ticker:hover .ticker__track, .ticker:focus-within .ticker__track { animation-play-state: paused; }
+@keyframes tickerscroll { to { transform: translateX(-50%); } }
+.ticker__i {
+  display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--ink-2);
+  white-space: nowrap;
+}
+.ticker__i .amt { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ticker__i .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--data-200); }
+
+/* ── Graphiques ─────────────────────────────────────────────────────────── */
+
+.chart { width: 100%; display: block; overflow: visible; }
+.chart .grid-l { stroke: var(--line); stroke-width: 1; }
+.chart .axis-l { stroke: var(--line-2); stroke-width: 1; }
+.chart .tick { fill: var(--ink-4); font-size: 10.5px; font-family: var(--ui); }
+.chart .tick--v { font-variant-numeric: tabular-nums; }
+.chart .lbl { fill: var(--ink-2); font-size: 11.5px; font-family: var(--ui); }
+.chart .val { fill: var(--ink); font-size: 11.5px; font-weight: 600; font-family: var(--ui); font-variant-numeric: tabular-nums; }
+.chart .bar { fill: var(--data); pointer-events: none; }
+.chartbox { width: 100%; overflow: hidden; }
+.chart .bar--mut { fill: var(--data-200); }
+.chart .hit { fill: transparent; cursor: pointer; }
+.chart .hit:hover + .bar, .chart .bar.on { fill: var(--data-600); }
+
+.charttip {
+  position: fixed; z-index: 60; pointer-events: none; opacity: 0;
+  padding: 7px 10px; border-radius: 6px;
+  background: var(--ink); color: #fff; font-size: 12px; line-height: 1.4;
+  box-shadow: var(--shadow-2); transition: opacity .1s ease;
+}
+.charttip b { font-variant-numeric: tabular-nums; }
+
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+
+.meter { height: 6px; border-radius: 100px; background: var(--data-wash); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--data); border-radius: 100px; }
+
+/* ── Barre de pilotage de la démonstration ──────────────────────────────── */
+
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; height: var(--dock-h);
+  display: flex; align-items: center; gap: 14px; padding: 0 18px;
+  background: var(--ink); color: #dfe2ef;
+  box-shadow: 0 -8px 24px -18px rgba(0,0,0,.8);
+}
+.dock__lb {
+  font-size: 10px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
+  color: #8b92ad;
+}
+.roleswitch { display: flex; gap: 4px; background: rgba(255,255,255,.07); padding: 3px; border-radius: 100px; }
+.rolebtn {
+  border: 0; background: none; color: #c3c9de; cursor: pointer;
+  padding: 5px 13px; border-radius: 100px; font-size: 12.5px; font-weight: 600;
+}
+.rolebtn:hover { color: #fff; }
+.rolebtn[aria-current="true"] { background: #fff; color: var(--ink); }
+.dock__spacer { flex: 1; }
+.dockbtn {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid rgba(255,255,255,.16); background: none; color: #dfe2ef;
+  padding: 5px 11px; border-radius: var(--r-ctl); font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.dockbtn:hover { background: rgba(255,255,255,.09); }
+.dockbtn[aria-pressed="true"] { background: var(--warn); border-color: var(--warn); color: #3a2900; }
+.dockbtn svg { width: 15px; height: 15px; }
+
+.console {
+  position: fixed; left: 0; right: 0; bottom: var(--dock-h); z-index: 49;
+  height: 292px; display: none; flex-direction: column;
+  background: #0f1220; color: #cfd6ea; border-top: 1px solid rgba(255,255,255,.12);
+}
+.console[data-open="true"] { display: flex; }
+.console__hd {
+  display: flex; align-items: center; gap: 12px; padding: 9px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.1); font-size: 12px;
+}
+.console__hd b { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: #8b92ad; }
+.console__bd { flex: 1; overflow-y: auto; padding: 10px 16px 18px; font-family: var(--mono); font-size: 11.5px; }
+.logline { padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.06); display: flex; gap: 10px; }
+.logline__m { font-weight: 600; min-width: 44px; }
+.logline__m[data-m="GET"] { color: #7fc4ff; }
+.logline__m[data-m="POST"] { color: #7ee2a8; }
+.logline__m[data-m="PATCH"], .logline__m[data-m="PUT"] { color: #f5c86b; }
+.logline__p { color: #dfe4f5; flex: 1; word-break: break-all; }
+.logline__s { color: #8b92ad; white-space: nowrap; }
+.logline__s b { color: #7ee2a8; }
+.logline__s b[data-bad="1"] { color: #ff8f8f; }
+.logbody { color: #8b92ad; padding: 2px 0 6px 54px; white-space: pre-wrap; word-break: break-all; }
+
+/* ── Notifications & fenêtres ───────────────────────────────────────────── */
+
+.toasts {
+  position: fixed; right: 18px; bottom: calc(var(--dock-h) + 16px); z-index: 70;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+}
+.toast {
+  display: flex; align-items: flex-start; gap: 10px; max-width: 380px;
+  padding: 12px 15px; border-radius: var(--r-ctl);
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--shadow-3); font-size: 13px;
+  animation: toastin .22s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes toastin { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+.toast svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+.toast--good svg { color: var(--good); }
+.toast--bad svg { color: var(--critical); }
+.toast--info svg { color: var(--data); }
+.toast b { display: block; font-weight: 600; }
+.toast span { color: var(--ink-3); font-size: 12.5px; }
+
+.modal {
+  position: fixed; inset: 0; z-index: 80; display: none;
+  place-items: center; padding: 24px;
+  background: rgba(18,23,43,.42);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+.modal[data-open="true"] { display: grid; }
+.modal__box {
+  width: min(560px, 100%); max-height: 84vh; overflow-y: auto;
+  background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-3);
+  animation: modalin .2s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes modalin { from { transform: translateY(12px) scale(.985); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal__hd { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.modal__hd h3 { font-size: 16px; }
+.modal__bd { padding: 20px; }
+.modal__ft { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-2); border-radius: 0 0 12px 12px; }
+
+/* ── Connexion ──────────────────────────────────────────────────────────── */
+
+.login { min-height: calc(100vh - var(--dock-h)); display: grid; place-items: center; padding: 40px 20px; }
+.login__box { width: min(880px, 100%); }
+.login__head { text-align: center; margin-bottom: 26px; }
+.login__head h1 { font-size: 30px; letter-spacing: -.03em; }
+.login__head p { color: var(--ink-3); margin-top: 8px; font-size: 14px; }
+.rolecards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.rolecard {
+  display: flex; flex-direction: column; gap: 8px; padding: 20px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card);
+  box-shadow: var(--shadow-1); cursor: pointer; text-align: left;
+  transition: border-color .14s ease, transform .14s ease, box-shadow .14s ease;
+}
+.rolecard:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: var(--shadow-2); }
+.rolecard__ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--brand-wash); color: var(--brand); }
+.rolecard__ico svg { width: 21px; height: 21px; }
+.rolecard h3 { font-size: 15px; }
+.rolecard p { font-size: 12.5px; color: var(--ink-3); line-height: 1.5; }
+.rolecard__who { margin-top: auto; padding-top: 10px; font-size: 12px; color: var(--ink-4); border-top: 1px solid var(--line); }
+
+/* ── Adaptation aux petits écrans ───────────────────────────────────────── */
+
+@media (max-width: 1180px) { .g-main { grid-template-columns: minmax(0,1fr); } .g-4 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 900px) {
+  .workspace { grid-template-columns: minmax(0,1fr); }
+  .rail {
+    border-right: 0; border-bottom: 1px solid var(--line);
+    display: flex; gap: 6px; overflow-x: auto; padding: 10px 12px;
+  }
+  .rail__label { display: none; }
+  .rail__group { display: flex; gap: 6px; }
+  .rail__group + .rail__group { margin-top: 0; }
+  .navitem { width: auto; white-space: nowrap; margin: 0; }
+  .stage { padding: 18px 14px 50px; }
+  .g-2, .g-3, .g-4 { grid-template-columns: minmax(0,1fr); }
+  .rolecards { grid-template-columns: minmax(0,1fr); }
+  .masthead__in { gap: 12px; padding: 9px 14px; flex-wrap: nowrap; }
+  .crest__dir { display: none; }
+  .crest__ministry { font-size: 9px; }
+  .crest__mark { width: 32px; height: 32px; font-size: 13px; }
+  .wordmark { padding-left: 12px; border-left: 1px solid var(--line); }
+  .wordmark span { display: none; }
+  .envpill { font-size: 0; padding: 5px; gap: 0; }
+  .envpill::before { margin: 0; }
+  .whoami__n, .whoami__r { display: none; }
+  .dock { gap: 10px; padding: 0 10px; overflow-x: auto; }
+}
+@media (max-width: 420px) { .device { border-radius: 0; padding: 0; box-shadow: none; } .device__screen { border-radius: 0; height: auto; min-height: 640px; } .device__island { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  .ticker__track { animation: none; }
+}
+</style>
+
+<div class="tricolore" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<header class="masthead">
+  <div class="masthead__in">
+    <div class="crest">
+      <div class="crest__mark" aria-hidden="true">JB</div>
+      <div class="crest__txt">
+        <div class="crest__ministry">Ministère du Job<br>et Bonheur</div>
+        <div class="crest__dir">Direction du Numérique et de l'Innovation</div>
+      </div>
+    </div>
+    <div class="wordmark"><b>CartePro</b> <span>JEB/DNI/2026-002 · v1.0</span></div>
+    <div class="masthead__spacer"></div>
+    <span class="envpill">Démonstrateur — aucune transaction réelle</span>
+    <div id="whoami"></div>
+  </div>
+</header>
+
+<main id="app" aria-live="polite"></main>
+
+<div class="toasts" id="toasts" aria-live="assertive"></div>
+<div class="charttip" id="charttip" role="presentation"></div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal__box" id="modal-box"></div>
+</div>
+
+<section class="console" id="console" aria-label="Journal des appels d'API">
+  <div class="console__hd">
+    <b>Console API</b>
+    <span style="color:#8b92ad">REST · JSON · <span class="mono">/api/v1</span></span>
+    <span style="flex:1"></span>
+    <button class="dockbtn" type="button" id="console-doc">Endpoints</button>
+    <button class="dockbtn" type="button" id="console-clear">Vider</button>
+    <button class="dockbtn" type="button" id="console-close" aria-label="Fermer la console">Fermer</button>
+  </div>
+  <div class="console__bd" id="console-log"></div>
+</section>
+
+<nav class="dock" aria-label="Pilotage de la démonstration">
+  <span class="dock__lb">Rôle</span>
+  <div class="roleswitch" id="roleswitch" role="group" aria-label="Changer d'espace"></div>
+  <div class="dock__spacer"></div>
+  <button class="dockbtn" type="button" id="btn-degraded" aria-pressed="false"
+          title="Simule une perte de connectivité chez le partenaire">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m2 2 20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 3-2M2 8.8a15 15 0 0 1 4.2-2.6M19.9 12.9a10 10 0 0 0-4.1-2.5M22 8.8a15 15 0 0 0-7.6-3.7"/><path d="M12 20h.01"/></svg>
+    Mode dégradé
+  </button>
+  <button class="dockbtn" type="button" id="btn-console" aria-pressed="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 8-4 4 4 4M13 16h4"/><rect x="2" y="3" width="20" height="18" rx="2"/></svg>
+    Console API <span class="mono" id="console-count" style="opacity:.7">0</span>
+  </button>
+  <button class="dockbtn" type="button" id="btn-reset">Réinitialiser les données</button>
+</nav>
+
+<script>
+"use strict";
+/* ============================================================================
+   1. Utilitaires
+   ========================================================================= */
+
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+const eur = (c, opts) => (c / 100).toLocaleString("fr-FR", Object.assign(
+  { style: "currency", currency: "EUR" }, opts || {}));
+const eurShort = c => (c / 100).toLocaleString("fr-FR",
+  { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+const nfr = n => n.toLocaleString("fr-FR");
+
+const D_JOUR = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+const M_COURT = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+
+function dateFR(ts, withTime) {
+  const d = new Date(ts);
+  const s = d.getDate() + " " + M_COURT[d.getMonth()] + " " + d.getFullYear();
+  return withTime ? s + " à " + pad(d.getHours()) + ":" + pad(d.getMinutes()) : s;
+}
+function heureFR(ts) { const d = new Date(ts); return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+function jourRelatif(ts) {
+  const d = new Date(ts), n = new Date();
+  const j0 = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+  const dj = Math.round((j0 - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 864e5);
+  if (dj === 0) return "Aujourd'hui";
+  if (dj === 1) return "Hier";
+  if (dj < 7) return D_JOUR[d.getDay()].charAt(0).toUpperCase() + D_JOUR[d.getDay()].slice(1);
+  return dateFR(ts);
+}
+const pad = n => String(n).padStart(2, "0");
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+const uid = n => Array.from({ length: n || 8 }, () =>
+  "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+
+/* Empreinte FNV-1a 32 bits, en hexadécimal sur 8 caractères. Elle chaîne les
+   transactions entre elles (§3.2 du cahier des charges) : ce n'est pas de la
+   cryptographie, c'est la démonstration du principe d'inaltérabilité. */
+function fnv1a(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+
+const ICO = {
+  home:    '<path d="M3 10.2 12 3l9 7.2V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  qr:      '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14h1M14 20h3M20 17v4"/>',
+  clock:   '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  pin:     '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  store:   '<path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3M3 9l1.5 3h15L21 9M4.5 12v8a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-8"/><path d="M9 21v-5h6v5"/>',
+  wallet:  '<path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2"/><path d="M3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M21 9v6h-4a3 3 0 0 1 0-6z"/>',
+  users:   '<path d="M16 20v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1"/><circle cx="9" cy="7" r="4"/><path d="M22 20v-1a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+  shield:  '<path d="M12 22s8-3.5 8-10V5l-8-3-8 3v7c0 6.5 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
+  check:   '<path d="m4 12 5.5 5.5L20 7"/>',
+  x:       '<path d="M18 6 6 18M6 6l12 12"/>',
+  alert:   '<path d="M12 9v5M12 17.5h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>',
+  info:    '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
+  up:      '<path d="M7 17 17 7M9 7h8v8"/>',
+  down:    '<path d="M17 7 7 17M15 17H7V9"/>',
+  card:    '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  search:  '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  plus:    '<path d="M12 5v14M5 12h14"/>',
+  dl:      '<path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M4 20h16"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 21v-5h5"/>',
+  chart:   '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  build:   '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+  list:    '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  key:     '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.8 12.2 8-8M17 6l2 2M14.5 8.5l2 2"/>',
+  scan:    '<path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M7 12h10"/>',
+  left:    '<path d="m14 6-6 6 6 6"/>',
+  right:   '<path d="m10 6 6 6-6 6"/>',
+  out:     '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+  ticket:  '<path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a3 3 0 0 0 0 6v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a3 3 0 0 0 0-6Z"/><path d="M14 5v14"/>',
+  eye:     '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  offline: '<path d="m2 2 20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 3-2M19.9 12.9a10 10 0 0 0-4.1-2.5"/><path d="M12 20h.01"/>',
+  lock:    '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'
+};
+function ico(name, cls) {
+  return '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" '
+    + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"'
+    + (cls ? ' class="' + cls + '"' : "") + '>' + (ICO[name] || "") + '</svg>';
+}
+</script>
+
+<script>
+"use strict";
+/* ============================================================================
+   2. Encodeur QR (ISO/IEC 18004) — mode octet, niveau de correction M,
+      versions 1 à 4.
+
+      Écrit ici plutôt qu'importé : le cahier des charges impose que le QR de
+      paiement fonctionne en connectivité dégradée (§2.2). Un démonstrateur qui
+      irait chercher une bibliothèque sur un CDN pour dessiner ce QR se
+      contredirait lui-même. Aucune dépendance : la page entière fonctionne
+      hors ligne.
+   ========================================================================= */
+
+const QR = (function () {
+
+  /* -- Corps de Galois GF(256), polynôme primitif 0x11d -------------------- */
+  const EXP = new Array(512), LOG = new Array(256);
+  (function () {
+    let x = 1;
+    for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11d; }
+    for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  })();
+  const gmul = (a, b) => (a === 0 || b === 0) ? 0 : EXP[LOG[a] + LOG[b]];
+
+  function genPoly(n) {
+    let p = [1];
+    for (let i = 0; i < n; i++) {
+      const r = new Array(p.length + 1).fill(0);
+      for (let j = 0; j < p.length; j++) { r[j] ^= p[j]; r[j + 1] ^= gmul(p[j], EXP[i]); }
+      p = r;
+    }
+    return p;
+  }
+  function eccOf(data, n) {
+    const gen = genPoly(n);
+    const res = data.slice().concat(new Array(n).fill(0));
+    for (let i = 0; i < data.length; i++) {
+      const f = res[i];
+      if (f === 0) continue;
+      for (let j = 0; j < gen.length; j++) res[i + j] ^= gmul(gen[j], f);
+    }
+    return res.slice(data.length);
+  }
+
+  /* -- Tables de version, niveau M ---------------------------------------- */
+  // ecPerBlock = mots de correction par bloc ; blocks = [nb de blocs, mots de données par bloc]
+  const VERSIONS = {
+    1: { size: 21, ecPerBlock: 10, blocks: [[1, 16]], align: [],       remainder: 0 },
+    2: { size: 25, ecPerBlock: 16, blocks: [[1, 28]], align: [6, 18],  remainder: 7 },
+    3: { size: 29, ecPerBlock: 26, blocks: [[1, 44]], align: [6, 22],  remainder: 7 },
+    4: { size: 33, ecPerBlock: 18, blocks: [[2, 32]], align: [6, 26],  remainder: 7 }
+  };
+  const dataCodewords = v =>
+    VERSIONS[v].blocks.reduce((s, b) => s + b[0] * b[1], 0);
+  // 4 bits de mode + 8 bits de longueur (versions 1 à 9) en tête du flux
+  const capacity = v => Math.floor((dataCodewords(v) * 8 - 12) / 8);
+
+  const G15 = 0x537, G15_MASK = 0x5412;
+  function bchDigit(d) { let n = 0; while (d !== 0) { n++; d >>>= 1; } return n; }
+  function formatBits(mask) {
+    const data = (0 /* niveau M */ << 3) | mask;   // niveau M = 0b00
+    let d = data << 10;
+    while (bchDigit(d) - bchDigit(G15) >= 0) d ^= (G15 << (bchDigit(d) - bchDigit(G15)));
+    return ((data << 10) | d) ^ G15_MASK;
+  }
+
+  const MASKS = [
+    (i, j) => (i + j) % 2 === 0,
+    (i, j) => i % 2 === 0,
+    (i, j) => j % 3 === 0,
+    (i, j) => (i + j) % 3 === 0,
+    (i, j) => (Math.floor(i / 2) + Math.floor(j / 3)) % 2 === 0,
+    (i, j) => (i * j) % 2 + (i * j) % 3 === 0,
+    (i, j) => ((i * j) % 2 + (i * j) % 3) % 2 === 0,
+    (i, j) => ((i * j) % 3 + (i + j) % 2) % 2 === 0
+  ];
+
+  /* -- Construction de la matrice ----------------------------------------- */
+  function blank(size) {
+    return { m: Array.from({ length: size }, () => new Array(size).fill(null)),
+             fn: Array.from({ length: size }, () => new Array(size).fill(false)), size: size };
+  }
+  function put(g, r, c, v) { g.m[r][c] = v; g.fn[r][c] = true; }
+
+  function finder(g, r0, c0) {
+    for (let r = -1; r <= 7; r++) for (let c = -1; c <= 7; c++) {
+      const r1 = r0 + r, c1 = c0 + c;
+      if (r1 < 0 || c1 < 0 || r1 >= g.size || c1 >= g.size) continue;
+      const on = (r >= 0 && r <= 6 && (c === 0 || c === 6))
+              || (c >= 0 && c <= 6 && (r === 0 || r === 6))
+              || (r >= 2 && r <= 4 && c >= 2 && c <= 4);
+      put(g, r1, c1, on ? 1 : 0);
+    }
+  }
+
+  function functionPatterns(g, ver) {
+    const size = g.size, cfg = VERSIONS[ver];
+    finder(g, 0, 0); finder(g, 0, size - 7); finder(g, size - 7, 0);
+
+    for (let i = 8; i < size - 8; i++) {          // rythme
+      const v = i % 2 === 0 ? 1 : 0;
+      put(g, 6, i, v); put(g, i, 6, v);
+    }
+    const A = cfg.align;                           // motifs d'alignement
+    for (let a = 0; a < A.length; a++) for (let b = 0; b < A.length; b++) {
+      const r = A[a], c = A[b];
+      if ((r <= 8 && c <= 8) || (r <= 8 && c >= size - 9) || (r >= size - 9 && c <= 8)) continue;
+      for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++)
+        put(g, r + dr, c + dc, (Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0)) ? 1 : 0);
+    }
+    for (let i = 0; i < 9; i++) {                  // zones réservées au format
+      if (g.m[8][i] === null) put(g, 8, i, 0);
+      if (g.m[i][8] === null) put(g, i, 8, 0);
+    }
+    for (let i = 0; i < 8; i++) {
+      if (g.m[8][size - 1 - i] === null) put(g, 8, size - 1 - i, 0);
+      if (g.m[size - 1 - i][8] === null) put(g, size - 1 - i, 8, 0);
+    }
+    put(g, size - 8, 8, 1);                        // module toujours noir
+  }
+
+  function placeData(g, bytes) {
+    const size = g.size;
+    let inc = -1, row = size - 1, bit = 7, byte = 0;
+    for (let col = size - 1; col > 0; col -= 2) {
+      if (col === 6) col--;
+      for (;;) {
+        for (let c = 0; c < 2; c++) {
+          const cc = col - c;
+          if (g.m[row][cc] === null) {
+            let dark = 0;
+            if (byte < bytes.length) dark = (bytes[byte] >>> bit) & 1;
+            g.m[row][cc] = dark;
+            if (--bit === -1) { byte++; bit = 7; }
+          }
+        }
+        row += inc;
+        if (row < 0 || row >= size) { row -= inc; inc = -inc; break; }
+      }
+    }
+  }
+
+  function applied(g, mask) {
+    const size = g.size, out = g.m.map(r => r.slice());
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++)
+      if (!g.fn[r][c] && MASKS[mask](r, c)) out[r][c] ^= 1;
+    const bits = formatBits(mask);
+    for (let i = 0; i < 15; i++) {
+      const v = (bits >> i) & 1;
+      if (i < 6) out[i][8] = v; else if (i < 8) out[i + 1][8] = v; else out[size - 15 + i][8] = v;
+      if (i < 8) out[8][size - 1 - i] = v; else if (i < 9) out[8][15 - i] = v; else out[8][14 - i] = v;
+    }
+    out[size - 8][8] = 1;
+    return out;
+  }
+
+  /* Pénalités normatives : plus le score est bas, meilleur est le masque. */
+  function penalty(m) {
+    const n = m.length;
+    let score = 0;
+
+    for (let pass = 0; pass < 2; pass++) {          // règle 1 : suites de 5+
+      for (let a = 0; a < n; a++) {
+        let run = 1, prev = pass ? m[0][a] : m[a][0];
+        for (let b = 1; b < n; b++) {
+          const v = pass ? m[b][a] : m[a][b];
+          if (v === prev) { run++; } else { if (run >= 5) score += 3 + (run - 5); run = 1; prev = v; }
+        }
+        if (run >= 5) score += 3 + (run - 5);
+      }
+    }
+    for (let r = 0; r < n - 1; r++) for (let c = 0; c < n - 1; c++) {   // règle 2 : blocs 2×2
+      const v = m[r][c];
+      if (v === m[r][c + 1] && v === m[r + 1][c] && v === m[r + 1][c + 1]) score += 3;
+    }
+    const P = [1,0,1,1,1,0,1];                       // règle 3 : motif de leurre
+    for (let pass = 0; pass < 2; pass++) {
+      for (let a = 0; a < n; a++) for (let b = 0; b <= n - 7; b++) {
+        let hit = true;
+        for (let k = 0; k < 7; k++) if ((pass ? m[b + k][a] : m[a][b + k]) !== P[k]) { hit = false; break; }
+        if (!hit) continue;
+        const before = [];
+        for (let k = b - 4; k < b; k++) before.push(k < 0 ? 0 : (pass ? m[k][a] : m[a][k]));
+        const after = [];
+        for (let k = b + 7; k < b + 11; k++) after.push(k >= n ? 0 : (pass ? m[k][a] : m[a][k]));
+        if (before.every(v => v === 0) || after.every(v => v === 0)) score += 40;
+      }
+    }
+    let dark = 0;                                    // règle 4 : équilibre noir/blanc
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) dark += m[r][c];
+    score += Math.floor(Math.abs(dark * 100 / (n * n) - 50) / 5) * 10;
+    return score;
+  }
+
+  /* -- API ---------------------------------------------------------------- */
+  function encode(text) {
+    const data = [];
+    for (let i = 0; i < text.length; i++) {          // le jeton est en ASCII
+      const cp = text.charCodeAt(i);
+      if (cp > 255) throw new Error("QR : caractère hors ASCII");
+      data.push(cp);
+    }
+    let ver = 0;
+    for (let v = 1; v <= 4; v++) if (data.length <= capacity(v)) { ver = v; break; }
+    if (!ver) throw new Error("QR : charge utile trop longue (" + data.length + " octets)");
+
+    const cfg = VERSIONS[ver], total = dataCodewords(ver);
+
+    // Flux binaire : mode 0100, longueur sur 8 bits, données, terminateur, bourrage
+    let bits = "0100" + data.length.toString(2).padStart(8, "0");
+    data.forEach(b => { bits += b.toString(2).padStart(8, "0"); });
+    bits += "0000".slice(0, Math.min(4, total * 8 - bits.length));
+    while (bits.length % 8) bits += "0";
+    const words = [];
+    for (let i = 0; i < bits.length; i += 8) words.push(parseInt(bits.substr(i, 8), 2));
+    const PAD = [0xEC, 0x11];
+    for (let i = 0; words.length < total; i++) words.push(PAD[i % 2]);
+
+    // Découpage en blocs, correction d'erreur, puis entrelacement
+    const dBlocks = [], eBlocks = [];
+    let off = 0;
+    cfg.blocks.forEach(([count, per]) => {
+      for (let i = 0; i < count; i++) {
+        const blk = words.slice(off, off + per); off += per;
+        dBlocks.push(blk);
+        eBlocks.push(eccOf(blk, cfg.ecPerBlock));
+      }
+    });
+    const out = [];
+    const maxD = Math.max.apply(null, dBlocks.map(b => b.length));
+    for (let i = 0; i < maxD; i++) dBlocks.forEach(b => { if (i < b.length) out.push(b[i]); });
+    for (let i = 0; i < cfg.ecPerBlock; i++) eBlocks.forEach(b => out.push(b[i]));
+
+    const g = blank(cfg.size);
+    functionPatterns(g, ver);
+    const stream = out.slice();
+    if (cfg.remainder) stream.push(0);               // bits restants, à zéro
+    placeData(g, stream);
+
+    let best = null, bestScore = Infinity;
+    for (let mask = 0; mask < 8; mask++) {
+      const cand = applied(g, mask), s = penalty(cand);
+      if (s < bestScore) { bestScore = s; best = cand; }
+    }
+    return { modules: best, size: cfg.size, version: ver };
+  }
+
+  /* Dessine sur un canvas, zone de silence de 4 modules comprise. */
+  function draw(canvas, text, px) {
+    const qr = encode(text);
+    const quiet = 4, n = qr.size + quiet * 2;
+    const scale = Math.max(1, Math.floor((px || 232) / n));
+    const side = scale * n;
+    canvas.width = side; canvas.height = side;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, side, side);
+    ctx.fillStyle = "#12172b";
+    for (let r = 0; r < qr.size; r++) for (let c = 0; c < qr.size; c++)
+      if (qr.modules[r][c]) ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+    return qr;
+  }
+
+  return { encode, draw, capacity };
+})();
+</script>
+
+<script>
+"use strict";
+/* ============================================================================
+   3. Données et persistance
+
+      Le dispositif est une simulation fonctionnelle (§5) : la « base » est un
+      objet JavaScript sérialisé dans le stockage local du navigateur. Le
+      schéma reproduit néanmoins celui d'une base relationnelle — employeurs,
+      salariés, partenaires, transactions, rechargements, jetons — pour que le
+      passage à un vrai backend soit une transposition, pas une réécriture.
+   ========================================================================= */
+
+const STORE_KEY = "cartepro.demo.v1";
+
+const CATEGORIES = [
+  { id: "restauration",  label: "Restauration",    ico: "store" },
+  { id: "boulangerie",   label: "Boulangerie",     ico: "store" },
+  { id: "alimentation",  label: "Alimentation",    ico: "store" },
+  { id: "culture",       label: "Culture",         ico: "ticket" },
+  { id: "sport",         label: "Sport",           ico: "chart" },
+  { id: "bienetre",      label: "Bien-être",       ico: "users" },
+  { id: "transport",     label: "Transport",       ico: "pin" }
+];
+const catLabel = id => (CATEGORIES.find(c => c.id === id) || { label: id }).label;
+const catIco   = id => (CATEGORIES.find(c => c.id === id) || { ico: "store" }).ico;
+
+const REGIONS = ["Île-de-France", "Auvergne-Rhône-Alpes", "Provence-Alpes-Côte d'Azur",
+  "Hauts-de-France", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Grand Est"];
+
+const STATUS = {
+  active:    { label: "Actif",       pill: "pill--good" },
+  pending:   { label: "En attente",  pill: "pill--warn" },
+  suspended: { label: "Suspendu",    pill: "pill--crit" },
+  closed:    { label: "Clôturé",     pill: "pill--mute" },
+  rejected:  { label: "Refusé",      pill: "pill--mute" }
+};
+
+let DB = null;
+
+/* Générateur pseudo-aléatoire à graine : l'historique de démonstration doit
+   être le même à chaque réinitialisation, sinon les graphiques changent de
+   forme entre deux présentations. */
+function rng(seed) {
+  let s = seed >>> 0;
+  return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+}
+
+function seed() {
+  const R = rng(20260202);
+  const pick = arr => arr[Math.floor(R() * arr.length)];
+  const between = (a, b) => a + Math.floor(R() * (b - a + 1));
+
+  const employers = [
+    { id: "EMP-VALLONIS", name: "Groupe Vallonis", siret: "812 445 902 00034", employees: 48 },
+    { id: "EMP-ARDENNE",  name: "Ardenne Industries", siret: "509 118 774 00021", employees: 132 }
+  ];
+
+  const employees = [
+    { id: "SAL-0042", name: "Amina Berthier",  email: "a.berthier@vallonis.fr",  employerId: "EMP-VALLONIS", balance: 0, since: "2026-01-12" },
+    { id: "SAL-0043", name: "Youssef Kaddour", email: "y.kaddour@vallonis.fr",   employerId: "EMP-VALLONIS", balance: 0, since: "2026-01-12" },
+    { id: "SAL-0044", name: "Claire Nguyen",   email: "c.nguyen@vallonis.fr",    employerId: "EMP-VALLONIS", balance: 0, since: "2026-02-03" },
+    { id: "SAL-0101", name: "Marc Lestrade",   email: "m.lestrade@ardenne.fr",   employerId: "EMP-ARDENNE",  balance: 0, since: "2026-01-20" },
+    { id: "SAL-0102", name: "Sophie Ravel",    email: "s.ravel@ardenne.fr",      employerId: "EMP-ARDENNE",  balance: 0, since: "2026-01-20" },
+    { id: "SAL-0103", name: "Hugo Delcourt",   email: "h.delcourt@ardenne.fr",   employerId: "EMP-ARDENNE",  balance: 0, since: "2026-03-02" }
+  ];
+
+  const P = (id, name, cat, addr, city, region, x, y, st, days) => ({
+    id, name, category: cat, address: addr, city, region,
+    x, y, status: st, siret: between(100, 899) + " " + between(100, 899) + " " + between(100, 899) + " 000" + between(10, 99),
+    contact: name.split(" ").slice(-1)[0].toLowerCase() + "@partenaire.fr",
+    createdAt: Date.now() - days * 864e5,
+    iban: "FR76 " + between(1000, 9999) + " " + between(1000, 9999) + " " + between(1000, 9999) + " " + between(1000, 9999)
+  });
+
+  const partners = [
+    P("PRT-001", "Le Comptoir des Halles", "restauration", "12 rue des Halles",      "Paris",      "Île-de-France",              0.34, 0.30, "active", 96),
+    P("PRT-002", "Boulangerie Sarrazin",   "boulangerie",  "4 place Victor Hugo",    "Paris",      "Île-de-France",              0.52, 0.44, "active", 94),
+    P("PRT-003", "Librairie Ampère",       "culture",      "27 rue Ampère",          "Lyon",       "Auvergne-Rhône-Alpes",       0.68, 0.24, "active", 88),
+    P("PRT-004", "Studio Forme",           "sport",        "9 avenue de la Gare",    "Lille",      "Hauts-de-France",            0.22, 0.62, "active", 81),
+    P("PRT-005", "Le Panier Bio",          "alimentation", "55 cours Berriat",       "Grenoble",   "Auvergne-Rhône-Alpes",       0.78, 0.56, "active", 76),
+    P("PRT-006", "Cinéma Le Rex",          "culture",      "3 boulevard Gambetta",   "Bordeaux",   "Nouvelle-Aquitaine",         0.44, 0.72, "active", 70),
+    P("PRT-007", "Table de Marseille",     "restauration", "18 quai du Port",        "Marseille",  "Provence-Alpes-Côte d'Azur", 0.60, 0.80, "active", 64),
+    P("PRT-008", "Vélo Cité",              "transport",    "2 rue Nationale",        "Nantes",     "Pays de la Loire",           0.14, 0.40, "active", 58),
+    P("PRT-009", "Institut Bellevue",      "bienetre",     "31 rue Saint-Rome",      "Toulouse",   "Occitanie",                  0.86, 0.34, "active", 51),
+    P("PRT-010", "Épicerie Kléber",        "alimentation", "76 avenue Kléber",       "Strasbourg", "Grand Est",                  0.30, 0.18, "active", 44),
+    P("PRT-011", "Café des Facultés",      "restauration", "1 place de la Sorbonne", "Paris",      "Île-de-France",              0.48, 0.62, "suspended", 39),
+    P("PRT-012", "Fournil de Lyon",        "boulangerie",  "14 rue de la Charité",   "Lyon",       "Auvergne-Rhône-Alpes",       0.72, 0.68, "active", 33),
+    P("PRT-013", "Escapade Nautique",      "sport",        "8 quai des Chartrons",   "Bordeaux",   "Nouvelle-Aquitaine",         0.20, 0.30, "pending", 4),
+    P("PRT-014", "Maison Perrin",          "boulangerie",  "40 rue du Marché",       "Lille",      "Hauts-de-France",            0.62, 0.14, "pending", 2)
+  ];
+
+  const db = {
+    employers, employees, partners,
+    txns: [], topups: [], tokens: [], audit: [], outbox: [],
+    session: { role: null, employeeId: "SAL-0042", partnerId: "PRT-001" },
+    degraded: false,
+    counters: { txn: 0, topup: 0 }
+  };
+
+  /* Historique : 90 jours de rechargements mensuels et de dépenses. */
+  const now = Date.now();
+  const actifs = partners.filter(p => p.status === "active");
+
+  for (let m = 6; m >= 1; m--) {
+    const at = now - m * 30 * 864e5;
+    employees.forEach(e => {
+      const amount = e.employerId === "EMP-VALLONIS" ? 22000 : 18000;
+      db.topups.push({
+        id: "RCH-" + String(++db.counters.topup).padStart(5, "0"),
+        employerId: e.employerId, employeeId: e.id, amount, at,
+        label: "Dotation mensuelle"
+      });
+      e.balance += amount;
+    });
+  }
+
+  for (let d = 88; d >= 0; d--) {
+    const day = new Date(now - d * 864e5);
+    const we = day.getDay() === 0 || day.getDay() === 6;
+    const count = we ? between(0, 2) : between(1, 4);
+    for (let k = 0; k < count; k++) {
+      const e = pick(employees);
+      const p = pick(actifs);
+      const amount = between(340, 4200);
+      if (e.balance < amount) continue;
+      const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(),
+                          between(8, 20), between(0, 59)).getTime();
+      commitTxn(db, e, p, amount, at, "qr");
+    }
+  }
+  db.txns.sort((a, b) => a.at - b.at);
+  rechain(db);
+  return db;
+}
+
+/* Enregistre une transaction et chaîne son empreinte à la précédente. Une fois
+   écrite, une transaction n'est jamais modifiée ni supprimée (§2.2, §3.2) : le
+   seul mouvement inverse possible serait une nouvelle transaction. */
+function commitTxn(db, employee, partner, amount, at, channel) {
+  const prev = db.txns.length ? db.txns[db.txns.length - 1].hash : "0".repeat(8);
+  const ref = "TRX-" + String(++db.counters.txn).padStart(6, "0");
+  const t = {
+    id: ref, ref, employeeId: employee.id, partnerId: partner.id,
+    amount, at: at || Date.now(), channel: channel || "qr",
+    status: "validated", prev, hash: ""
+  };
+  t.hash = fnv1a([prev, ref, t.employeeId, t.partnerId, t.amount, t.at].join("|"));
+  employee.balance -= amount;
+  db.txns.push(t);
+  return t;
+}
+
+function rechain(db) {
+  let prev = "0".repeat(8);
+  db.txns.forEach(t => {
+    t.prev = prev;
+    t.hash = fnv1a([prev, t.ref, t.employeeId, t.partnerId, t.amount, t.at].join("|"));
+    prev = t.hash;
+  });
+}
+
+function verifyLedger(db) {
+  let prev = "0".repeat(8);
+  for (let i = 0; i < db.txns.length; i++) {
+    const t = db.txns[i];
+    const h = fnv1a([prev, t.ref, t.employeeId, t.partnerId, t.amount, t.at].join("|"));
+    if (t.prev !== prev || t.hash !== h)
+      return { ok: false, index: i, ref: t.ref, expected: h, found: t.hash };
+    prev = t.hash;
+  }
+  return { ok: true, count: db.txns.length, head: prev };
+}
+
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch (e) { /* navigation privée */ }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.txns && parsed.partners) return parsed;
+    }
+  } catch (e) { /* stockage indisponible ou corrompu : on repart du jeu de démonstration */ }
+  return null;
+}
+function resetDB() { DB = seed(); save(); }
+
+const emp = id => DB.employees.find(e => e.id === id);
+const prt = id => DB.partners.find(p => p.id === id);
+const emr = id => DB.employers.find(e => e.id === id);
+const me  = () => emp(DB.session.employeeId);
+const mypartner = () => prt(DB.session.partnerId);
+
+/* Bus d'événements : c'est lui qui fait que le solde du salarié se met à jour
+   « en temps réel » (§2.2) quand le partenaire valide de son côté. */
+const BUS = {
+  h: {},
+  on(evt, fn) { (this.h[evt] = this.h[evt] || []).push(fn); },
+  emit(evt, data) { (this.h[evt] || []).forEach(fn => fn(data)); }
+};
+</script>
+
+<script>
+"use strict";
+/* ============================================================================
+   4. API REST simulée
+
+      Toutes les vues passent par ici — aucune n'écrit directement dans DB.
+      C'est ce qui permet à la console de montrer, pendant la démonstration, la
+      requête exacte que déclenche chaque geste, et ce qui rendra le
+      remplacement par un vrai backend mécanique : seule cette couche change.
+   ========================================================================= */
+
+const API = (function () {
+
+  const PREFIX = "/api/v1";
+  const logs = [];
+  let listeners = [];
+
+  const err = (status, code, message) => { const e = new Error(message); e.status = status; e.body = { error: code, message }; throw e; };
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  /* ---- Table de routage ------------------------------------------------- */
+  // offline:true  → l'appel reste possible en connectivité dégradée
+  const ROUTES = [
+
+    { m: "POST", p: /^\/auth\/session$/, offline: true, h: (_, b) => {
+        if (!["employee", "partner", "admin"].includes(b.role)) err(400, "invalid_role", "Rôle inconnu");
+        DB.session.role = b.role;
+        return { role: b.role, issuedAt: Date.now(), expiresIn: 3600 };
+      } },
+
+    { m: "GET", p: /^\/employees\/([\w-]+)$/, h: a => {
+        const e = emp(a[1]) || err(404, "not_found", "Salarié inconnu");
+        return { id: e.id, name: e.name, email: e.email, employer: emr(e.employerId).name, since: e.since };
+      } },
+
+    // Point d'entrée prévu pour l'interconnexion avec les SIRH employeurs (§3.3)
+    { m: "GET", p: /^\/employees\/([\w-]+)\/balance$/, offline: true, h: a => {
+        const e = emp(a[1]) || err(404, "not_found", "Salarié inconnu");
+        return { employeeId: e.id, balance: e.balance, currency: "EUR", asOf: new Date().toISOString() };
+      } },
+
+    { m: "GET", p: /^\/employees\/([\w-]+)\/transactions$/, h: (a, _, q) => {
+        const e = emp(a[1]) || err(404, "not_found", "Salarié inconnu");
+        let rows = DB.txns.filter(t => t.employeeId === e.id).slice().reverse();
+        if (q.month) rows = rows.filter(t => new Date(t.at).toISOString().slice(0, 7) === q.month);
+        return paginate(rows.map(publicTxn), q);
+      } },
+
+    { m: "POST", p: /^\/payment-tokens$/, offline: true, h: (_, b) => {
+        const e = emp(b.employeeId) || err(404, "not_found", "Salarié inconnu");
+        if (e.balance <= 0) err(402, "empty_balance", "Solde épuisé");
+        DB.tokens = DB.tokens.filter(t => t.expiresAt > Date.now() - 3600e3);
+        const tok = {
+          token: uid(16), employeeId: e.id,
+          issuedAt: Date.now(), expiresAt: Date.now() + 5 * 60e3,   // 5 minutes (§3.2)
+          usedAt: null, offline: !!DB.degraded
+        };
+        DB.tokens.push(tok); save();
+        return tok;
+      } },
+
+    { m: "GET", p: /^\/payment-tokens\/([\w-]+)$/, h: a => {
+        const t = DB.tokens.find(x => x.token === a[1]) || err(404, "unknown_token", "Jeton inconnu");
+        if (t.usedAt) err(409, "token_used", "Jeton déjà utilisé");
+        if (t.expiresAt < Date.now()) err(410, "token_expired", "Jeton expiré");
+        const e = emp(t.employeeId);
+        return { token: t.token, employee: { id: e.id, name: e.name }, expiresAt: t.expiresAt };
+      } },
+
+    { m: "POST", p: /^\/transactions$/, h: (_, b) => {
+        const t = DB.tokens.find(x => x.token === b.token) || err(404, "unknown_token", "Jeton inconnu");
+        if (t.usedAt) err(409, "token_used", "Jeton déjà utilisé");
+        // Un encaissement capturé hors ligne est daté par le partenaire : c'est
+        // cette date-là qui est comparée à la validité du jeton, sinon aucune
+        // reprise de connexion ne pourrait aboutir (§2.2, mode dégradé).
+        const captured = b.capturedAt ? Number(b.capturedAt) : Date.now();
+        if (t.expiresAt < captured) err(410, "token_expired", "Jeton expiré");
+        const p = prt(b.partnerId) || err(404, "not_found", "Partenaire inconnu");
+        if (p.status !== "active") err(403, "partner_inactive", "Compte partenaire non actif");
+        const amount = Math.round(Number(b.amount));
+        if (!(amount > 0)) err(400, "invalid_amount", "Montant invalide");
+        const e = emp(t.employeeId);
+        if (e.balance < amount) err(402, "insufficient_funds", "Solde insuffisant");
+
+        t.usedAt = Date.now();                       // jeton à usage unique (§3.2)
+        const txn = commitTxn(DB, e, p, amount, captured, b.channel || "qr");
+        save();
+        BUS.emit("txn", { txn, employee: e, partner: p });
+        return publicTxn(txn);
+      } },
+
+    { m: "GET", p: /^\/partners$/, offline: true, h: (_, __, q) => {
+        let rows = DB.partners.filter(p => q.all ? true : p.status === "active");
+        if (q.status) rows = rows.filter(p => p.status === q.status);
+        if (q.category) rows = rows.filter(p => p.category === q.category);
+        if (q.query) {
+          const s = q.query.toLowerCase();
+          rows = rows.filter(p => (p.name + " " + p.city + " " + catLabel(p.category)).toLowerCase().includes(s));
+        }
+        rows = rows.slice().sort((a, b) => a.name.localeCompare(b.name, "fr"));
+        return paginate(rows.map(publicPartner), q);
+      } },
+
+    { m: "GET", p: /^\/partners\/([\w-]+)$/, h: a => {
+        const p = prt(a[1]) || err(404, "not_found", "Partenaire inconnu");
+        return publicPartner(p, true);
+      } },
+
+    { m: "POST", p: /^\/partners$/, h: (_, b) => {
+        if (!b.name || !b.category || !b.city) err(400, "missing_fields", "Champs obligatoires manquants");
+        const p = {
+          id: "PRT-" + String(DB.partners.length + 1).padStart(3, "0"),
+          name: b.name, category: b.category, address: b.address || "", city: b.city,
+          region: b.region || REGIONS[0], siret: b.siret || "", contact: b.contact || "",
+          iban: b.iban || "", x: 0.2 + Math.random() * 0.6, y: 0.2 + Math.random() * 0.6,
+          status: "pending", createdAt: Date.now()       // validation manuelle obligatoire (§2.2)
+        };
+        DB.partners.push(p); save();
+        return publicPartner(p, true);
+      } },
+
+    { m: "PATCH", p: /^\/partners\/([\w-]+)$/, h: (a, b) => {
+        const p = prt(a[1]) || err(404, "not_found", "Partenaire inconnu");
+        if (!STATUS[b.status]) err(400, "invalid_status", "Statut inconnu");
+        const before = p.status;
+        p.status = b.status;
+        DB.audit.unshift({ at: Date.now(), actor: "admin", target: p.id,
+          action: "status", from: before, to: b.status, note: b.note || "" });
+        save();
+        return publicPartner(p, true);
+      } },
+
+    { m: "GET", p: /^\/partners\/([\w-]+)\/transactions$/, h: (a, _, q) => {
+        const p = prt(a[1]) || err(404, "not_found", "Partenaire inconnu");
+        let rows = DB.txns.filter(t => t.partnerId === p.id).slice().reverse();
+        if (q.since) rows = rows.filter(t => t.at >= Number(q.since));
+        return paginate(rows.map(publicTxn), q);
+      } },
+
+    { m: "POST", p: /^\/topups$/, h: (_, b) => {
+        const employer = emr(b.employerId) || err(404, "not_found", "Employeur inconnu");
+        const amount = Math.round(Number(b.amount));
+        if (!(amount > 0)) err(400, "invalid_amount", "Montant invalide");
+        const ids = b.employeeIds && b.employeeIds.length
+          ? b.employeeIds
+          : DB.employees.filter(e => e.employerId === employer.id).map(e => e.id);
+        const lines = ids.map(id => {
+          const e = emp(id) || err(404, "not_found", "Salarié inconnu : " + id);
+          e.balance += amount;
+          const t = { id: "RCH-" + String(++DB.counters.topup).padStart(5, "0"),
+                      employerId: employer.id, employeeId: e.id, amount,
+                      at: Date.now(), label: b.label || "Rechargement" };
+          DB.topups.unshift(t);
+          return t;
+        });
+        save();
+        BUS.emit("topup", { lines });
+        return { credited: lines.length, amount, total: amount * lines.length, lines };
+      } },
+
+    { m: "GET", p: /^\/admin\/stats$/, h: () => stats() },
+
+    { m: "GET", p: /^\/ledger\/verify$/, h: () => verifyLedger(DB) }
+  ];
+
+  /* ---- Documentation publiée dans la console ---------------------------- */
+  const DOC = [
+    ["POST",  "/auth/session",                        "Ouvre une session (employee · partner · admin)"],
+    ["GET",   "/employees/{id}",                      "Fiche salarié"],
+    ["GET",   "/employees/{id}/balance",              "Solde — point d'entrée SIRH employeur (§3.3)"],
+    ["GET",   "/employees/{id}/transactions",         "Historique paginé (?page&size&month)"],
+    ["POST",  "/payment-tokens",                      "Émet un jeton de paiement, valable 5 min, usage unique"],
+    ["GET",   "/payment-tokens/{token}",              "Résout un jeton présenté par un salarié"],
+    ["POST",  "/transactions",                        "Valide un encaissement — écriture définitive"],
+    ["GET",   "/partners",                            "Catalogue paginé (?query&category&status&page&size)"],
+    ["POST",  "/partners",                            "Demande d'adhésion — créée au statut « en attente »"],
+    ["GET",   "/partners/{id}",                       "Fiche partenaire"],
+    ["PATCH", "/partners/{id}",                       "Change le statut — réservé à l'administration"],
+    ["GET",   "/partners/{id}/transactions",          "Encaissements du partenaire (?since)"],
+    ["POST",  "/topups",                              "Rechargement employeur, individuel ou par lot"],
+    ["GET",   "/admin/stats",                         "Indicateurs nationaux"],
+    ["GET",   "/ledger/verify",                       "Vérifie la chaîne d'empreintes du registre"]
+  ];
+
+  /* ---- Représentations publiques ---------------------------------------- */
+  function publicTxn(t) {
+    const p = prt(t.partnerId), e = emp(t.employeeId);
+    return { ref: t.ref, at: new Date(t.at).toISOString(), amount: t.amount, currency: "EUR",
+             status: t.status, channel: t.channel,
+             partner: p ? { id: p.id, name: p.name, category: p.category, city: p.city } : null,
+             employee: e ? { id: e.id, name: e.name } : null,
+             integrity: { prev: t.prev, hash: t.hash } };
+  }
+  function publicPartner(p, full) {
+    const base = { id: p.id, name: p.name, category: p.category, categoryLabel: catLabel(p.category),
+                   city: p.city, region: p.region, address: p.address, status: p.status,
+                   x: p.x, y: p.y };
+    if (!full) return base;
+    const rows = DB.txns.filter(t => t.partnerId === p.id);
+    return Object.assign(base, {
+      siret: p.siret, contact: p.contact, iban: p.iban,
+      createdAt: new Date(p.createdAt).toISOString(),
+      totals: { count: rows.length, amount: rows.reduce((s, t) => s + t.amount, 0) }
+    });
+  }
+  function paginate(rows, q) {
+    const size = Math.max(1, Math.min(100, Number(q.size) || 10));
+    const pages = Math.max(1, Math.ceil(rows.length / size));
+    const page = Math.min(pages, Math.max(1, Number(q.page) || 1));
+    return { items: rows.slice((page - 1) * size, page * size),
+             page, size, pages, total: rows.length };
+  }
+  function stats() {
+    const now = Date.now(), since30 = now - 30 * 864e5, since60 = now - 60 * 864e5;
+    const vol = DB.txns.reduce((s, t) => s + t.amount, 0);
+    const cur = DB.txns.filter(t => t.at >= since30);
+    const prev = DB.txns.filter(t => t.at >= since60 && t.at < since30);
+    const sum = a => a.reduce((s, t) => s + t.amount, 0);
+    const byRegion = {}, byCat = {};
+    DB.txns.forEach(t => {
+      const p = prt(t.partnerId); if (!p) return;
+      byRegion[p.region] = (byRegion[p.region] || 0) + t.amount;
+      byCat[p.category] = (byCat[p.category] || 0) + t.amount;
+    });
+    return {
+      volume: vol, volume30: sum(cur), volume30prev: sum(prev),
+      count: DB.txns.length, count30: cur.length,
+      partnersActive: DB.partners.filter(p => p.status === "active").length,
+      partnersPending: DB.partners.filter(p => p.status === "pending").length,
+      partnersTotal: DB.partners.length,
+      employees: DB.employees.length,
+      outstanding: DB.employees.reduce((s, e) => s + e.balance, 0),
+      average: DB.txns.length ? Math.round(vol / DB.txns.length) : 0,
+      byRegion, byCategory: byCat
+    };
+  }
+
+  /* ---- Exécution -------------------------------------------------------- */
+  function parseQuery(path) {
+    const i = path.indexOf("?");
+    if (i < 0) return { clean: path, q: {} };
+    const q = {};
+    new URLSearchParams(path.slice(i + 1)).forEach((v, k) => { q[k] = v; });
+    return { clean: path.slice(0, i), q };
+  }
+
+  async function call(method, path, body) {
+    const t0 = performance.now();
+    const full = PREFIX + path;
+    const { clean, q } = parseQuery(path);
+    const route = ROUTES.find(r => r.m === method && r.p.test(clean));
+
+    if (!route) return finish(method, full, 404, { error: "no_route", message: "Endpoint inconnu" }, t0, true);
+
+    if (DB.degraded && !route.offline) {
+      await wait(600 + Math.random() * 400);
+      const e = new Error("Réseau indisponible");
+      e.network = true; e.status = 0;
+      finish(method, full, 0, { error: "network_unreachable", message: "Aucune réponse du serveur" }, t0, true);
+      throw e;
+    }
+
+    await wait(70 + Math.random() * 150);
+    try {
+      const out = route.h(clean.match(route.p), body || {}, q);
+      return finish(method, full, method === "POST" ? 201 : 200, out, t0, false);
+    } catch (e) {
+      finish(method, full, e.status || 500, e.body || { error: "server_error", message: e.message }, t0, true);
+      throw e;
+    }
+  }
+
+  function finish(method, path, status, body, t0, bad) {
+    const entry = { method, path, status, body, ms: Math.round(performance.now() - t0), at: Date.now(), bad };
+    logs.push(entry);
+    if (logs.length > 240) logs.shift();
+    listeners.forEach(fn => fn(entry));
+    return body;
+  }
+
+  return { call, logs, doc: DOC, onLog: fn => listeners.push(fn),
+           clear: () => { logs.length = 0; listeners.forEach(fn => fn(null)); },
+           get: (p, q) => call("GET", p + (q ? "?" + new URLSearchParams(q) : "")),
+           post: (p, b) => call("POST", p, b),
+           patch: (p, b) => call("PATCH", p, b) };
+})();
+</script>
+
+<script>
+"use strict";
+/* ============================================================================
+   5. Briques d'interface : notifications, fenêtres, pagination, graphiques
+   ========================================================================= */
+
+function toast(kind, title, detail) {
+  const box = document.createElement("div");
+  box.className = "toast toast--" + kind;
+  box.innerHTML = ico(kind === "good" ? "check" : kind === "bad" ? "alert" : "info")
+    + "<div><b>" + esc(title) + "</b>"
+    + (detail ? "<span>" + esc(detail) + "</span>" : "") + "</div>";
+  $("#toasts").appendChild(box);
+  setTimeout(() => {
+    box.style.transition = "opacity .3s ease, transform .3s ease";
+    box.style.opacity = "0"; box.style.transform = "translateY(6px)";
+    setTimeout(() => box.remove(), 320);
+  }, 4200);
+}
+
+const Modal = {
+  open(title, bodyHTML, footHTML) {
+    $("#modal-box").innerHTML =
+      '<div class="modal__hd"><h3 id="modal-title">' + esc(title) + '</h3>'
+      + '<span style="flex:1"></span>'
+      + '<button class="btn btn--ghost" type="button" data-close aria-label="Fermer">' + ico("x") + '</button></div>'
+      + '<div class="modal__bd">' + bodyHTML + '</div>'
+      + (footHTML ? '<div class="modal__ft">' + footHTML + '</div>' : '');
+    $("#modal").dataset.open = "true";
+    $$("[data-close]", $("#modal")).forEach(b => b.onclick = () => Modal.close());
+    const first = $("input, select, button:not([data-close])", $("#modal-box"));
+    if (first) first.focus();
+  },
+  close() { $("#modal").dataset.open = "false"; $("#modal-box").innerHTML = ""; }
+};
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("#modal").dataset.open === "true") Modal.close();
+});
+$("#modal").addEventListener("mousedown", e => { if (e.target.id === "modal") Modal.close(); });
+
+/* Pagination : le catalogue partenaires doit la supporter (§3.4). */
+function pagerHTML(meta, id) {
+  if (meta.pages <= 1) {
+    return '<span class="pager__i">' + meta.total + " résultat" + (meta.total > 1 ? "s" : "") + "</span>";
+  }
+  const btn = (p, lbl, cur, dis) =>
+    '<button class="pgbtn" type="button" data-pager="' + id + '" data-page="' + p + '"'
+    + (cur ? ' aria-current="true"' : "") + (dis ? " disabled" : "") + ">" + lbl + "</button>";
+  let out = '<span class="pager__i">' + meta.total + " résultats · page " + meta.page + " sur " + meta.pages + "</span>";
+  out += btn(meta.page - 1, ico("left"), false, meta.page === 1);
+  const from = Math.max(1, Math.min(meta.page - 1, meta.pages - 2));
+  for (let p = from; p < from + Math.min(3, meta.pages); p++) out += btn(p, p, p === meta.page, false);
+  out += btn(meta.page + 1, ico("right"), false, meta.page === meta.pages);
+  return out;
+}
+
+/* ---- Graphiques -----------------------------------------------------------
+   Une seule série par graphique, une seule teinte : ces vues répondent chacune
+   à une question de volume, pas à une comparaison de catégories. Les couleurs
+   de statut restent réservées aux statuts.
+   -------------------------------------------------------------------------*/
+
+const tip = $("#charttip");
+function tipShow(html, ev) {
+  tip.innerHTML = html;
+  tip.style.opacity = "1";
+  const r = tip.getBoundingClientRect();
+  let x = ev.clientX + 14, y = ev.clientY - r.height - 10;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+  if (y < 8) y = ev.clientY + 16;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function tipHide() { tip.style.opacity = "0"; }
+
+function topRounded(x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h);
+  return "M" + x + " " + (y + h) + "V" + (y + rr)
+    + "a" + rr + " " + rr + " 0 0 1 " + rr + " " + -rr
+    + "h" + (w - 2 * rr)
+    + "a" + rr + " " + rr + " 0 0 1 " + rr + " " + rr
+    + "V" + (y + h) + "Z";
+}
+function endRounded(x, y, w, h, r) {         // barre horizontale : extrémité droite arrondie
+  const rr = Math.min(r, h / 2, w);
+  return "M" + x + " " + y + "h" + (w - rr)
+    + "a" + rr + " " + rr + " 0 0 1 " + rr + " " + rr
+    + "v" + (h - 2 * rr)
+    + "a" + rr + " " + rr + " 0 0 1 " + -rr + " " + rr
+    + "H" + x + "Z";
+}
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const n = v / mag;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+}
+
+/* Colonnes : évolution d'un volume dans le temps.
+
+   Le graphique est dessiné APRÈS insertion, aux dimensions réelles de son
+   conteneur, en unités pixel. Étirer un viewBox pour remplir la carte
+   déformerait aussi les étiquettes : c'est ce qui transforme un axe en titre
+   géant. */
+const CHARTS = new Map();
+let chartSeq = 0;
+
+function chartBox(rows, opts) {
+  const id = "ch" + (++chartSeq);
+  CHARTS.set(id, { rows: rows, opts: opts || {} });
+  return '<div class="chartbox" data-chart="' + id + '" style="height:'
+    + ((opts && opts.px) || 190) + 'px"></div>';
+}
+
+function mountCharts(root) {
+  $$(".chartbox[data-chart]", root || document).forEach(box => {
+    const spec = CHARTS.get(box.dataset.chart);
+    if (!spec) return;
+    box.innerHTML = columnSVG(spec.rows, spec.opts,
+      Math.max(220, box.clientWidth || 600), box.clientHeight || spec.opts.px || 190);
+  });
+}
+let resizeT = null;
+addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => mountCharts(), 180); });
+
+function columnSVG(rows, opts, W, H) {
+  opts = opts || {};
+  const padL = 54, padR = 10, padT = 20, padB = 22;
+  const max = niceMax(Math.max.apply(null, rows.map(r => r.value).concat([1])));
+  const plotW = Math.max(10, W - padL - padR), plotH = Math.max(10, H - padT - padB);
+  const band = plotW / rows.length;
+  const bw = Math.min(band * 0.6, 24);
+  const peak = rows.reduce((a, b) => (b.value > a.value ? b : a), rows[0] || { value: 0 });
+
+  let g = "";
+  for (let i = 0; i <= 2; i++) {
+    const y = padT + plotH * (i / 2), v = max * (1 - i / 2);
+    g += '<line class="grid-l" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y.toFixed(1) + '"/>'
+      + '<text class="tick tick--v" x="' + (padL - 8) + '" y="' + (y + 3.5).toFixed(1) + '" text-anchor="end">'
+      + esc(opts.fmtTick ? opts.fmtTick(v) : nfr(Math.round(v))) + "</text>";
+  }
+  rows.forEach((r, i) => {
+    const h = Math.max(1.5, plotH * (r.value / max));
+    const x = padL + band * i + (band - bw) / 2, y = padT + plotH - h;
+    const isPeak = r === peak && opts.labelPeak !== false && r.value > 0;
+    g += '<rect class="hit" x="' + (padL + band * i).toFixed(1) + '" y="' + padT + '" width="' + band.toFixed(1)
+      + '" height="' + plotH.toFixed(1) + '" data-tip="'
+      + esc(opts.tip ? opts.tip(r) : r.label + " — " + r.value) + '"/>'
+      + '<path class="bar' + (isPeak ? " on" : "") + '" d="' + topRounded(x, y, bw, h, 4) + '"/>';
+    if (isPeak) {
+      g += '<text class="val" x="' + (x + bw / 2).toFixed(1) + '" y="' + (y - 7).toFixed(1) + '" text-anchor="middle">'
+        + esc(opts.fmtPeak ? opts.fmtPeak(r) : nfr(r.value)) + "</text>";
+    }
+    if (r.tick) {
+      g += '<text class="tick" x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">'
+        + esc(r.tick) + "</text>";
+    }
+  });
+  g += '<line class="axis-l" x1="' + padL + '" y1="' + (padT + plotH).toFixed(1) + '" x2="' + (W - padR)
+    + '" y2="' + (padT + plotH).toFixed(1) + '"/>';
+
+  return '<svg class="chart" viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H
+    + '" role="img" aria-label="' + esc(opts.aria || "Graphique en colonnes") + '">' + g + "</svg>";
+}
+
+/* Barres horizontales : répartition entre entités nommées. */
+function barChart(rows, opts) {
+  opts = opts || {};
+  const max = Math.max.apply(null, rows.map(r => r.value).concat([1]));
+  return '<div style="display:flex;flex-direction:column;gap:10px">' + rows.map(r => {
+    const pct = Math.max(1.5, (r.value / max) * 100);
+    return '<div>'
+      + '<div style="display:flex;gap:12px;align-items:baseline;margin-bottom:4px">'
+      +   '<span style="font-size:12.5px;color:var(--ink-2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.label) + '</span>'
+      +   '<b class="num" style="font-size:12.5px">' + esc(opts.fmt ? opts.fmt(r.value) : nfr(r.value)) + '</b>'
+      + '</div>'
+      + '<svg class="chart" viewBox="0 0 100 6" preserveAspectRatio="none" style="height:8px" aria-hidden="true">'
+      +   '<rect x="0" y="0" width="100" height="6" rx="3" fill="var(--data-wash)"/>'
+      +   '<path class="bar" d="' + endRounded(0, 0, pct, 6, 2.4) + '"/>'
+      + '</svg></div>';
+  }).join("") + "</div>";
+}
+
+function sparkline(values, opts) {
+  opts = opts || {};
+  const W = 100, H = 22, max = Math.max.apply(null, values.concat([1])), min = 0;
+  const step = W / Math.max(1, values.length - 1);
+  const pt = i => [i * step, H - 2 - (H - 4) * ((values[i] - min) / (max - min || 1))];
+  const d = values.map((v, i) => (i ? "L" : "M") + pt(i).map(n => n.toFixed(2)).join(" ")).join("");
+  const last = pt(values.length - 1);
+  return '<svg class="chart stat__spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" '
+    + 'style="height:26px" aria-hidden="true">'
+    + '<path d="' + d + "L" + W + " " + H + "L0 " + H + 'Z" fill="var(--data-wash)"/>'
+    + '<path d="' + d + '" fill="none" stroke="var(--data)" stroke-width="1.6" stroke-linejoin="round" '
+    + 'stroke-linecap="round" vector-effect="non-scaling-stroke"/>'
+    + '<circle cx="' + last[0].toFixed(2) + '" cy="' + last[1].toFixed(2) + '" r="2.2" fill="var(--data)" '
+    + 'stroke="var(--surface)" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>';
+}
+
+/* Un seul écouteur pour toutes les infobulles de graphique. */
+document.addEventListener("mouseover", e => {
+  const t = e.target.closest ? e.target.closest("[data-tip]") : null;
+  if (t) tipShow(t.getAttribute("data-tip").replace(/\n/g, "<br>"), e);
+});
+document.addEventListener("mousemove", e => {
+  const t = e.target.closest ? e.target.closest("[data-tip]") : null;
+  if (t) tipShow(t.getAttribute("data-tip").replace(/\n/g, "<br>"), e); else tipHide();
+});
+document.addEventListener("mouseleave", tipHide);
+
+function statTile(label, value, opts) {
+  opts = opts || {};
+  return '<div class="card stat">'
+    + '<div class="stat__lb">' + esc(label) + "</div>"
+    + '<div class="stat__v">' + esc(value) + "</div>"
+    + (opts.delta ? '<div class="stat__d stat__d--' + (opts.deltaDir || "up") + '">'
+        + ico(opts.deltaDir === "down" ? "down" : "up") + "<b>" + esc(opts.delta) + "</b> "
+        + esc(opts.deltaNote || "") + "</div>" : "")
+    + (opts.note ? '<div class="stat__d">' + esc(opts.note) + "</div>" : "")
+    + (opts.spark ? sparkline(opts.spark) : "")
+    + "</div>";
+}
+</script>
+
+<script>
+"use strict";
+/* ============================================================================
+   6. Espace salarié — application mobile
+
+      Rendu dans un châssis de téléphone : c'est là que le dispositif est
+      réellement utilisé, au comptoir d'un partenaire, et une maquette pleine
+      largeur mentirait sur les contraintes de l'écran.
+   ========================================================================= */
+
+const Employee = (function () {
+
+  let view = "accueil";
+  let qr = { token: null, expiresAt: 0, timer: null, paid: null };
+  let cat = { query: "", category: "", page: 1 };
+  let hist = { month: "", page: 1 };
+
+  function frame(inner, tabs) {
+    return '<div class="device">'
+      + '<div class="device__screen">'
+      +   '<div class="device__island" aria-hidden="true"></div>'
+      +   '<div class="phone__status"><span class="num">' + heureFR(Date.now()) + '</span>'
+      +     '<span class="sigs">' + (DB.degraded
+              ? ico("offline") + '<span style="font-size:11px;color:var(--warn)">hors ligne</span>'
+              : '<span style="font-size:11px;color:var(--ink-4)">5G</span>') + '</span></div>'
+      +   '<div class="phone__body" id="phone-body">' + inner + '</div>'
+      +   tabs
+      + '</div></div>'
+      + '<p class="device__caption">Espace salarié — application mobile · '
+      + esc(me().name) + ' · ' + esc(emr(me().employerId).name) + '</p>';
+  }
+
+  function tabbar() {
+    const t = [["accueil", "home", "Accueil"], ["payer", "qr", "Payer"],
+               ["historique", "clock", "Historique"], ["partenaires", "pin", "Autour"]];
+    return '<nav class="phone__tabs">' + t.map(([id, i, lb]) =>
+      '<button class="ptab" type="button" data-eview="' + id + '"'
+      + (view === id ? ' aria-current="true"' : "") + ">" + ico(i) + "<span>" + lb + "</span></button>"
+    ).join("") + "</nav>";
+  }
+
+  /* ---- Accueil ---------------------------------------------------------- */
+  function accueil() {
+    const e = me();
+    const last = DB.txns.filter(t => t.employeeId === e.id).slice(-4).reverse();
+    const lastTop = DB.topups.filter(t => t.employeeId === e.id).sort((a, b) => b.at - a.at)[0];
+    const mois = DB.txns.filter(t => t.employeeId === e.id
+      && new Date(t.at).getMonth() === new Date().getMonth()).reduce((s, t) => s + t.amount, 0);
+
+    return '<div class="phone__h"><h2>Bonjour ' + esc(e.name.split(" ")[0]) + '</h2></div>'
+      + '<div class="paycard">'
+      +   '<div class="paycard__top"><div><div class="paycard__brand">CartePro</div>'
+      +     '<div class="paycard__min">Ministère du Job et Bonheur</div></div>'
+      +     '<div class="paycard__chip" aria-hidden="true"></div></div>'
+      +   '<div class="paycard__bal"><div class="lb">Solde disponible</div>'
+      +     '<div class="v num" id="emp-balance">' + eur(e.balance) + '</div></div>'
+      +   '<div class="paycard__foot"><span class="mono num">'
+      +     esc(e.id.replace("SAL-", "4021 ")) + " 88" + '</span>'
+      +     '<span style="margin-left:auto">' + esc(emr(e.employerId).name) + "</span></div>"
+      + '</div>'
+      + '<div class="qbtns">'
+      +   '<button class="qbtn" type="button" data-eview="payer">' + ico("qr") + "Payer</button>"
+      +   '<button class="qbtn" type="button" data-eview="historique">' + ico("clock") + "Historique</button>"
+      +   '<button class="qbtn" type="button" data-eview="partenaires">' + ico("pin") + "Autour</button>"
+      + '</div>'
+      + '<div style="display:flex;gap:10px;margin-top:16px">'
+      +   '<div class="card" style="flex:1;padding:12px 14px">'
+      +     '<div style="font-size:11.5px;color:var(--ink-4)">Dépensé ce mois</div>'
+      +     '<div class="num" style="font-size:18px;font-weight:600">' + eur(mois) + "</div></div>"
+      +   '<div class="card" style="flex:1;padding:12px 14px">'
+      +     '<div style="font-size:11.5px;color:var(--ink-4)">Dernière dotation</div>'
+      +     '<div class="num" style="font-size:18px;font-weight:600">'
+      +       (lastTop ? eur(lastTop.amount) : "—") + "</div>"
+      +     '<div style="font-size:11px;color:var(--ink-4)">' + (lastTop ? dateFR(lastTop.at) : "") + "</div></div>"
+      + '</div>'
+      + '<h3 style="font-size:13px;margin:20px 0 4px">Dernières opérations</h3>'
+      + (last.length ? last.map(txnRow).join("") : '<p class="empty">Aucune opération</p>')
+      + '<button class="btn btn--ghost" type="button" data-eview="historique" '
+      + 'style="width:100%;margin-top:10px">Tout l\'historique</button>';
+  }
+
+  function txnRow(t) {
+    const p = prt(t.partnerId);
+    return '<div class="txnrow"><div class="txnrow__ico">' + ico(catIco(p ? p.category : "store")) + "</div>"
+      + '<div class="txnrow__m"><div class="txnrow__t">' + esc(p ? p.name : "Partenaire") + "</div>"
+      + '<div class="txnrow__s">' + esc(jourRelatif(t.at)) + " · " + heureFR(t.at) + " · " + esc(t.ref) + "</div></div>"
+      + '<div class="txnrow__a num">−' + eur(t.amount) + "</div></div>";
+  }
+
+  /* ---- Payer : génération du QR ----------------------------------------- */
+  function payer() {
+    if (qr.paid) {
+      const p = prt(qr.paid.partner.id) || { name: qr.paid.partner.name };
+      return '<div class="phone__h"><h2>Paiement accepté</h2></div>'
+        + '<div class="paid"><div class="paid__mark">' + ico("check") + "</div>"
+        + '<div><div class="num" style="font-size:32px;font-weight:600">−' + eur(qr.paid.amount) + "</div>"
+        + '<div style="color:var(--ink-3);margin-top:4px">' + esc(p.name) + "</div></div>"
+        + '<div class="card" style="width:100%;padding:14px;text-align:left">'
+        +   row("Référence", '<span class="mono">' + esc(qr.paid.ref) + "</span>")
+        +   row("Nouveau solde", '<b class="num">' + eur(me().balance) + "</b>")
+        +   row("Empreinte", '<span class="mono" style="font-size:11px">' + esc(qr.paid.hash) + "</span>")
+        + "</div>"
+        + '<p style="font-size:12px;color:var(--ink-4);max-width:30ch">Cette opération est définitive : '
+        + 'elle ne peut être ni modifiée ni annulée.</p>'
+        + '<button class="btn btn--primary btn--lg" type="button" data-qr="reset">Terminer</button></div>';
+    }
+
+    const live = qr.token && qr.expiresAt > Date.now();
+    return '<div class="phone__h"><h2>Payer</h2></div>'
+      + (DB.degraded ? '<div class="note note--warn" style="margin-bottom:14px">' + ico("offline")
+          + "<div><b>Mode dégradé.</b> Le jeton est produit par l'application à partir de la réserve "
+          + "pré-provisionnée. Il reste présentable ; le partenaire l'encaissera puis synchronisera.</div></div>" : "")
+      + '<div class="qrstage">'
+      +   '<div class="qrframe' + (live ? "" : " qrframe--dead") + '" id="qr-frame">'
+      +     '<canvas id="qr-canvas" width="232" height="232" role="img" '
+      +     'aria-label="QR code de paiement à présenter au partenaire"></canvas>'
+      +     '<div class="qrframe__over"><div><div style="font-weight:600;margin-bottom:6px">'
+      +       (qr.token ? "Jeton expiré" : "Aucun jeton actif") + "</div>"
+      +       '<div style="font-size:12px;color:var(--ink-3)">Générez un QR code au moment de payer.</div></div></div>'
+      +   "</div>"
+      +   (live ? '<div class="qrtimer">'
+      +     '<svg class="qrtimer__ring" viewBox="0 0 36 36" aria-hidden="true">'
+      +       '<circle cx="18" cy="18" r="15" fill="none" stroke="var(--surface-3)" stroke-width="3"/>'
+      +       '<circle id="qr-ring" cx="18" cy="18" r="15" fill="none" stroke="var(--brand)" stroke-width="3" '
+      +       'stroke-linecap="round" transform="rotate(-90 18 18)" stroke-dasharray="94.2" stroke-dashoffset="0"/></svg>'
+      +     '<div style="text-align:left"><div class="qrtimer__t" id="qr-time">5:00</div>'
+      +     '<div class="qrtimer__s">avant expiration · usage unique</div></div></div>' : "")
+      +   (qr.token ? '<div class="qrtoken">CP1|' + esc(qr.token) + "</div>" : "")
+      +   '<button class="btn ' + (live ? "" : "btn--primary ") + 'btn--lg" type="button" data-qr="new" '
+      +     'style="margin-top:16px">' + (live ? "Régénérer un jeton" : "Générer un QR code de paiement") + "</button>"
+      +   '<p style="font-size:11.5px;color:var(--ink-4);margin-top:12px;max-width:34ch;text-align:center">'
+      +     "Le partenaire scanne ce code, saisit le montant et valide. Votre solde est débité à cet instant.</p>"
+      + "</div>";
+  }
+  const row = (k, v) => '<div style="display:flex;gap:12px;padding:5px 0;font-size:12.5px">'
+    + '<span style="color:var(--ink-4)">' + k + '</span><span style="margin-left:auto">' + v + "</span></div>";
+
+  async function newToken() {
+    try {
+      const t = await API.post("/payment-tokens", { employeeId: me().id });
+      qr.token = t.token; qr.expiresAt = t.expiresAt; qr.paid = null;
+      render();
+      toast("info", "Jeton émis", "Valable 5 minutes, un seul encaissement.");
+    } catch (e) {
+      toast("bad", "Émission impossible", (e.body && e.body.message) || "Erreur");
+    }
+  }
+
+  function tick() {
+    if (!qr.token || view !== "payer" || qr.paid) return;
+    const left = qr.expiresAt - Date.now();
+    const el = $("#qr-time"), ring = $("#qr-ring");
+    if (left <= 0) { render(); return; }
+    if (el) el.textContent = Math.floor(left / 60000) + ":" + pad(Math.floor(left / 1000) % 60);
+    if (ring) ring.setAttribute("stroke-dashoffset", String(94.2 * (1 - left / (5 * 60e3))));
+  }
+
+  /* ---- Historique ------------------------------------------------------- */
+  async function historique() {
+    const e = me();
+    const res = await API.get("/employees/" + e.id + "/transactions",
+      Object.assign({ page: hist.page, size: 8 }, hist.month ? { month: hist.month } : {}));
+    const months = [];
+    for (let i = 0; i < 4; i++) {
+      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
+      months.push({ v: d.toISOString().slice(0, 7), lb: M_COURT[d.getMonth()] + " " + String(d.getFullYear()).slice(2) });
+    }
+    const total = res.items.reduce((s, t) => s + t.amount, 0);
+
+    return '<div class="phone__h"><h2>Historique</h2></div>'
+      + '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px">'
+      +   '<button class="pgbtn" type="button" data-month=""' + (hist.month ? "" : ' aria-current="true"') + ">Tout</button>"
+      +   months.map(m => '<button class="pgbtn" type="button" data-month="' + m.v + '"'
+          + (hist.month === m.v ? ' aria-current="true"' : "") + ">" + m.lb + "</button>").join("")
+      + "</div>"
+      + '<div class="card" style="padding:12px 14px;margin-bottom:6px;display:flex;align-items:baseline">'
+      +   '<span style="font-size:12px;color:var(--ink-3)">' + res.total + " opération" + (res.total > 1 ? "s" : "") + "</span>"
+      +   '<b class="num" style="margin-left:auto">' + eur(total) + "</b>"
+      +   '<span style="font-size:11px;color:var(--ink-4);margin-left:6px">sur cette page</span></div>'
+      + (res.items.length ? res.items.map(t => {
+          return '<div class="txnrow"><div class="txnrow__ico">'
+            + ico(catIco(t.partner ? t.partner.category : "store")) + "</div>"
+            + '<div class="txnrow__m"><div class="txnrow__t">' + esc(t.partner ? t.partner.name : "—") + "</div>"
+            + '<div class="txnrow__s">' + esc(dateFR(new Date(t.at).getTime())) + " · " + esc(t.ref) + "</div></div>"
+            + '<div class="txnrow__a num">−' + eur(t.amount) + "</div></div>";
+        }).join("") : '<p class="empty">Aucune opération sur cette période</p>')
+      + '<div class="pager" style="margin-top:14px">' + pagerHTML(res, "hist") + "</div>";
+  }
+
+  /* ---- Partenaires ------------------------------------------------------ */
+  async function partenaires() {
+    const res = await API.get("/partners", { page: cat.page, size: 6,
+      query: cat.query, category: cat.category });
+    const all = await API.get("/partners", { size: 100 });
+
+    return '<div class="phone__h"><h2>Autour de moi</h2></div>'
+      + '<label class="field" style="margin-bottom:10px">'
+      +   '<span class="vh">Rechercher un partenaire</span>'
+      +   '<input class="input" id="cat-q" type="search" placeholder="Rechercher un partenaire, une ville…" '
+      +   'value="' + esc(cat.query) + '"></label>'
+      + '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px">'
+      +   '<button class="pgbtn" type="button" data-cat=""' + (cat.category ? "" : ' aria-current="true"') + ">Toutes</button>"
+      +   CATEGORIES.map(c => '<button class="pgbtn" type="button" data-cat="' + c.id + '"'
+          + (cat.category === c.id ? ' aria-current="true"' : "") + ">" + esc(c.label) + "</button>").join("")
+      + "</div>"
+      + mapHTML(all.items, 100, 62)
+      + '<div class="plist" style="margin-top:6px">'
+      + (res.items.length ? res.items.map(p =>
+          '<button class="pitem" type="button" data-partner="' + p.id + '">'
+          + '<span class="pitem__ico">' + ico(catIco(p.category)) + "</span>"
+          + '<span class="pitem__m"><span class="pitem__t">' + esc(p.name) + "</span>"
+          + '<span class="pitem__s">' + esc(p.categoryLabel) + " · " + esc(p.city) + "</span></span>"
+          + '<span class="pitem__d">' + (0.3 + (p.x + p.y)).toFixed(1) + " km</span></button>"
+        ).join("") : '<p class="empty">Aucun partenaire ne correspond</p>')
+      + "</div>"
+      + '<div class="pager" style="margin-top:14px">' + pagerHTML(res, "cat") + "</div>";
+  }
+
+  /* Fond de plan schématique : le dispositif n'embarque pas de service
+     cartographique, mais la fonction « localiser un partenaire » doit être
+     démontrable. Les rues sont dessinées, les positions sont réelles. */
+  function mapHTML(items, W, H) {
+    const streets = [[0,14,100,20],[0,38,100,31],[0,52,100,58],[18,0,26,62],[52,0,46,62],[76,0,84,62]];
+    return '<div class="mapbox"><svg viewBox="0 0 ' + W + " " + H + '" role="img" '
+      + 'aria-label="Plan des partenaires référencés">'
+      + '<rect width="' + W + '" height="' + H + '" fill="#e9eef7"/>'
+      + '<rect x="6" y="20" width="20" height="14" rx="2" fill="#dcecdd"/>'
+      + '<rect x="62" y="6" width="26" height="10" rx="2" fill="#dcecdd"/>'
+      + '<path d="M0 46 C 20 42, 30 54, 52 50 S 84 40, 100 44" fill="none" stroke="#cfe0f3" stroke-width="4"/>'
+      + streets.map(s => '<line x1="' + s[0] + '" y1="' + s[1] + '" x2="' + s[2] + '" y2="' + s[3]
+          + '" stroke="#ffffff" stroke-width="2.4"/>').join("")
+      + items.map(p => {
+          const x = (6 + p.x * 88).toFixed(1), y = (5 + p.y * 52).toFixed(1);
+          return '<g class="mappin" data-partner="' + p.id + '" data-tip="' + esc(p.name + " — " + p.city) + '">'
+            + '<circle class="hit" cx="' + x + '" cy="' + y + '" r="4.5"/>'
+            + '<circle cx="' + x + '" cy="' + y + '" r="2.6" fill="#000091" stroke="#fff" stroke-width="1"/></g>';
+        }).join("")
+      + "</svg><div class=\"maplegend\">" + items.length + " partenaires référencés</div></div>";
+  }
+
+  /* ---- Assemblage ------------------------------------------------------- */
+  async function render() {
+    const body = view === "accueil" ? accueil()
+      : view === "payer" ? payer()
+      : view === "historique" ? await historique()
+      : await partenaires();
+    $("#app").innerHTML = '<div class="workspace" style="grid-template-columns:minmax(0,1fr)">'
+      + '<div class="stage stage--bench">' + frame(body, tabbar()) + "</div></div>";
+    if (view === "payer" && qr.token && qr.expiresAt > Date.now()) {
+      try { QR.draw($("#qr-canvas"), "CP1|" + qr.token, 232); }
+      catch (e) { toast("bad", "QR indisponible", e.message); }
+      tick();
+    }
+    const q = $("#cat-q");
+    if (q) {
+      q.oninput = () => { cat.query = q.value; cat.page = 1;
+        clearTimeout(q._t); q._t = setTimeout(() => { render().then(() => { const n = $("#cat-q"); if (n) { n.focus(); n.selectionStart = n.value.length; } }); }, 220); };
+    }
+  }
+
+  function go(v) { view = v; if (v !== "payer") qr.paid = null; render(); }
+
+  BUS.on("txn", d => {
+    if (d.employee.id !== DB.session.employeeId) return;
+    if (qr.token && DB.tokens.some(t => t.token === qr.token && t.usedAt)) {
+      qr.paid = { amount: d.txn.amount, ref: d.txn.ref, hash: d.txn.hash,
+                  partner: { id: d.partner.id, name: d.partner.name } };
+      qr.token = null;
+      if (DB.session.role === "employee") { view = "payer"; render(); }
+    }
+  });
+
+  setInterval(tick, 500);
+
+  return {
+    render, go,
+    handle(el) {
+      if (el.dataset.eview) { go(el.dataset.eview); return true; }
+      if (el.dataset.qr === "new") { newToken(); return true; }
+      if (el.dataset.qr === "reset") { qr.paid = null; go("accueil"); return true; }
+      if (el.dataset.month !== undefined && el.closest(".phone__body")) {
+        hist.month = el.dataset.month; hist.page = 1; render(); return true;
+      }
+      if (el.dataset.cat !== undefined) { cat.category = el.dataset.cat; cat.page = 1; render(); return true; }
+      if (el.dataset.pager === "hist") { hist.page = Number(el.dataset.page); render(); return true; }
+      if (el.dataset.pager === "cat") { cat.page = Number(el.dataset.page); render(); return true; }
+      if (el.dataset.partner && el.closest(".stage--bench")) { partnerSheet(el.dataset.partner); return true; }
+      return false;
+    },
+    reset() { view = "accueil"; qr = { token: null, expiresAt: 0, timer: null, paid: null }; }
+  };
+
+  async function partnerSheet(id) {
+    const p = await API.get("/partners/" + id);
+    Modal.open(p.name,
+      '<div style="display:flex;gap:14px;align-items:flex-start">'
+      + '<div class="pitem__ico" style="width:46px;height:46px">' + ico(catIco(p.category)) + "</div>"
+      + "<div><div style=\"font-weight:600\">" + esc(p.categoryLabel) + "</div>"
+      + '<div style="color:var(--ink-3);font-size:13px">' + esc(p.address) + ", " + esc(p.city) + "</div>"
+      + '<div style="margin-top:8px"><span class="pill ' + STATUS[p.status].pill + '">'
+      + STATUS[p.status].label + "</span></div></div></div>"
+      + '<hr class="sep">'
+      + '<div class="note">' + ico("info") + "<div>Présentez votre QR code CartePro en caisse. "
+      + "Le partenaire saisit le montant, vous voyez le débit immédiatement.</div></div>",
+      '<button class="btn" type="button" data-close>Fermer</button>');
+  }
+})();
+</script>
+
+<script>
+"use strict";
+/* ============================================================================
+   7. Espace partenaire
+   ========================================================================= */
+
+const Partner = (function () {
+
+  let view = "bord";
+  let scan = { token: null, employee: null, amount: "", busy: false };
+  let period = 30;
+  let cat = { page: 1, query: "" };
+
+  const NAV = [
+    ["bord",         "chart",  "Tableau de bord"],
+    ["encaisser",    "scan",   "Encaisser"],
+    ["transactions", "list",   "Transactions"],
+    ["catalogue",    "store",  "Catalogue"],
+    ["compte",       "build",  "Mon compte"]
+  ];
+
+  function rail() {
+    const p = mypartner();
+    const outbox = DB.outbox.length;
+    return '<aside class="rail"><div class="rail__group">'
+      + '<p class="rail__label">Espace partenaire</p>'
+      + NAV.map(([id, i, lb]) =>
+          '<button class="navitem" type="button" data-pview="' + id + '"'
+          + (view === id ? ' aria-current="true"' : "") + ">"
+          + '<span class="navitem__ico">' + ico(i) + "</span>" + lb
+          + (id === "encaisser" && outbox ? '<span class="navitem__badge">' + outbox + "</span>" : "")
+          + "</button>").join("")
+      + "</div>"
+      + '<div class="rail__group"><p class="rail__label">Établissement</p>'
+      + '<div style="padding:0 10px"><div style="font-weight:600;font-size:13px">' + esc(p.name) + "</div>"
+      + '<div style="font-size:11.5px;color:var(--ink-4);margin-bottom:8px">' + esc(p.city) + "</div>"
+      + '<span class="pill ' + STATUS[p.status].pill + '">' + STATUS[p.status].label + "</span></div></div>"
+      + "</aside>";
+  }
+
+  /* ---- Tableau de bord -------------------------------------------------- */
+  async function bord() {
+    const p = mypartner();
+    const now = Date.now(), d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    const mine = DB.txns.filter(t => t.partnerId === p.id);
+    const today = mine.filter(t => t.at >= d0.getTime());
+    const m30 = mine.filter(t => t.at >= now - 30 * 864e5);
+    const m60 = mine.filter(t => t.at >= now - 60 * 864e5 && t.at < now - 30 * 864e5);
+    const sum = a => a.reduce((s, t) => s + t.amount, 0);
+    const evol = sum(m60) ? Math.round((sum(m30) - sum(m60)) / sum(m60) * 100) : 0;
+
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now - i * 864e5); d.setHours(0, 0, 0, 0);
+      const next = d.getTime() + 864e5;
+      const rows = mine.filter(t => t.at >= d.getTime() && t.at < next);
+      days.push({ label: dateFR(d.getTime()), value: sum(rows), count: rows.length,
+                  tick: i % 3 === 0 ? d.getDate() + "/" + (d.getMonth() + 1) : "" });
+    }
+    const spark = days.slice(-12).map(d => d.value / 100);
+
+    return '<div class="pagehead"><div><h1>Tableau de bord</h1>'
+      + '<p>Encaissements CartePro de ' + esc(p.name) + ". Les montants sont crédités sur le compte "
+      + "de l'établissement à J+2 ouvré.</p></div>"
+      + '<div class="pagehead__act">'
+      + '<button class="btn btn--primary" type="button" data-pview="encaisser">' + ico("scan") + "Encaisser</button>"
+      + "</div></div>"
+      + '<div class="grid g-4" style="margin-bottom:16px">'
+      + statTile("Encaissé aujourd'hui", eur(sum(today)), { note: today.length + " transaction" + (today.length > 1 ? "s" : "") })
+      + statTile("Encaissé sur 30 jours", eur(sum(m30)), {
+          delta: (evol >= 0 ? "+" : "") + evol + " %", deltaDir: evol >= 0 ? "up" : "down",
+          deltaNote: "vs 30 jours précédents" })
+      + statTile("Transactions (30 j)", nfr(m30.length), { spark })
+      + statTile("Panier moyen", m30.length ? eur(Math.round(sum(m30) / m30.length)) : "—",
+          { note: "sur les 30 derniers jours" })
+      + "</div>"
+      + '<div class="grid g-main">'
+      + '<section class="card"><div class="card__hd"><h3>Encaissements des 14 derniers jours</h3>'
+      +   '<span class="sub">en euros</span>'
+      +   '<span class="act"><button class="btn btn--ghost" type="button" data-table="p14">Données</button></span></div>'
+      +   '<div class="card__bd">' + chartBox(days, {
+            px: 210, aria: "Encaissements quotidiens des quatorze derniers jours",
+            fmtTick: v => eurShort(v),
+            fmtPeak: r => eurShort(r.value),
+            tip: r => r.label + "\n" + eur(r.value) + " · " + r.count + " transaction" + (r.count > 1 ? "s" : "")
+          }) + "</div></section>"
+      + '<section class="card"><div class="card__hd"><h3>Derniers encaissements</h3></div>'
+      +   '<div class="card__bd" style="padding:8px 0">'
+      +   (mine.length ? mine.slice(-6).reverse().map(t => {
+            const e = emp(t.employeeId);
+            return '<div class="txnrow" style="padding:9px 18px">'
+              + '<div class="txnrow__ico txnrow__ico--in">' + ico("down") + "</div>"
+              + '<div class="txnrow__m"><div class="txnrow__t">' + esc(e ? e.name : "Salarié") + "</div>"
+              + '<div class="txnrow__s">' + esc(jourRelatif(t.at)) + " · " + heureFR(t.at) + " · <span class=\"mono\">" + esc(t.ref) + "</span></div></div>"
+              + '<div class="txnrow__a txnrow__a--in num">+' + eur(t.amount) + "</div></div>";
+          }).join("") : '<p class="empty">Aucun encaissement</p>')
+      +   "</div>"
+      +   '<div class="card__ft">Total historique : <b class="num">' + eur(sum(mine)) + "</b> sur "
+      +   mine.length + " transactions</div></section>"
+      + "</div>";
+  }
+
+  /* ---- Encaisser -------------------------------------------------------- */
+  function encaisser() {
+    const p = mypartner();
+    if (p.status !== "active") {
+      return '<div class="pagehead"><div><h1>Encaisser</h1></div></div>'
+        + '<div class="card"><div class="card__bd"><div class="note note--warn">' + ico("alert")
+        + "<div><b>Compte " + STATUS[p.status].label.toLowerCase() + ".</b> "
+        + "Un établissement non actif ne peut pas encaisser. Contactez la Direction du Numérique "
+        + "et de l'Innovation pour connaître les suites données à votre dossier.</div></div></div></div>";
+    }
+
+    const out = DB.outbox.length ? '<section class="card" style="margin-top:16px">'
+      + '<div class="card__hd"><h3>File d\'attente hors ligne</h3>'
+      + '<span class="sub">' + DB.outbox.length + " encaissement" + (DB.outbox.length > 1 ? "s" : "") + " capturé" + (DB.outbox.length > 1 ? "s" : "") + " sans réseau</span>"
+      + '<span class="act"><button class="btn btn--primary" type="button" data-sync="1"'
+      + (DB.degraded ? " disabled" : "") + ">" + ico("refresh") + "Synchroniser</button></span></div>"
+      + '<div class="tblwrap"><table class="tbl"><thead><tr><th>Capturé le</th><th>Jeton</th>'
+      + '<th class="r">Montant</th><th>État</th></tr></thead><tbody>'
+      + DB.outbox.map(o => '<tr><td class="num">' + dateFR(o.capturedAt, true) + "</td>"
+          + '<td class="mono">' + esc(o.token.slice(0, 10)) + "…</td>"
+          + '<td class="r num">' + eur(o.amount) + "</td>"
+          + '<td><span class="pill ' + (o.error ? "pill--crit" : "pill--warn") + '">'
+          + esc(o.error || "En attente") + "</span></td></tr>").join("")
+      + "</tbody></table></div>"
+      + '<div class="card__ft">' + (DB.degraded
+          ? "La synchronisation reprendra à la reconnexion. Les jetons restent valides : c'est la date "
+            + "de capture qui fait foi."
+          : "Réseau disponible — lancez la synchronisation pour écrire ces opérations au registre.")
+      + "</div></section>" : "";
+
+    return '<div class="pagehead"><div><h1>Encaisser un paiement</h1>'
+      + "<p>Scannez le QR code présenté par le salarié, ou saisissez son jeton à la main si la caméra "
+      + "est indisponible.</p></div></div>"
+      + '<div class="grid g-main">'
+      + '<section class="card"><div class="card__bd">'
+      +   (DB.degraded ? '<div class="note note--warn" style="margin-bottom:16px">' + ico("offline")
+          + "<div><b>Mode dégradé actif.</b> L'encaissement sera capturé localement, signé, puis "
+          + "transmis au registre dès le retour du réseau.</div></div>" : "")
+      +   '<div class="grid g-2">'
+      +     '<div><span class="field__lb">1. Jeton du salarié</span>'
+      +       (scan.token
+              ? '<div class="card" style="padding:14px;background:var(--good-wash);border-color:#c6e8c6">'
+                + '<div style="display:flex;align-items:center;gap:10px">'
+                + '<span style="color:#0a7a0a">' + ico("check") + "</span>"
+                + "<div><b>" + esc(scan.employee.name) + "</b>"
+                + '<div class="mono" style="font-size:11.5px;color:var(--ink-3)">CP1|' + esc(scan.token) + "</div></div></div></div>"
+              : '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+                + '<button class="btn btn--primary" type="button" data-scan="cam">' + ico("scan") + "Scanner le QR</button>"
+                + '<button class="btn" type="button" data-scan="man">Saisie manuelle</button></div>')
+      +     "</div>"
+      +     '<div><label class="field"><span class="field__lb">2. Montant à encaisser</span>'
+      +       '<input class="input input--big num" id="pay-amount" type="text" inputmode="decimal" '
+      +       'placeholder="0,00" value="' + esc(scan.amount) + '"' + (scan.token ? "" : " disabled") + ">"
+      +       '<span class="field__hint">En euros. Le solde du salarié est débité immédiatement.</span></label></div>'
+      +   "</div>"
+      +   '<hr class="sep">'
+      +   '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+      +     '<button class="btn btn--primary btn--lg" type="button" data-scan="validate" style="width:auto"'
+      +     (scan.token ? "" : " disabled") + ">" + ico("check") + "Valider l'encaissement</button>"
+      +     '<button class="btn btn--ghost" type="button" data-scan="cancel">Annuler</button>'
+      +     '<span style="font-size:12px;color:var(--ink-4);margin-left:auto">'
+      +     "Une transaction validée est définitive (§2.2).</span>"
+      +   "</div>"
+      + "</div></section>"
+      + '<section class="card"><div class="card__hd"><h3>Comment ça marche</h3></div>'
+      +   '<div class="card__bd" style="display:flex;flex-direction:column;gap:14px">'
+      +   [["Le salarié génère un QR", "Valable 5 minutes, utilisable une seule fois."],
+          ["Vous scannez et saisissez le montant", "Le jeton identifie le salarié, jamais sa carte bancaire."],
+          ["La validation débite le solde", "Le salarié voit le nouveau solde à l'instant même."],
+          ["L'écriture est définitive", "Chaque transaction est chaînée à la précédente par une empreinte."]
+        ].map((s, i) => '<div style="display:flex;gap:12px">'
+          + '<span style="width:22px;height:22px;border-radius:50%;background:var(--brand-wash);color:var(--brand);'
+          + 'display:grid;place-items:center;font-size:11.5px;font-weight:700;flex:none">' + (i + 1) + "</span>"
+          + "<div><b style=\"font-size:13px\">" + s[0] + "</b>"
+          + '<div style="font-size:12.5px;color:var(--ink-3)">' + s[1] + "</div></div></div>").join("")
+      +   "</div></section>"
+      + "</div>" + out;
+  }
+
+  async function doScan() {
+    Modal.open("Scanner le QR code",
+      '<div style="display:grid;place-items:center;gap:14px;padding:10px 0">'
+      + '<div style="width:210px;height:210px;border-radius:14px;background:var(--ink);position:relative;'
+      + 'display:grid;place-items:center;color:#5c6480">' + ico("scan")
+      + '<div style="position:absolute;left:14px;right:14px;height:2px;background:var(--good);'
+      + 'animation:scanline 1.1s ease-in-out infinite alternate"></div></div>'
+      + '<p style="font-size:13px;color:var(--ink-3)">Recherche d\'un QR code CartePro…</p></div>'
+      + '<style>@keyframes scanline{from{top:18px}to{top:190px}}</style>');
+    await new Promise(r => setTimeout(r, 1250));
+    const t = DB.tokens.filter(x => !x.usedAt && x.expiresAt > Date.now()).slice(-1)[0];
+    Modal.close();
+    if (!t) {
+      toast("bad", "Aucun QR détecté", "Demandez au salarié de générer un jeton dans son application.");
+      return;
+    }
+    await resolve(t.token);
+  }
+
+  async function resolve(token) {
+    try {
+      const r = await API.get("/payment-tokens/" + token);
+      scan.token = r.token; scan.employee = r.employee;
+      render();
+      toast("good", "Jeton reconnu", r.employee.name);
+    } catch (e) {
+      if (e.network) {
+        // Hors ligne : le jeton est accepté sur sa seule présentation et sera
+        // vérifié à la synchronisation.
+        scan.token = token; scan.employee = { name: "Salarié (vérification différée)" };
+        render();
+        toast("info", "Capturé hors ligne", "Le jeton sera vérifié à la reconnexion.");
+      } else {
+        toast("bad", "Jeton refusé", (e.body && e.body.message) || "Erreur");
+      }
+    }
+  }
+
+  async function validate() {
+    const raw = ($("#pay-amount") || {}).value || "";
+    const amount = Math.round(parseFloat(raw.replace(/\s/g, "").replace(",", ".")) * 100);
+    if (!(amount > 0)) { toast("bad", "Montant invalide", "Saisissez un montant supérieur à zéro."); return; }
+    const capturedAt = Date.now();
+    try {
+      const t = await API.post("/transactions", { token: scan.token, partnerId: mypartner().id,
+        amount, capturedAt, channel: "qr" });
+      scan = { token: null, employee: null, amount: "" };
+      render();
+      toast("good", "Encaissement validé", t.ref + " · " + eur(t.amount));
+    } catch (e) {
+      if (e.network) {
+        DB.outbox.push({ token: scan.token, amount, capturedAt, partnerId: mypartner().id });
+        save();
+        scan = { token: null, employee: null, amount: "" };
+        render();
+        toast("info", "Mis en file d'attente", "Sera transmis dès le retour du réseau.");
+      } else {
+        toast("bad", "Encaissement refusé", (e.body && e.body.message) || "Erreur");
+      }
+    }
+  }
+
+  async function sync() {
+    const items = DB.outbox.slice();
+    DB.outbox.length = 0;
+    let ok = 0;
+    for (const o of items) {
+      try {
+        await API.post("/transactions", { token: o.token, partnerId: o.partnerId,
+          amount: o.amount, capturedAt: o.capturedAt, channel: "offline" });
+        ok++;
+      } catch (e) {
+        o.error = (e.body && e.body.message) || "Échec";
+        DB.outbox.push(o);
+      }
+    }
+    save(); render();
+    if (ok) toast("good", "Synchronisation terminée", ok + " encaissement" + (ok > 1 ? "s" : "") + " transmis.");
+    if (DB.outbox.length) toast("bad", "Reste " + DB.outbox.length + " en échec", "Voir la file d'attente.");
+  }
+
+  /* ---- Transactions ----------------------------------------------------- */
+  async function transactions() {
+    const p = mypartner();
+    const since = Date.now() - period * 864e5;
+    const res = await API.get("/partners/" + p.id + "/transactions", { since, page: cat.page, size: 12 });
+    const total = DB.txns.filter(t => t.partnerId === p.id && t.at >= since).reduce((s, t) => s + t.amount, 0);
+
+    return '<div class="pagehead"><div><h1>Transactions</h1>'
+      + "<p>Journal des encaissements. Chaque ligne porte l'empreinte qui la relie à la précédente.</p></div>"
+      + '<div class="pagehead__act">'
+      + [7, 30, 90].map(d => '<button class="pgbtn" type="button" data-period="' + d + '"'
+          + (period === d ? ' aria-current="true"' : "") + ">" + d + " j</button>").join("")
+      + '<button class="btn" type="button" data-export="1">' + ico("dl") + "Exporter</button></div></div>"
+      + '<div class="grid g-3" style="margin-bottom:16px">'
+      + statTile("Encaissé sur la période", eur(total))
+      + statTile("Transactions", nfr(res.total))
+      + statTile("Panier moyen", res.total ? eur(Math.round(total / res.total)) : "—")
+      + "</div>"
+      + '<section class="card"><div class="tblwrap"><table class="tbl"><thead><tr>'
+      +   "<th>Référence</th><th>Date</th><th>Salarié</th><th>Canal</th>"
+      +   '<th class="r">Montant</th><th>Empreinte</th><th>État</th></tr></thead><tbody>'
+      + (res.items.length ? res.items.map(t =>
+          "<tr><td class=\"mono\">" + esc(t.ref) + "</td>"
+          + '<td class="num">' + dateFR(new Date(t.at).getTime(), true) + "</td>"
+          + "<td>" + esc(t.employee ? t.employee.name : "—") + "</td>"
+          + "<td>" + (t.channel === "offline" ? '<span class="pill pill--mute">Hors ligne</span>' : '<span class="pill pill--info">QR</span>') + "</td>"
+          + '<td class="r num"><b>' + eur(t.amount) + "</b></td>"
+          + '<td class="mono" style="font-size:11.5px;color:var(--ink-4)">' + esc(t.integrity.hash) + "</td>"
+          + '<td><span class="pill pill--good">Validée</span></td></tr>').join("")
+        : '<tr><td colspan="7"><p class="empty">Aucune transaction sur la période</p></td></tr>')
+      + "</tbody></table></div>"
+      + '<div class="card__ft"><div class="pager">' + pagerHTML(res, "ptx") + "</div></div></section>";
+  }
+
+  /* ---- Catalogue -------------------------------------------------------- */
+  async function catalogue() {
+    const res = await API.get("/partners", { page: cat.page, size: 8, query: cat.query });
+    return '<div class="pagehead"><div><h1>Catalogue des partenaires</h1>'
+      + "<p>Les établissements référencés par le Ministère. La liste est paginée : elle est appelée "
+      + "à s'allonger (§3.4).</p></div></div>"
+      + '<section class="card"><div class="card__hd">'
+      + '<input class="input" id="pcat-q" type="search" placeholder="Rechercher…" style="max-width:280px" value="'
+      + esc(cat.query) + '"><span class="sub">' + res.total + " établissements actifs</span></div>"
+      + '<div class="tblwrap"><table class="tbl"><thead><tr><th>Établissement</th><th>Catégorie</th>'
+      + "<th>Ville</th><th>Région</th></tr></thead><tbody>"
+      + res.items.map(p => "<tr><td><b>" + esc(p.name) + "</b><div style=\"font-size:11.5px;color:var(--ink-4)\">"
+          + esc(p.address) + "</div></td><td>" + esc(p.categoryLabel) + "</td><td>" + esc(p.city)
+          + '</td><td style="color:var(--ink-3)">' + esc(p.region) + "</td></tr>").join("")
+      + "</tbody></table></div>"
+      + '<div class="card__ft"><div class="pager">' + pagerHTML(res, "pcat") + "</div></div></section>";
+  }
+
+  /* ---- Compte ----------------------------------------------------------- */
+  async function compte() {
+    const p = await API.get("/partners/" + DB.session.partnerId);
+    const pend = DB.partners.filter(x => x.status === "pending");
+    const line = (k, v) => '<div style="display:flex;gap:16px;padding:9px 0;border-bottom:1px solid var(--line)">'
+      + '<span style="color:var(--ink-3);min-width:150px">' + k + "</span><span>" + v + "</span></div>";
+
+    return '<div class="pagehead"><div><h1>Mon compte</h1>'
+      + "<p>Coordonnées de l'établissement et suivi des demandes d'adhésion.</p></div>"
+      + '<div class="pagehead__act"><button class="btn btn--primary" type="button" data-new-partner="1">'
+      + ico("plus") + "Déposer une demande d'adhésion</button></div></div>"
+      + '<div class="grid g-main">'
+      + '<section class="card"><div class="card__hd"><h3>' + esc(p.name) + "</h3>"
+      +   '<span class="act"><span class="pill ' + STATUS[p.status].pill + '">' + STATUS[p.status].label + "</span></span></div>"
+      +   '<div class="card__bd" style="padding-top:4px">'
+      +   line("Identifiant", '<span class="mono">' + esc(p.id) + "</span>")
+      +   line("Catégorie", esc(p.categoryLabel))
+      +   line("Adresse", esc(p.address + ", " + p.city))
+      +   line("Région", esc(p.region))
+      +   line("SIRET", '<span class="mono">' + esc(p.siret) + "</span>")
+      +   line("IBAN de reversement", '<span class="mono">' + esc(p.iban) + "</span>")
+      +   line("Référencé depuis", dateFR(new Date(p.createdAt).getTime()))
+      +   line("Encaissements", "<b>" + eur(p.totals.amount) + "</b> sur " + p.totals.count + " transactions")
+      +   "</div></section>"
+      + '<section class="card"><div class="card__hd"><h3>Demandes en cours d\'instruction</h3></div>'
+      +   '<div class="card__bd">'
+      +   (pend.length ? pend.map(x => '<div style="display:flex;gap:12px;align-items:center;padding:9px 0;'
+          + 'border-bottom:1px solid var(--line)"><div><b>' + esc(x.name) + "</b>"
+          + '<div style="font-size:12px;color:var(--ink-4)">Déposée le ' + dateFR(x.createdAt) + "</div></div>"
+          + '<span class="pill pill--warn" style="margin-left:auto">En attente</span></div>').join("")
+          : '<p class="empty">Aucune demande en cours</p>')
+      +   '<div class="note" style="margin-top:14px">' + ico("info")
+      +   "<div>Toute adhésion est soumise à une validation manuelle par l'administration (§2.2). "
+      +   "Aucun encaissement n'est possible avant cette validation.</div></div>"
+      +   "</div></section></div>";
+  }
+
+  function newPartnerForm() {
+    Modal.open("Demande d'adhésion au dispositif",
+      '<label class="field"><span class="field__lb">Raison sociale</span>'
+      + '<input class="input" id="np-name" placeholder="Ex. Boulangerie du Marché"></label>'
+      + '<div class="grid g-2">'
+      + '<label class="field"><span class="field__lb">Catégorie</span><select class="select" id="np-cat">'
+      + CATEGORIES.map(c => '<option value="' + c.id + '">' + esc(c.label) + "</option>").join("")
+      + "</select></label>"
+      + '<label class="field"><span class="field__lb">Région</span><select class="select" id="np-reg">'
+      + REGIONS.map(r => '<option>' + esc(r) + "</option>").join("") + "</select></label></div>"
+      + '<div class="grid g-2">'
+      + '<label class="field"><span class="field__lb">Adresse</span><input class="input" id="np-addr" placeholder="12 rue…"></label>'
+      + '<label class="field"><span class="field__lb">Ville</span><input class="input" id="np-city" placeholder="Paris"></label></div>'
+      + '<div class="grid g-2">'
+      + '<label class="field"><span class="field__lb">SIRET</span><input class="input mono" id="np-siret" placeholder="000 000 000 00000"></label>'
+      + '<label class="field"><span class="field__lb">Courriel de contact</span><input class="input" id="np-mail" type="email" placeholder="contact@etablissement.fr"></label></div>'
+      + '<div class="note">' + ico("lock") + "<div>La demande est transmise à la Direction du Numérique "
+      + "et de l'Innovation. Elle sera instruite manuellement avant activation.</div></div>",
+      '<button class="btn" type="button" data-close>Annuler</button>'
+      + '<button class="btn btn--primary" type="button" data-submit-partner="1">Transmettre la demande</button>');
+  }
+
+  async function submitPartner() {
+    const v = id => ($("#" + id) || {}).value || "";
+    if (!v("np-name").trim() || !v("np-city").trim()) {
+      toast("bad", "Formulaire incomplet", "La raison sociale et la ville sont obligatoires.");
+      return;
+    }
+    try {
+      const p = await API.post("/partners", {
+        name: v("np-name").trim(), category: v("np-cat"), region: v("np-reg"),
+        address: v("np-addr").trim(), city: v("np-city").trim(),
+        siret: v("np-siret").trim(), contact: v("np-mail").trim()
+      });
+      Modal.close(); render();
+      toast("good", "Demande transmise", p.id + " — en attente de validation par l'administration.");
+    } catch (e) {
+      toast("bad", "Transmission impossible", (e.body && e.body.message) || "Erreur");
+    }
+  }
+
+  function exportCSV() {
+    const p = mypartner();
+    const since = Date.now() - period * 864e5;
+    const rows = DB.txns.filter(t => t.partnerId === p.id && t.at >= since);
+    const csv = ["reference;date;salarie;montant_eur;canal;empreinte"].concat(rows.map(t =>
+      [t.ref, new Date(t.at).toISOString(), (emp(t.employeeId) || {}).name || "",
+       (t.amount / 100).toFixed(2).replace(".", ","), t.channel, t.hash].join(";"))).join("\n");
+    Modal.open("Export des transactions (" + rows.length + " lignes)",
+      '<p style="font-size:13px;color:var(--ink-3);margin-bottom:10px">Format CSV, séparateur point-virgule.</p>'
+      + '<textarea class="input mono" id="csv-out" rows="10" readonly style="font-size:11.5px">'
+      + esc(csv) + "</textarea>",
+      '<button class="btn" type="button" data-close>Fermer</button>'
+      + '<button class="btn btn--primary" type="button" data-copy="csv-out">Copier</button>');
+  }
+
+  async function render() {
+    const body = view === "bord" ? await bord()
+      : view === "encaisser" ? encaisser()
+      : view === "transactions" ? await transactions()
+      : view === "catalogue" ? await catalogue()
+      : await compte();
+    $("#app").innerHTML = '<div class="workspace">' + rail() + '<div class="stage">' + body + "</div></div>";
+    mountCharts();
+    if (scrollY > 120) scrollTo({ top: 0 });
+
+    const amt = $("#pay-amount");
+    if (amt) { amt.oninput = () => { scan.amount = amt.value; }; if (scan.token) amt.focus(); }
+    const q = $("#pcat-q");
+    if (q) q.oninput = () => { cat.query = q.value; cat.page = 1; clearTimeout(q._t);
+      q._t = setTimeout(() => render().then(() => { const n = $("#pcat-q"); if (n) { n.focus(); n.selectionStart = n.value.length; } }), 220); };
+  }
+
+  BUS.on("txn", d => { if (DB.session.role === "partner" && d.partner.id === DB.session.partnerId) render(); });
+
+  return {
+    render,
+    go(v) { view = v; render(); },
+    reset() { view = "bord"; scan = { token: null, employee: null, amount: "" }; },
+    handle(el) {
+      if (el.dataset.pview) { view = el.dataset.pview; render(); return true; }
+      if (el.dataset.scan === "cam") { doScan(); return true; }
+      if (el.dataset.scan === "man") {
+        Modal.open("Saisie manuelle du jeton",
+          '<label class="field"><span class="field__lb">Jeton présenté par le salarié</span>'
+          + '<input class="input mono" id="man-token" placeholder="CP1|a1b2c3d4e5f6a7b8">'
+          + '<span class="field__hint">Le jeton figure sous le QR code, dans l\'application du salarié.</span></label>',
+          '<button class="btn" type="button" data-close>Annuler</button>'
+          + '<button class="btn btn--primary" type="button" data-man="1">Valider le jeton</button>');
+        return true;
+      }
+      if (el.dataset.man) {
+        const raw = (($("#man-token") || {}).value || "").trim().replace(/^CP1\|/, "");
+        Modal.close();
+        if (raw) resolve(raw); else toast("bad", "Jeton vide", "Recopiez le jeton affiché sous le QR code.");
+        return true;
+      }
+      if (el.dataset.scan === "validate") { validate(); return true; }
+      if (el.dataset.scan === "cancel") { scan = { token: null, employee: null, amount: "" }; render(); return true; }
+      if (el.dataset.sync) { sync(); return true; }
+      if (el.dataset.period) { period = Number(el.dataset.period); cat.page = 1; render(); return true; }
+      if (el.dataset.export) { exportCSV(); return true; }
+      if (el.dataset.newPartner) { newPartnerForm(); return true; }
+      if (el.dataset.submitPartner) { submitPartner(); return true; }
+      if (el.dataset.pager === "ptx" || el.dataset.pager === "pcat") {
+        cat.page = Number(el.dataset.page); render(); return true;
+      }
+      return false;
+    }
+  };
+})();
+</script>
+
+<script>
+"use strict";
+/* ============================================================================
+   8. Espace administration (Ministère)
+   ========================================================================= */
+
+const Admin = (function () {
+
+  let view = "bord";
+  let page = { comptes: 1, rech: 1 };
+  let tableView = false;
+
+  const NAV = [
+    ["bord",        "chart",  "Tableau de bord national"],
+    ["validations", "shield", "Validations"],
+    ["comptes",     "users",  "Comptes"],
+    ["recharges",   "wallet", "Rechargements employeurs"],
+    ["registre",    "lock",   "Registre des transactions"],
+    ["api",         "key",    "API & interopérabilité"]
+  ];
+
+  function rail() {
+    const pend = DB.partners.filter(p => p.status === "pending").length;
+    return '<aside class="rail"><div class="rail__group">'
+      + '<p class="rail__label">Administration</p>'
+      + NAV.map(([id, i, lb]) =>
+          '<button class="navitem" type="button" data-aview="' + id + '"'
+          + (view === id ? ' aria-current="true"' : "") + ">"
+          + '<span class="navitem__ico">' + ico(i) + "</span>" + lb
+          + (id === "validations" && pend ? '<span class="navitem__badge">' + pend + "</span>" : "")
+          + "</button>").join("")
+      + "</div></aside>";
+  }
+
+  /* ---- Tableau de bord national ----------------------------------------- */
+  async function bord() {
+    const s = await API.get("/admin/stats");
+    const now = Date.now();
+
+    const weeks = [];
+    for (let i = 11; i >= 0; i--) {
+      const end = now - i * 7 * 864e5, start = end - 7 * 864e5;
+      const rows = DB.txns.filter(t => t.at >= start && t.at < end);
+      const d = new Date(start);
+      weeks.push({ label: "Semaine du " + dateFR(start), value: rows.reduce((a, t) => a + t.amount, 0),
+                   count: rows.length, tick: i % 2 === 0 ? d.getDate() + "/" + (d.getMonth() + 1) : "" });
+    }
+    const regions = Object.entries(s.byRegion).sort((a, b) => b[1] - a[1])
+      .map(([label, value]) => ({ label, value }));
+    const cats = Object.entries(s.byCategory).sort((a, b) => b[1] - a[1])
+      .map(([id, value]) => ({ label: catLabel(id), value }));
+    const evol = s.volume30prev ? Math.round((s.volume30 - s.volume30prev) / s.volume30prev * 100) : 0;
+
+    const recent = DB.txns.slice(-14).reverse().map(t => {
+      const p = prt(t.partnerId);
+      return '<span class="ticker__i"><span class="dot"></span>'
+        + '<span class="mono" style="color:var(--ink-4)">' + esc(t.ref) + "</span>"
+        + esc(p ? p.name : "—") + '<span class="amt">' + eur(t.amount) + "</span>"
+        + '<span style="color:var(--ink-4)">' + esc(p ? p.city : "") + "</span></span>";
+    }).join("");
+
+    return '<div class="pagehead"><div><h1>Tableau de bord national</h1>'
+      + "<p>Volumétrie du dispositif CartePro, tous employeurs et tous partenaires confondus.</p></div>"
+      + '<div class="pagehead__act"><span class="pill pill--info">' + ico("refresh")
+      + "Données au " + dateFR(Date.now(), true) + "</span></div></div>"
+
+      + '<div class="grid g-main" style="margin-bottom:16px">'
+      + '<section class="card"><div class="card__bd" style="display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap">'
+      +   "<div><div class=\"stat__lb\">Volume échangé depuis l'ouverture</div>"
+      +     '<div class="hero-fig">' + eur(s.volume, { maximumFractionDigits: 0 }) + "</div>"
+      +     '<div class="stat__d stat__d--' + (evol >= 0 ? "up" : "down") + '">'
+      +       ico(evol >= 0 ? "up" : "down") + "<b>" + (evol >= 0 ? "+" : "") + evol
+      +       " %</b> sur 30 jours glissants</div></div>"
+      +   '<div style="flex:1;min-width:220px">' + sparkline(weeks.map(w => w.value / 100)) + "</div>"
+      + "</div></section>"
+      + statTile("Transactions", nfr(s.count), { note: nfr(s.count30) + " sur 30 jours" })
+      + "</div>"
+
+      + '<div class="grid g-4" style="margin-bottom:16px">'
+      + statTile("Partenaires actifs", nfr(s.partnersActive), {
+          note: s.partnersPending ? s.partnersPending + " demande(s) en attente" : "Aucune demande en attente" })
+      + statTile("Salariés bénéficiaires", nfr(s.employees), { note: DB.employers.length + " employeurs raccordés" })
+      + statTile("Encours non dépensé", eur(s.outstanding), { note: "Solde cumulé des bénéficiaires" })
+      + statTile("Panier moyen", eur(s.average), { note: "Toutes transactions" })
+      + "</div>"
+
+      + '<div class="ticker" tabindex="0" aria-label="Dernières transactions enregistrées">'
+      +   '<span class="ticker__lb">Flux des encaissements</span>'
+      +   '<div class="ticker__win"><div class="ticker__track">' + recent + recent + "</div></div></div>"
+
+      + '<div class="grid g-main" style="margin-top:16px">'
+      + '<section class="card"><div class="card__hd"><h3>Volume hebdomadaire</h3>'
+      +   '<span class="sub">12 dernières semaines</span>'
+      +   '<span class="act"><button class="btn btn--ghost" type="button" data-tableview="1">'
+      +     (tableView ? "Voir le graphique" : "Voir les données") + "</button></span></div>"
+      +   '<div class="card__bd">'
+      +   (tableView
+          ? '<div class="tblwrap"><table class="tbl"><thead><tr><th>Semaine</th>'
+            + '<th class="r">Transactions</th><th class="r">Volume</th></tr></thead><tbody>'
+            + weeks.map(w => "<tr><td>" + esc(w.label) + '</td><td class="r num">' + w.count
+              + '</td><td class="r num">' + eur(w.value) + "</td></tr>").join("")
+            + "</tbody></table></div>"
+          : chartBox(weeks, { px: 220, aria: "Volume hebdomadaire des transactions",
+              fmtTick: v => eurShort(v), fmtPeak: r => eurShort(r.value),
+              tip: r => r.label + "\n" + eur(r.value) + " · " + r.count + " transactions" }))
+      +   "</div></section>"
+      + '<section class="card"><div class="card__hd"><h3>Répartition géographique</h3>'
+      +   '<span class="sub">volume par région</span></div>'
+      +   '<div class="card__bd">' + barChart(regions, { fmt: eurShort }) + "</div>"
+      +   '<div class="card__ft">' + regions.length + " régions actives sur " + REGIONS.length + "</div></section>"
+      + "</div>"
+
+      + '<section class="card" style="margin-top:16px"><div class="card__hd">'
+      +   "<h3>Répartition par catégorie de partenaire</h3></div>"
+      +   '<div class="card__bd">' + barChart(cats, { fmt: eurShort }) + "</div></section>";
+  }
+
+  /* ---- Validations ------------------------------------------------------ */
+  async function validations() {
+    const pend = await API.get("/partners", { status: "pending", all: 1, size: 50 });
+    const hist = DB.audit.slice(0, 8);
+
+    return '<div class="pagehead"><div><h1>Validations d\'adhésion</h1>'
+      + "<p>Toute demande d'adhésion est instruite manuellement avant activation (§2.2). "
+      + "Un établissement non validé ne peut encaisser aucune transaction.</p></div></div>"
+      + (pend.items.length
+        ? '<div class="grid g-2">' + pend.items.map(p => {
+            const full = prt(p.id);
+            return '<section class="card"><div class="card__hd">'
+              + '<span class="pitem__ico">' + ico(catIco(p.category)) + "</span>"
+              + "<div><h3>" + esc(p.name) + "</h3>"
+              + '<span class="sub">' + esc(p.categoryLabel) + " · " + esc(p.city) + "</span></div>"
+              + '<span class="act"><span class="pill pill--warn">En attente</span></span></div>'
+              + '<div class="card__bd" style="font-size:13px;display:flex;flex-direction:column;gap:6px">'
+              + '<div><span style="color:var(--ink-3)">Adresse </span>' + esc(full.address || "—") + ", " + esc(p.city) + "</div>"
+              + '<div><span style="color:var(--ink-3)">SIRET </span><span class="mono">' + esc(full.siret || "—") + "</span></div>"
+              + '<div><span style="color:var(--ink-3)">Contact </span>' + esc(full.contact || "—") + "</div>"
+              + '<div><span style="color:var(--ink-3)">Déposée le </span>' + dateFR(full.createdAt, true) + "</div>"
+              + "</div>"
+              + '<div class="card__ft" style="display:flex;gap:8px">'
+              + '<button class="btn btn--primary" type="button" data-validate="' + p.id + '">'
+              + ico("check") + "Valider l'adhésion</button>"
+              + '<button class="btn" type="button" data-reject="' + p.id + '">Refuser</button></div></section>';
+          }).join("") + "</div>"
+        : '<section class="card"><p class="empty">' + ico("check")
+          + "<br>Aucune demande en attente d'instruction.</p></section>")
+      + '<section class="card" style="margin-top:16px"><div class="card__hd"><h3>Décisions récentes</h3></div>'
+      + '<div class="tblwrap"><table class="tbl"><thead><tr><th>Date</th><th>Établissement</th>'
+      + "<th>Décision</th><th>Agent</th></tr></thead><tbody>"
+      + (hist.length ? hist.map(a => "<tr><td class=\"num\">" + dateFR(a.at, true) + "</td>"
+          + "<td>" + esc((prt(a.target) || {}).name || a.target) + "</td>"
+          + '<td><span class="pill ' + STATUS[a.to].pill + '">' + STATUS[a.to].label + "</span></td>"
+          + '<td style="color:var(--ink-3)">' + esc(a.actor) + "</td></tr>").join("")
+        : '<tr><td colspan="4"><p class="empty">Aucune décision enregistrée</p></td></tr>')
+      + "</tbody></table></div></section>";
+  }
+
+  /* ---- Comptes ---------------------------------------------------------- */
+  async function comptes() {
+    const res = await API.get("/partners", { all: 1, size: 8, page: page.comptes });
+    return '<div class="pagehead"><div><h1>Gestion des comptes</h1>'
+      + "<p>Activation, suspension et clôture des comptes partenaires ; suivi des soldes salariés.</p></div></div>"
+      + '<section class="card"><div class="card__hd"><h3>Partenaires</h3>'
+      + '<span class="sub">' + res.total + " comptes</span></div>"
+      + '<div class="tblwrap"><table class="tbl"><thead><tr><th>Établissement</th><th>Catégorie</th>'
+      + "<th>Région</th><th>Statut</th><th>Actions</th></tr></thead><tbody>"
+      + res.items.map(p => {
+          const acts = [];
+          if (p.status !== "active") acts.push(['<button class="btn" type="button" data-status="active" data-id="' + p.id + '">Activer</button>']);
+          if (p.status === "active") acts.push(['<button class="btn" type="button" data-status="suspended" data-id="' + p.id + '">Suspendre</button>']);
+          if (p.status !== "closed") acts.push(['<button class="btn btn--ghost" type="button" data-status="closed" data-id="' + p.id + '">Clôturer</button>']);
+          return "<tr><td><b>" + esc(p.name) + '</b><div style="font-size:11.5px;color:var(--ink-4)" class="mono">'
+            + esc(p.id) + "</div></td><td>" + esc(p.categoryLabel) + "</td>"
+            + '<td style="color:var(--ink-3)">' + esc(p.region) + "</td>"
+            + '<td><span class="pill ' + STATUS[p.status].pill + '">' + STATUS[p.status].label + "</span></td>"
+            + '<td><div style="display:flex;gap:6px">' + acts.join("") + "</div></td></tr>";
+        }).join("")
+      + "</tbody></table></div>"
+      + '<div class="card__ft"><div class="pager">' + pagerHTML(res, "comptes") + "</div></div></section>"
+
+      + '<section class="card" style="margin-top:16px"><div class="card__hd"><h3>Salariés bénéficiaires</h3></div>'
+      + '<div class="tblwrap"><table class="tbl"><thead><tr><th>Salarié</th><th>Employeur</th>'
+      + '<th class="r">Solde</th><th class="r">Dépensé</th><th>Bénéficiaire depuis</th></tr></thead><tbody>'
+      + DB.employees.map(e => {
+          const spent = DB.txns.filter(t => t.employeeId === e.id).reduce((s, t) => s + t.amount, 0);
+          return "<tr><td><b>" + esc(e.name) + '</b><div style="font-size:11.5px;color:var(--ink-4)">'
+            + esc(e.email) + "</div></td><td>" + esc(emr(e.employerId).name) + "</td>"
+            + '<td class="r num"><b>' + eur(e.balance) + '</b></td><td class="r num">' + eur(spent) + "</td>"
+            + '<td style="color:var(--ink-3)">' + esc(e.since) + "</td></tr>";
+        }).join("")
+      + "</tbody></table></div></section>";
+  }
+
+  /* ---- Rechargements ---------------------------------------------------- */
+  async function recharges() {
+    const rows = DB.topups.slice(0, 10);
+    return '<div class="pagehead"><div><h1>Rechargements employeurs</h1>'
+      + "<p>Créditer les comptes salariés au nom d'un employeur raccordé au dispositif.</p></div></div>"
+      + '<div class="grid g-main">'
+      + '<section class="card"><div class="card__hd"><h3>Nouveau rechargement</h3></div>'
+      +   '<div class="card__bd">'
+      +   '<label class="field"><span class="field__lb">Employeur</span>'
+      +     '<select class="select" id="tp-employer">'
+      +     DB.employers.map(e => '<option value="' + e.id + '">' + esc(e.name) + " — " + e.employees
+          + " salariés</option>").join("") + "</select></label>"
+      +   '<label class="field"><span class="field__lb">Montant par salarié</span>'
+      +     '<input class="input input--big num" id="tp-amount" inputmode="decimal" value="180,00">'
+      +     '<span class="field__hint">Le même montant est crédité à chaque bénéficiaire sélectionné.</span></label>'
+      +   '<label class="field"><span class="field__lb">Libellé</span>'
+      +     '<input class="input" id="tp-label" value="Dotation mensuelle"></label>'
+      +   '<span class="field__lb">Bénéficiaires</span>'
+      +   '<div id="tp-list" style="max-height:190px;overflow:auto;border:1px solid var(--line);'
+      +     'border-radius:var(--r-ctl);padding:8px 10px;margin-bottom:14px"></div>'
+      +   '<button class="btn btn--primary btn--lg" type="button" data-topup="1">'
+      +     ico("wallet") + "Créditer les comptes</button>"
+      +   "</div></section>"
+      + '<section class="card"><div class="card__hd"><h3>Derniers rechargements</h3></div>'
+      +   '<div class="tblwrap"><table class="tbl"><thead><tr><th>Réf.</th><th>Salarié</th>'
+      +   '<th class="r">Montant</th><th>Date</th></tr></thead><tbody>'
+      +   rows.map(t => "<tr><td class=\"mono\">" + esc(t.id) + "</td><td>"
+        + esc((emp(t.employeeId) || {}).name || "—") + '</td><td class="r num">+' + eur(t.amount)
+        + '</td><td class="num" style="color:var(--ink-3)">' + dateFR(t.at) + "</td></tr>").join("")
+      +   "</tbody></table></div></section></div>";
+  }
+
+  function fillTopupList() {
+    const box = $("#tp-list"), sel = $("#tp-employer");
+    if (!box || !sel) return;
+    box.innerHTML = DB.employees.filter(e => e.employerId === sel.value).map(e =>
+      '<label style="display:flex;gap:9px;align-items:center;padding:5px 0;font-size:13px">'
+      + '<input type="checkbox" class="tp-emp" value="' + e.id + '" checked>'
+      + esc(e.name) + '<span style="margin-left:auto;color:var(--ink-4)" class="num">' + eur(e.balance) + "</span></label>"
+    ).join("");
+  }
+
+  async function doTopup() {
+    const amount = Math.round(parseFloat(($("#tp-amount").value || "").replace(/\s/g, "").replace(",", ".")) * 100);
+    const ids = $$(".tp-emp:checked").map(c => c.value);
+    if (!(amount > 0)) { toast("bad", "Montant invalide", "Saisissez un montant supérieur à zéro."); return; }
+    if (!ids.length) { toast("bad", "Aucun bénéficiaire", "Sélectionnez au moins un salarié."); return; }
+    try {
+      const r = await API.post("/topups", { employerId: $("#tp-employer").value, amount,
+        employeeIds: ids, label: $("#tp-label").value });
+      render();
+      toast("good", "Comptes crédités", r.credited + " salariés · " + eur(r.total) + " au total.");
+    } catch (e) {
+      toast("bad", "Rechargement refusé", (e.body && e.body.message) || "Erreur");
+    }
+  }
+
+  /* ---- Registre --------------------------------------------------------- */
+  async function registre() {
+    const v = await API.get("/ledger/verify");
+    const last = DB.txns.slice(-12).reverse();
+    return '<div class="pagehead"><div><h1>Registre des transactions</h1>'
+      + "<p>Chaque transaction porte l'empreinte de la précédente. Modifier une ligne écrite romprait "
+      + "la chaîne et serait immédiatement détectable (§3.2).</p></div></div>"
+      + '<div class="grid g-3" style="margin-bottom:16px">'
+      + statTile("Écritures au registre", nfr(v.count || DB.txns.length))
+      + statTile("État de la chaîne", v.ok ? "Intègre" : "Rompue",
+          { note: v.ok ? "Vérifiée à l'instant" : "Rupture à l'écriture " + v.ref })
+      + statTile("Empreinte de tête", (v.head || "—"), { note: "Dernier maillon de la chaîne" })
+      + "</div>"
+      + '<section class="card"><div class="card__hd"><h3>Contrôle d\'inaltérabilité</h3>'
+      + '<span class="act"><button class="btn" type="button" data-verify="1">' + ico("shield")
+      + "Vérifier la chaîne</button>"
+      + '<button class="btn" type="button" data-tamper="1">Simuler une falsification</button></span></div>'
+      + '<div class="card__bd"><div id="verify-out" class="note">' + ico("info")
+      + "<div>La vérification recalcule l'empreinte de chaque écriture à partir de la précédente et "
+      + "la compare à celle qui est stockée. La falsification simulée modifie un montant en mémoire, "
+      + "montre la rupture détectée, puis restaure immédiatement la valeur d'origine.</div></div></div></section>"
+      + '<section class="card" style="margin-top:16px"><div class="card__hd"><h3>Dernières écritures</h3></div>'
+      + '<div class="tblwrap"><table class="tbl"><thead><tr><th>Réf.</th><th>Date</th><th>Salarié</th>'
+      + '<th>Partenaire</th><th class="r">Montant</th><th>Empreinte précédente</th><th>Empreinte</th>'
+      + "</tr></thead><tbody>"
+      + last.map(t => "<tr><td class=\"mono\">" + esc(t.ref) + '</td><td class="num">' + dateFR(t.at, true)
+        + "</td><td>" + esc((emp(t.employeeId) || {}).name || "—") + "</td><td>"
+        + esc((prt(t.partnerId) || {}).name || "—") + '</td><td class="r num">' + eur(t.amount)
+        + '</td><td class="mono" style="color:var(--ink-4)">' + esc(t.prev) + '</td>'
+        + '<td class="mono">' + esc(t.hash) + "</td></tr>").join("")
+      + "</tbody></table></div></section>";
+  }
+
+  async function verify(msg) {
+    const v = await API.get("/ledger/verify");
+    const out = $("#verify-out");
+    if (!out) return v;
+    out.className = "note" + (v.ok ? "" : " note--warn");
+    out.innerHTML = ico(v.ok ? "check" : "alert") + "<div><b>"
+      + (v.ok ? "Chaîne intègre." : "Rupture détectée à l'écriture " + esc(v.ref) + ".")
+      + "</b> " + (v.ok
+        ? nfr(v.count) + " écritures vérifiées, empreinte de tête " + v.head + "."
+        : "Empreinte attendue " + esc(v.expected) + ", empreinte stockée " + esc(v.found) + ".")
+      + (msg ? " " + esc(msg) : "") + "</div>";
+    return v;
+  }
+
+  async function tamper() {
+    const i = Math.max(0, DB.txns.length - 5);
+    const t = DB.txns[i], keep = t.amount;
+    t.amount = keep + 1337;
+    await verify("La ligne " + t.ref + " a été modifiée hors procédure.");
+    setTimeout(async () => {
+      t.amount = keep;
+      await verify("Valeur d'origine restaurée : le registre est de nouveau cohérent.");
+      toast("info", "Démonstration terminée", "Le montant modifié a été restauré.");
+    }, 2600);
+  }
+
+  /* ---- API -------------------------------------------------------------- */
+  function apiView() {
+    return '<div class="pagehead"><div><h1>API & interopérabilité</h1>'
+      + "<p>Interface REST documentée, échanges en JSON (§3.3). Le point d'entrée « solde » est celui "
+      + "prévu pour l'interconnexion future avec les SIRH employeurs.</p></div>"
+      + '<div class="pagehead__act"><button class="btn" type="button" data-console="1">'
+      + ico("eye") + "Ouvrir la console</button></div></div>"
+      + '<section class="card"><div class="card__hd"><h3>Points d\'entrée</h3>'
+      + '<span class="sub">base <span class="mono">/api/v1</span></span></div>'
+      + '<div class="tblwrap"><table class="tbl"><thead><tr><th>Méthode</th><th>Chemin</th>'
+      + "<th>Rôle</th><th></th></tr></thead><tbody>"
+      + API.doc.map(([m, p, d]) => "<tr><td><b class=\"mono\">" + m + '</b></td><td class="mono">'
+        + esc(p) + '</td><td style="color:var(--ink-3)">' + esc(d) + "</td>"
+        + '<td class="r">' + (p.indexOf("{") < 0 && m === "GET"
+          ? '<button class="btn btn--ghost" type="button" data-try="' + esc(p) + '">Tester</button>'
+          : "") + "</td></tr>").join("")
+      + "</tbody></table></div></section>"
+      + '<div class="grid g-2" style="margin-top:16px">'
+      + '<section class="card"><div class="card__hd"><h3>Exemple — solde d\'un salarié</h3></div>'
+      +   '<div class="card__bd"><pre class="mono" style="margin:0;font-size:12px;overflow-x:auto;'
+      +   'background:var(--surface-2);padding:12px;border-radius:var(--r-ctl);border:1px solid var(--line)">'
+      +   esc('GET /api/v1/employees/SAL-0042/balance\n\n200 OK\n{\n  "employeeId": "SAL-0042",\n'
+          + '  "balance": 24760,\n  "currency": "EUR",\n  "asOf": "2026-08-31T09:12:44.108Z"\n}')
+      +   "</pre>"
+      +   '<div class="note" style="margin-top:14px">' + ico("info")
+      +   "<div>Les montants circulent en centimes, en nombre entier : aucun arrondi flottant ne peut "
+      +   "s'introduire dans une somme d'argent.</div></div></div></section>"
+      + '<section class="card"><div class="card__hd"><h3>Sécurité des échanges</h3></div>'
+      +   '<div class="card__bd" style="display:flex;flex-direction:column;gap:12px">'
+      +   [["HTTPS obligatoire", "Aucun échange en clair ; en production, HSTS et certificat de l'État."],
+          ["Jeton à usage unique", "Cinq minutes de validité, invalidé dès le premier encaissement."],
+          ["Écriture définitive", "Aucune route ne permet de modifier ou supprimer une transaction."],
+          ["Authentification par rôle", "Salarié, partenaire et administration ont des périmètres disjoints."]
+        ].map(s => '<div style="display:flex;gap:11px"><span style="color:var(--good);flex:none">'
+          + ico("check") + "</span><div><b style=\"font-size:13px\">" + s[0] + "</b>"
+          + '<div style="font-size:12.5px;color:var(--ink-3)">' + s[1] + "</div></div></div>").join("")
+      +   "</div></section></div>";
+  }
+
+  /* ---- Assemblage ------------------------------------------------------- */
+  async function render() {
+    const body = view === "bord" ? await bord()
+      : view === "validations" ? await validations()
+      : view === "comptes" ? await comptes()
+      : view === "recharges" ? await recharges()
+      : view === "registre" ? await registre()
+      : apiView();
+    $("#app").innerHTML = '<div class="workspace">' + rail() + '<div class="stage">' + body + "</div></div>";
+    mountCharts();
+    if (scrollY > 120) scrollTo({ top: 0 });
+    if (view === "recharges") {
+      fillTopupList();
+      const sel = $("#tp-employer");
+      if (sel) sel.onchange = fillTopupList;
+    }
+  }
+
+  async function setStatus(id, status) {
+    try {
+      const p = await API.patch("/partners/" + id, { status });
+      render();
+      toast(status === "active" ? "good" : "info", "Statut mis à jour",
+        p.name + " — " + STATUS[status].label.toLowerCase() + ".");
+    } catch (e) {
+      toast("bad", "Modification refusée", (e.body && e.body.message) || "Erreur");
+    }
+  }
+
+  BUS.on("txn", () => { if (DB.session.role === "admin" && view === "bord") render(); });
+
+  return {
+    render,
+    go(v) { view = v; render(); },
+    reset() { view = "bord"; },
+    handle(el) {
+      if (el.dataset.aview) { view = el.dataset.aview; render(); return true; }
+      if (el.dataset.validate) { setStatus(el.dataset.validate, "active"); return true; }
+      if (el.dataset.reject) { setStatus(el.dataset.reject, "rejected"); return true; }
+      if (el.dataset.status && el.dataset.id) { setStatus(el.dataset.id, el.dataset.status); return true; }
+      if (el.dataset.pager === "comptes") { page.comptes = Number(el.dataset.page); render(); return true; }
+      if (el.dataset.tableview) { tableView = !tableView; render(); return true; }
+      if (el.dataset.topup) { doTopup(); return true; }
+      if (el.dataset.verify) { verify(); return true; }
+      if (el.dataset.tamper) { tamper(); return true; }
+      if (el.dataset.try) { API.get(el.dataset.try).then(() => Shell.openConsole()); return true; }
+      if (el.dataset.console) { Shell.openConsole(); return true; }
+      return false;
+    }
+  };
+})();
+</script>
+
+<script>
+"use strict";
+/* ============================================================================
+   9. Coquille applicative : session, rôles, console, amorçage
+   ========================================================================= */
+
+const Shell = (function () {
+
+  const ROLES = {
+    employee: { label: "Salarié",        who: () => me().name,          sub: "Bénéficiaire CartePro" },
+    partner:  { label: "Partenaire",     who: () => mypartner().name,   sub: "Établissement référencé" },
+    admin:    { label: "Administration", who: () => "Thomas Vignal",    sub: "Direction du Numérique" }
+  };
+
+  function login() {
+    const cards = [
+      ["employee", "wallet", "Espace salarié",
+       "Consulter son solde, générer un QR code de paiement, retrouver ses opérations et localiser les partenaires.",
+       "Amina Berthier · Groupe Vallonis"],
+      ["partner", "store", "Espace partenaire",
+       "Encaisser un paiement CartePro, suivre ses recettes, gérer son compte et parcourir le catalogue.",
+       "Le Comptoir des Halles · Paris"],
+      ["admin", "shield", "Espace administration",
+       "Instruire les adhésions, piloter les comptes, créditer les salariés et suivre la volumétrie nationale.",
+       "Direction du Numérique et de l'Innovation"]
+    ];
+    return '<div class="login"><div class="login__box">'
+      + '<div class="login__head"><h1>Dispositif CartePro</h1>'
+      + "<p>Démonstrateur fonctionnel du titre dématérialisé d'avantages salariés. "
+      + "Trois espaces, un même registre de transactions.</p></div>"
+      + '<div class="rolecards">' + cards.map(([id, i, t, d, who]) =>
+          '<button class="rolecard" type="button" data-login="' + id + '">'
+          + '<span class="rolecard__ico">' + ico(i) + "</span>"
+          + "<h3>" + t + "</h3><p>" + d + "</p>"
+          + '<span class="rolecard__who">' + esc(who) + "</span></button>").join("")
+      + "</div>"
+      + '<div class="note" style="margin-top:22px">' + ico("info")
+      + "<div><b>Simulation fonctionnelle.</b> Aucune opération financière réelle n'est effectuée "
+      + "(§5 du cahier des charges JEB/DNI/2026-002). Les données sont fictives et stockées dans "
+      + "ce navigateur uniquement.</div></div>"
+      + "</div></div>";
+  }
+
+  function whoami() {
+    const r = DB.session.role;
+    if (!r) { $("#whoami").innerHTML = ""; return; }
+    const initials = ROLES[r].who().split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    $("#whoami").innerHTML = '<div class="whoami"><div class="whoami__av">' + esc(initials) + "</div>"
+      + '<div><div class="whoami__n">' + esc(ROLES[r].who()) + "</div>"
+      + '<div class="whoami__r">' + esc(ROLES[r].sub) + "</div></div>"
+      + '<button class="btn btn--ghost" type="button" data-logout="1" aria-label="Fermer la session" '
+      + 'title="Fermer la session">' + ico("out") + "</button></div>";
+  }
+
+  function roleswitch() {
+    $("#roleswitch").innerHTML = Object.keys(ROLES).map(r =>
+      '<button class="rolebtn" type="button" data-role="' + r + '"'
+      + (DB.session.role === r ? ' aria-current="true"' : "") + ">" + ROLES[r].label + "</button>").join("");
+  }
+
+  async function setRole(role) {
+    await API.post("/auth/session", { role });
+    save();
+    render();
+  }
+
+  function render() {
+    roleswitch(); whoami();
+    const r = DB.session.role;
+    if (!r) { $("#app").innerHTML = login(); return; }
+    if (r === "employee") Employee.render();
+    else if (r === "partner") Partner.render();
+    else Admin.render();
+  }
+
+  /* ---- Console API ------------------------------------------------------ */
+  function logLine(e) {
+    const body = JSON.stringify(e.body);
+    const short = body.length > 260 ? body.slice(0, 260) + " …" : body;
+    return '<div class="logline"><span class="logline__m" data-m="' + e.method + '">' + e.method + "</span>"
+      + '<span class="logline__p">' + esc(e.path) + "</span>"
+      + '<span class="logline__s"><b' + (e.bad ? ' data-bad="1"' : "") + ">"
+      + (e.status || "ERR") + "</b> · " + e.ms + " ms</span></div>"
+      + '<div class="logbody">' + esc(short) + "</div>";
+  }
+  function paintLog() {
+    const box = $("#console-log");
+    box.innerHTML = API.logs.slice(-60).reverse().map(logLine).join("")
+      || '<p style="color:#8b92ad">Aucun appel pour l\'instant. Chaque geste dans l\'interface en déclenche un.</p>';
+    $("#console-count").textContent = String(API.logs.length);
+  }
+  function openConsole() {
+    $("#console").dataset.open = "true";
+    $("#btn-console").setAttribute("aria-pressed", "true");
+    paintLog();
+  }
+  function closeConsole() {
+    $("#console").dataset.open = "false";
+    $("#btn-console").setAttribute("aria-pressed", "false");
+  }
+
+  /* ---- Délégation globale des clics ------------------------------------- */
+  document.addEventListener("click", ev => {
+    const el = ev.target.closest ? ev.target.closest("[data-login],[data-role],[data-logout],[data-copy],"
+      + "[data-eview],[data-qr],[data-month],[data-cat],[data-pager],[data-partner],"
+      + "[data-pview],[data-scan],[data-man],[data-sync],[data-period],[data-export],"
+      + "[data-new-partner],[data-submit-partner],[data-aview],[data-validate],[data-reject],"
+      + "[data-status],[data-tableview],[data-topup],[data-verify],[data-tamper],[data-try],[data-console]") : null;
+    if (!el) return;
+
+    if (el.dataset.login) { setRole(el.dataset.login); return; }
+    if (el.dataset.role)  { setRole(el.dataset.role); return; }
+    if (el.dataset.logout) {
+      DB.session.role = null; save();
+      Employee.reset(); Partner.reset(); Admin.reset();
+      render(); return;
+    }
+    if (el.dataset.copy) {
+      const src = $("#" + el.dataset.copy);
+      if (src) {
+        src.select();
+        try { document.execCommand("copy"); toast("good", "Copié", "Le contenu est dans le presse-papiers."); }
+        catch (e) { toast("info", "Sélection prête", "Utilisez Ctrl+C pour copier."); }
+      }
+      return;
+    }
+    const role = DB.session.role;
+    if (role === "employee" && Employee.handle(el)) return;
+    if (role === "partner" && Partner.handle(el)) return;
+    if (role === "admin" && Admin.handle(el)) return;
+    // Certains gestes valent quel que soit l'espace ouvert.
+    if (Employee.handle(el) || Partner.handle(el) || Admin.handle(el)) return;
+  });
+
+  /* ---- Barre de pilotage ------------------------------------------------ */
+  function wireDock() {
+    $("#btn-degraded").onclick = () => {
+      DB.degraded = !DB.degraded; save();
+      $("#btn-degraded").setAttribute("aria-pressed", String(DB.degraded));
+      toast(DB.degraded ? "info" : "good",
+        DB.degraded ? "Mode dégradé activé" : "Réseau rétabli",
+        DB.degraded
+          ? "Les appels serveur échouent ; le QR et les encaissements passent en local."
+          : "Les encaissements en attente peuvent être synchronisés.");
+      render();
+    };
+    $("#btn-console").onclick = () =>
+      ($("#console").dataset.open === "true" ? closeConsole() : openConsole());
+    $("#console-close").onclick = closeConsole;
+    $("#console-clear").onclick = () => { API.clear(); paintLog(); };
+    $("#console-doc").onclick = () => Modal.open("Points d'entrée de l'API",
+      '<div class="tblwrap"><table class="tbl"><thead><tr><th>Méthode</th><th>Chemin</th><th>Rôle</th>'
+      + "</tr></thead><tbody>" + API.doc.map(([m, p, d]) =>
+          '<tr><td class="mono"><b>' + m + '</b></td><td class="mono">' + esc(p)
+          + '</td><td style="color:var(--ink-3)">' + esc(d) + "</td></tr>").join("")
+      + "</tbody></table></div>",
+      '<button class="btn" type="button" data-close>Fermer</button>');
+    $("#btn-reset").onclick = () => {
+      if (!confirm("Réinitialiser toutes les données de démonstration ?")) return;
+      resetDB();
+      Employee.reset(); Partner.reset(); Admin.reset();
+      API.clear();
+      render();
+      toast("good", "Données réinitialisées", "Le jeu de démonstration est revenu à son état initial.");
+    };
+    API.onLog(() => { if ($("#console").dataset.open === "true") paintLog();
+      else $("#console-count").textContent = String(API.logs.length); });
+  }
+
+  /* ---- Amorçage --------------------------------------------------------- */
+  function boot() {
+    DB = load() || seed();
+    if (!DB.outbox) DB.outbox = [];
+    if (!DB.audit) DB.audit = [];
+    save();
+    $("#btn-degraded").setAttribute("aria-pressed", String(!!DB.degraded));
+    wireDock();
+    render();
+  }
+
+  return { boot, render, openConsole };
+})();
+
+Shell.boot();
+</script>
