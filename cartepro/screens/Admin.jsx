@@ -7,12 +7,13 @@ import { Icon } from "../lib/icons.jsx";
 import { eur, eurShort, nfr, dateFR, ilYA, centimes, initiales } from "../lib/format.js";
 import { catLabel, catIco, STATUS, CLAIM_STATUS, CLAIM_CATEGORIES, REGIONS } from "../lib/data.js";
 import { useApi, useToast, useDB, useSession, useNav, useModal } from "../lib/app.jsx";
-import { Pager, Note, Empty, StatTile, ColumnChart, BarList, Pill, Sparkline } from "../components/ui.jsx";
-import { Fil } from "./Employee.jsx";
+import { Pager, Note, Empty, StatTile, ColumnChart, BarList, Pill, Sparkline, Sim, SimBar, usePageTitle } from "../components/ui.jsx";
+import { Fil, OfficialBadge } from "./Employee.jsx";
 
 const SECTIONS = [
   ["bord",         "chart",  "Tableau de bord",  "/admin"],
   ["validations",  "shield", "Validations",      "/admin/validations"],
+  ["vitrine",      "spark",  "Choix du Ministre","/admin/vitrine"],
   ["salaries",     "users",  "Salariés",         "/admin/salaries"],
   ["reclamations", "chat",   "Réclamations",     "/admin/reclamations"],
   ["comptes",      "store",  "Comptes partenaires", "/admin/comptes"],
@@ -62,12 +63,13 @@ export function AdminSpace({ section = "bord" }) {
       </aside>
       <div className="stage">
         {section === "bord" ? <Bord />
-          : section === "validations" ? <Validations />
+          : section === "validations" ? <Validations agent={session.who} />
+          : section === "vitrine" ? <Vitrine agent={session.who} />
           : section === "salaries" ? <Salaries agent={session.who} />
           : section === "reclamations" ? <Reclamations agent={session.who} />
-          : section === "comptes" ? <Comptes />
+          : section === "comptes" ? <Comptes agent={session.who} />
           : section === "recharges" ? <Recharges agent={session.who} />
-          : section === "registre" ? <Registre />
+          : section === "registre" ? <Registre agent={session.who} />
           : <ApiView />}
       </div>
     </div>
@@ -76,6 +78,7 @@ export function AdminSpace({ section = "bord" }) {
 
 /* ---- Tableau de bord national --------------------------------------------- */
 function Bord() {
+  usePageTitle("Tableau de bord national");
   const api = useApi();
   const db = useDB();
   const [s, setS] = useState(null);
@@ -132,11 +135,16 @@ function Bord() {
         </div>
       </div>
 
+      <SimBar>
+        <b>Volumétrie de simulation.</b> Les montants agrégés ci-dessous proviennent d&apos;un jeu
+        de démonstration ; ils ne représentent aucun flux financier réel.
+      </SimBar>
+
       <div className="grid g-main" style={{ marginBottom: 16 }}>
         <section className="card"><div className="card__bd"
           style={{ display: "flex", gap: 28, alignItems: "flex-end", flexWrap: "wrap" }}>
           <div>
-            <div className="stat__lb">Volume échangé depuis l&apos;ouverture</div>
+            <div className="stat__lb">Volume échangé depuis l&apos;ouverture <Sim /></div>
             <div className="hero-fig num">{eur(s.volume, { maximumFractionDigits: 0 })}</div>
             <div className={"stat__d stat__d--" + (evol >= 0 ? "up" : "down")}>
               <Icon name={evol >= 0 ? "up" : "down"} />
@@ -156,7 +164,8 @@ function Bord() {
         <StatTile label="Salariés bénéficiaires" value={nfr(s.employees)}
                   note={s.employeesSuspended ? s.employeesSuspended + " compte(s) non actif(s)" : "Tous les comptes sont actifs"} />
         <StatTile label="Encours non dépensé" value={eur(s.outstanding)} note="Solde cumulé des bénéficiaires" />
-        <StatTile label="Réclamations ouvertes" value={nfr(s.claimsOpen)} note="À instruire ou en cours" />
+        <StatTile label="Réclamations ouvertes" value={nfr(s.claimsOpen)}
+                  note={s.reversals ? s.reversals + " annulation(s) au registre" : "Aucune annulation"} />
       </div>
 
       <div className="ticker" tabIndex={0} aria-label="Dernières transactions enregistrées">
@@ -206,19 +215,57 @@ function Bord() {
 }
 
 /* ---- Validations d'adhésion ----------------------------------------------- */
-function Validations() {
+function Validations({ agent }) {
+  usePageTitle("Validations d'adhésion");
   const api = useApi();
   const toast = useToast();
   const db = useDB();
   const pend = db.partners.filter(p => p.status === "pending");
   const hist = db.audit.filter(a => a.action === "status").slice(0, 8);
 
-  const decider = async (id, status) => {
+  const modal = useModal();
+
+  const valider = async p => {
     try {
-      const p = await api.patch("/partners/" + id, { status });
-      toast(status === "active" ? "good" : "info", "Décision enregistrée",
-        p.name + " — " + STATUS[status].label.toLowerCase() + ".");
+      await api.patch("/partners/" + p.id, { status: "active", author: agent.name, authorId: agent.id });
+      toast("good", "Adhésion validée", p.name + " peut désormais encaisser.");
     } catch (e) { /* message déjà affiché */ }
+  };
+
+  /* Un refus sans motif écrit n'est pas opposable au partenaire : le formulaire
+     l'exige, et l'API le refuse aussi (§2.3, Pontaillac). */
+  const refuser = p => {
+    let motive = "";
+    modal.open("Refuser l'adhésion — " + p.name, (
+      <>
+        <Note kind="warn">
+          Le motif est communiqué à l&apos;établissement dans son espace, avec la date de la
+          décision et le nom de l&apos;agent instructeur. Il est conservé au journal.
+        </Note>
+        <label className="field" style={{ marginTop: 14 }}>
+          <span className="field__lb">Motif du refus (obligatoire, dix caractères minimum)</span>
+          <textarea className="textarea" autoFocus
+                    placeholder="Ex. SIREN non vérifiable au répertoire Sirene ; objet social hors champ du dispositif."
+                    onChange={e => { motive = e.target.value; }} />
+        </label>
+      </>
+    ), (
+      <>
+        <button className="btn" type="button" onClick={modal.close}>Renoncer</button>
+        <button className="btn btn--danger" type="button" onClick={async () => {
+          if (motive.trim().length < 10) {
+            toast("bad", "Motif trop court", "Dix caractères au minimum : le partenaire doit comprendre la décision.");
+            return;
+          }
+          modal.close();
+          try {
+            await api.patch("/partners/" + p.id,
+              { status: "rejected", note: motive.trim(), author: agent.name, authorId: agent.id });
+            toast("info", "Adhésion refusée", p.name + " — motif transmis à l'établissement.");
+          } catch (e) { /* message déjà affiché */ }
+        }}>Refuser l&apos;adhésion</button>
+      </>
+    ));
   };
 
   return (
@@ -239,16 +286,18 @@ function Validations() {
               </div>
               <div className="card__bd" style={{ fontSize: 13, display: "flex", flexDirection: "column", gap: 6 }}>
                 <div><span style={{ color: "var(--ink-3)" }}>Adresse </span>{p.address || "—"}, {p.city}</div>
-                <div><span style={{ color: "var(--ink-3)" }}>SIRET </span>
-                  <span className="mono">{p.siret || "—"}</span></div>
+                <div><span style={{ color: "var(--ink-3)" }}>SIREN </span>
+                  <span className="mono">{p.siren || "—"}</span>
+                  {p.siren ? <span style={{ color: "var(--good)", marginLeft: 6 }}>clé valide</span> : null}</div>
+                <div><span style={{ color: "var(--ink-3)" }}>Objet social </span>{p.objetSocial || "—"}</div>
                 <div><span style={{ color: "var(--ink-3)" }}>Contact </span>{p.contact || "—"}</div>
                 <div><span style={{ color: "var(--ink-3)" }}>Déposée le </span>{dateFR(p.createdAt, true)}</div>
               </div>
               <div className="card__ft" style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn--primary" type="button" onClick={() => decider(p.id, "active")}>
+                <button className="btn btn--primary" type="button" onClick={() => valider(p)}>
                   <Icon name="check" /> Valider l&apos;adhésion
                 </button>
-                <button className="btn" type="button" onClick={() => decider(p.id, "rejected")}>Refuser</button>
+                <button className="btn" type="button" onClick={() => refuser(p)}>Refuser…</button>
               </div>
             </section>
           ))}
@@ -261,7 +310,7 @@ function Validations() {
         <div className="card__hd"><h3>Décisions récentes</h3></div>
         <div className="tblwrap">
           <table className="tbl">
-            <thead><tr><th>Date</th><th>Cible</th><th>Décision</th><th>Agent</th></tr></thead>
+            <thead><tr><th>Date</th><th>Cible</th><th>Décision</th><th>Motif</th><th>Agent</th></tr></thead>
             <tbody>
               {hist.length ? hist.map((a, i) => {
                 const cible = db.partners.find(p => p.id === a.target)
@@ -272,10 +321,136 @@ function Validations() {
                     <td>{cible ? cible.name : a.target}</td>
                     <td><Pill kind={(STATUS[a.to] || STATUS.closed).pill.replace("pill--", "")}>
                       {(STATUS[a.to] || {}).label || a.to}</Pill></td>
+                    <td style={{ color: "var(--ink-3)", maxWidth: 340 }}>{a.note || "—"}</td>
                     <td style={{ color: "var(--ink-3)" }}>{a.actor}</td>
                   </tr>
                 );
-              }) : <tr><td colSpan="4"><Empty>Aucune décision enregistrée</Empty></td></tr>}
+              }) : <tr><td colSpan="5"><Empty>Aucune décision enregistrée</Empty></td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/* ---- Le Choix du Ministre --------------------------------------------------
+   Le ministre veut désigner lui-même les partenaires mis en avant, « sans
+   passer par votre équipe » (annotation §2.1). L'écran est donc une bascule
+   directe, avec un mot qui s'affiche tel quel côté salarié et sur la page
+   publique. */
+function Vitrine({ agent }) {
+  usePageTitle("Le Choix du Ministre");
+  const api = useApi();
+  const toast = useToast();
+  const db = useDB();
+  const modal = useModal();
+  const actifs = db.partners.filter(p => p.status === "active");
+  const mis = actifs.filter(p => p.featured);
+
+  const retirer = async p => {
+    try {
+      await api.patch("/partners/" + p.id + "/featured", { featured: false, author: agent.name });
+      toast("info", "Retiré de la vitrine", p.name + " n'apparaît plus dans le Choix du Ministre.");
+    } catch (e) { /* message déjà affiché */ }
+  };
+
+  const mettreEnAvant = p => {
+    let note = p.ministerNote || "";
+    modal.open("Mettre en avant — " + p.name, (
+      <>
+        <Note>
+          Le partenaire apparaîtra dans « Le Choix du Ministre » sur l&apos;accueil des salariés
+          et sur la page publique. Le mot ci-dessous est repris tel quel, signé de votre nom.
+        </Note>
+        <label className="field" style={{ marginTop: 14 }}>
+          <span className="field__lb">Le mot du ministre (facultatif, 160 caractères)</span>
+          <textarea className="textarea" defaultValue={note} autoFocus maxLength={160}
+                    placeholder="Ex. Parfait pour souder une équipe et renouer avec la nature."
+                    onChange={e => { note = e.target.value; }} />
+        </label>
+      </>
+    ), (
+      <>
+        <button className="btn" type="button" onClick={modal.close}>Annuler</button>
+        <button className="btn btn--primary" type="button" onClick={async () => {
+          modal.close();
+          try {
+            await api.patch("/partners/" + p.id + "/featured",
+              { featured: true, note, author: agent.name });
+            toast("good", "Mis en avant", p.name + " apparaît désormais dans le Choix du Ministre.");
+          } catch (e) { /* message déjà affiché */ }
+        }}>Mettre en avant</button>
+      </>
+    ));
+  };
+
+  return (
+    <>
+      <div className="pagehead">
+        <div><h1>Le Choix du Ministre</h1>
+          <p>Les partenaires mis en avant sur la page publique et sur l&apos;accueil des salariés.
+            La modification est immédiate, sans intervention technique.</p></div>
+        <div className="pagehead__act"><Pill kind="info">{mis.length} sur {actifs.length} partenaires</Pill></div>
+      </div>
+
+      {mis.length ? (
+        <div className="grid g-3" style={{ marginBottom: 20 }}>
+          {mis.map(p => (
+            <section className="card pickcard" key={p.id}>
+              <div className="card__bd">
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <span className="pitem__ico"><Icon name={catIco(p.category)} /></span>
+                  <div style={{ minWidth: 0 }}>
+                    <b style={{ fontSize: 14 }}>{p.name}</b>
+                    <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
+                      {catLabel(p.category)} · {p.city}
+                    </div>
+                  </div>
+                  <span style={{ marginLeft: "auto" }} className="pick__star" title="Mis en avant">★</span>
+                </div>
+                {p.ministerNote ? <p className="quote" style={{ marginTop: 12 }}>« {p.ministerNote} »</p> : null}
+              </div>
+              <div className="card__ft" style={{ display: "flex", gap: 8 }}>
+                <button className="btn" type="button" onClick={() => mettreEnAvant(p)}>Modifier le mot</button>
+                <button className="btn btn--ghost" type="button" onClick={() => retirer(p)}>Retirer</button>
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <section className="card" style={{ marginBottom: 20 }}>
+          <Empty icon="spark">Aucun partenaire mis en avant pour l&apos;instant.</Empty>
+        </section>
+      )}
+
+      <section className="card">
+        <div className="card__hd"><h3>Tous les partenaires actifs</h3>
+          <span className="sub">une bascule par ligne</span></div>
+        <div className="tblwrap">
+          <table className="tbl">
+            <thead><tr><th>Établissement</th><th>Catégorie</th><th>Ville</th>
+              <th>Le mot du ministre</th><th></th></tr></thead>
+            <tbody>
+              {actifs.map(p => (
+                <tr key={p.id}>
+                  <td><b>{p.name}</b>{p.featured ? <span className="pick__star"> ★</span> : null}</td>
+                  <td>{catLabel(p.category)}</td>
+                  <td style={{ color: "var(--ink-3)" }}>{p.city}</td>
+                  <td style={{ color: "var(--ink-3)", maxWidth: 320 }}>
+                    {p.ministerNote || <span style={{ color: "var(--ink-4)" }}>—</span>}
+                  </td>
+                  <td className="r">
+                    {p.featured ? (
+                      <button className="btn btn--ghost" type="button" onClick={() => retirer(p)}>Retirer</button>
+                    ) : (
+                      <button className="btn" type="button" onClick={() => mettreEnAvant(p)}>
+                        <Icon name="spark" /> Mettre en avant
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -286,6 +461,7 @@ function Validations() {
 
 /* ---- Salariés : la relation directe administration ↔ bénéficiaire ---------- */
 function Salaries({ agent }) {
+  usePageTitle("Salariés bénéficiaires");
   const api = useApi();
   const toast = useToast();
   const db = useDB();
@@ -526,6 +702,7 @@ function FicheSalarie({ employee, onBack, onStatus, onRegularise }) {
 
 /* ---- Réclamations : instruction et réponse -------------------------------- */
 function Reclamations({ agent }) {
+  usePageTitle("Réclamations");
   const api = useApi();
   const toast = useToast();
   const db = useDB();
@@ -752,7 +929,8 @@ function OperationVisee({ ref_ }) {
 }
 
 /* ---- Comptes partenaires --------------------------------------------------- */
-function Comptes() {
+function Comptes({ agent }) {
+  usePageTitle("Comptes partenaires");
   const api = useApi();
   const toast = useToast();
   const db = useDB();
@@ -765,12 +943,45 @@ function Comptes() {
     return () => { alive = false; };
   }, [api, page, db.partners.length, db.partners.map(p => p.status).join("")]);
 
-  const setStatus = async (id, status) => {
-    try {
-      const p = await api.patch("/partners/" + id, { status });
-      toast(status === "active" ? "good" : "info", "Statut mis à jour",
-        p.name + " — " + STATUS[status].label.toLowerCase() + ".");
-    } catch (e) { /* message déjà affiché */ }
+  const modal = useModal();
+
+  const setStatus = async (p, status) => {
+    if (status === "active") {
+      try {
+        await api.patch("/partners/" + p.id, { status, author: agent.name, authorId: agent.id });
+        toast("good", "Statut mis à jour", p.name + " — actif.");
+      } catch (e) { /* message déjà affiché */ }
+      return;
+    }
+    let motive = "";
+    modal.open((status === "suspended" ? "Suspendre" : "Clôturer") + " — " + p.name, (
+      <>
+        <Note kind="warn">
+          Un motif écrit est obligatoire : il est montré à l&apos;établissement et conservé au
+          journal des décisions, avec votre nom et l&apos;horodatage.
+        </Note>
+        <label className="field" style={{ marginTop: 14 }}>
+          <span className="field__lb">Motif (dix caractères minimum)</span>
+          <textarea className="textarea" autoFocus onChange={e => { motive = e.target.value; }} />
+        </label>
+      </>
+    ), (
+      <>
+        <button className="btn" type="button" onClick={modal.close}>Renoncer</button>
+        <button className="btn btn--danger" type="button" onClick={async () => {
+          if (motive.trim().length < 10) {
+            toast("bad", "Motif trop court", "Dix caractères au minimum.");
+            return;
+          }
+          modal.close();
+          try {
+            await api.patch("/partners/" + p.id,
+              { status, note: motive.trim(), author: agent.name, authorId: agent.id });
+            toast("info", "Statut mis à jour", p.name + " — " + STATUS[status].label.toLowerCase() + ".");
+          } catch (e) { /* message déjà affiché */ }
+        }}>Confirmer</button>
+      </>
+    ));
   };
 
   return (
@@ -794,13 +1005,13 @@ function Comptes() {
                   <td>
                     <div style={{ display: "flex", gap: 6 }}>
                       {p.status !== "active" ? (
-                        <button className="btn" type="button" onClick={() => setStatus(p.id, "active")}>Activer</button>
+                        <button className="btn" type="button" onClick={() => setStatus(p, "active")}>Activer</button>
                       ) : (
-                        <button className="btn" type="button" onClick={() => setStatus(p.id, "suspended")}>Suspendre</button>
+                        <button className="btn" type="button" onClick={() => setStatus(p, "suspended")}>Suspendre…</button>
                       )}
                       {p.status !== "closed" ? (
-                        <button className="btn btn--ghost" type="button" onClick={() => setStatus(p.id, "closed")}>
-                          Clôturer
+                        <button className="btn btn--ghost" type="button" onClick={() => setStatus(p, "closed")}>
+                          Clôturer…
                         </button>
                       ) : null}
                     </div>
@@ -818,6 +1029,7 @@ function Comptes() {
 
 /* ---- Rechargements employeurs ---------------------------------------------- */
 function Recharges({ agent }) {
+  usePageTitle("Rechargements");
   const api = useApi();
   const toast = useToast();
   const db = useDB();
@@ -847,6 +1059,11 @@ function Recharges({ agent }) {
     <>
       <div className="pagehead"><div><h1>Rechargements employeurs</h1>
         <p>Créditer les comptes salariés au nom d&apos;un employeur raccordé au dispositif.</p></div></div>
+
+      <SimBar>
+        <b>Créditation de simulation.</b> Aucun fonds n&apos;est appelé auprès de l&apos;employeur :
+        l&apos;opération n&apos;augmente qu&apos;un solde fictif.
+      </SimBar>
 
       <div className="grid g-main">
         <section className="card">
@@ -920,12 +1137,48 @@ function Recharges({ agent }) {
 }
 
 /* ---- Registre -------------------------------------------------------------- */
-function Registre() {
+function Registre({ agent }) {
+  usePageTitle("Registre des transactions");
   const api = useApi();
   const toast = useToast();
   const db = useDB();
+  const modal = useModal();
   const [v, setV] = useState(null);
   const [msg, setMsg] = useState(null);
+
+  /* Le ministre veut pouvoir annuler ; une écriture validée reste inaltérable.
+     Les deux tiennent ensemble parce que l'annulation est une écriture de plus,
+     de sens inverse, et non une correction de l'ancienne. */
+  const annuler = t => {
+    let reason = "";
+    modal.open("Annuler l'écriture " + t.ref, (
+      <>
+        <Note kind="warn">
+          <b>L&apos;écriture ne sera pas effacée.</b> Une écriture inverse est ajoutée au registre,
+          rattachée à celle-ci, et le salarié est recrédité de {eur(t.amount)}. La chaîne
+          d&apos;empreintes reste vérifiable.
+        </Note>
+        <label className="field" style={{ marginTop: 14 }}>
+          <span className="field__lb">Motif de l&apos;annulation</span>
+          <input className="input" autoFocus placeholder="Ex. double encaissement constaté"
+                 onChange={e => { reason = e.target.value; }} />
+        </label>
+      </>
+    ), (
+      <>
+        <button className="btn" type="button" onClick={modal.close}>Renoncer</button>
+        <button className="btn btn--danger" type="button" onClick={async () => {
+          modal.close();
+          try {
+            const rev = await api.post("/transactions/" + t.ref + "/cancel",
+              { reason, author: agent.name });
+            await verifier();
+            toast("good", "Écriture annulée", rev.ref + " compense " + t.ref + " · " + eur(t.amount));
+          } catch (e) { /* message déjà affiché */ }
+        }}>Annuler l&apos;écriture</button>
+      </>
+    ));
+  };
 
   const verifier = async note => {
     const r = await api.get("/ledger/verify");
@@ -946,16 +1199,21 @@ function Registre() {
     }, 2800);
   };
 
-  const last = db.txns.slice(-12).reverse();
+  const last = db.txns.slice(-14).reverse();
+  const annulations = db.txns.filter(t => t.kind === "reversal").length;
 
   return (
     <>
       <div className="pagehead"><div><h1>Registre des transactions</h1>
-        <p>Chaque transaction porte l&apos;empreinte de la précédente. Modifier une ligne écrite
-          romprait la chaîne et serait immédiatement détectable (§3.2).</p></div></div>
+        <p>Chaque transaction porte l&apos;empreinte de la précédente. Une annulation n&apos;efface
+          rien : elle ajoute une écriture inverse, rattachée à celle qu&apos;elle compense — c&apos;est
+          ce qui permet d&apos;annuler sans renoncer à l&apos;inaltérabilité.</p></div></div>
 
-      <div className="grid g-3" style={{ marginBottom: 16 }}>
-        <StatTile label="Écritures au registre" value={nfr(db.txns.length)} />
+      <SimBar />
+
+      <div className="grid g-4" style={{ marginBottom: 16 }}>
+        <StatTile label="Écritures au registre" value={nfr(db.txns.length)}
+                  note={annulations + " annulation" + (annulations > 1 ? "s" : "")} />
         <StatTile label="État de la chaîne" value={v ? (v.ok ? "Intègre" : "Rompue") : "…"}
                   note={v && v.ok ? "Vérifiée à l'instant" : v ? "Rupture à l'écriture " + v.ref : ""} />
         <StatTile label="Empreinte de tête" value={v && v.head ? v.head : "—"}
@@ -989,19 +1247,32 @@ function Registre() {
         <div className="tblwrap">
           <table className="tbl">
             <thead><tr>
-              <th>Réf.</th><th>Date</th><th>Salarié</th><th>Partenaire</th>
-              <th className="r">Montant</th><th>Empreinte précédente</th><th>Empreinte</th>
+              <th>Réf.</th><th>Nature</th><th>Date</th><th>Salarié</th><th>Partenaire</th>
+              <th className="r">Montant</th><th>Empreinte</th><th></th>
             </tr></thead>
             <tbody>
               {last.map(t => (
                 <tr key={t.ref}>
                   <td className="mono">{t.ref}</td>
+                  <td>
+                    {t.kind === "reversal"
+                      ? <Pill kind="crit">Annule {t.reverses}</Pill>
+                      : t.reversedBy
+                        ? <Pill kind="mute">Annulée par {t.reversedBy}</Pill>
+                        : <Pill kind="good">Paiement</Pill>}
+                  </td>
                   <td className="num">{dateFR(t.at, true)}</td>
                   <td>{(db.employees.find(e => e.id === t.employeeId) || {}).name || "—"}</td>
                   <td>{(db.partners.find(p => p.id === t.partnerId) || {}).name || "—"}</td>
-                  <td className="r num">{eur(t.amount)}</td>
-                  <td className="mono" style={{ color: "var(--ink-4)" }}>{t.prev}</td>
-                  <td className="mono">{t.hash}</td>
+                  <td className="r num">{t.kind === "reversal" ? "+" : "−"}{eur(t.amount)}</td>
+                  <td className="mono" style={{ fontSize: 11.5 }}>{t.hash}</td>
+                  <td className="r">
+                    {t.kind !== "reversal" && !t.reversedBy ? (
+                      <button className="btn btn--ghost" type="button" onClick={() => annuler(t)}>
+                        Annuler
+                      </button>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1014,13 +1285,20 @@ function Registre() {
 
 /* ---- API ------------------------------------------------------------------- */
 function ApiView() {
+  usePageTitle("API");
   const api = useApi();
   const toast = useToast();
   return (
     <>
-      <div className="pagehead"><div><h1>API &amp; interopérabilité</h1>
-        <p>Interface REST documentée, échanges en JSON (§3.3). Le point d&apos;entrée « solde » est
-          celui prévu pour l&apos;interconnexion avec les SIRH employeurs.</p></div></div>
+      <div className="pagehead">
+        <div><h1>API</h1>
+          <p>Interface REST documentée, échanges en JSON. Chaque geste de l&apos;interface passe par
+            l&apos;un de ces points d&apos;entrée : la console en bas de page le montre en direct.</p></div>
+        <div className="pagehead__act">
+          <a className="btn btn--primary" href="/api-docs/"><Icon name="eye" /> Swagger UI</a>
+          <a className="btn" href="/openapi.yaml" download><Icon name="dl" /> openapi.yaml</a>
+        </div>
+      </div>
 
       <section className="card">
         <div className="card__hd"><h3>Points d&apos;entrée</h3>
@@ -1051,25 +1329,28 @@ function ApiView() {
 
       <div className="grid g-2" style={{ marginTop: 16 }}>
         <section className="card">
-          <div className="card__hd"><h3>Exemple — solde d&apos;un salarié</h3></div>
+          <div className="card__hd"><h3>Exemple — annuler une écriture</h3></div>
           <div className="card__bd">
             <pre className="mono" style={{ margin: 0, fontSize: 12, overflowX: "auto",
                  background: "var(--surface-2)", padding: 12, borderRadius: "var(--r-ctl)",
                  border: "1px solid var(--line)" }}>
-{`GET /api/v1/employees/SAL-0042/balance
+{`POST /api/v1/transactions/TRX-000104/cancel
+{ "reason": "double encaissement constaté" }
 
-200 OK
+201 Created
 {
-  "employeeId": "SAL-0042",
-  "balance": 24760,
+  "ref": "TRX-000110",
+  "kind": "reversal",
+  "reverses": "TRX-000104",
+  "amount": 4200,
   "currency": "EUR",
-  "status": "active",
-  "asOf": "2026-08-31T09:12:44.108Z"
+  "integrity": { "prev": "9c1f0ab3", "hash": "4d77e2b1" }
 }`}
             </pre>
             <div style={{ marginTop: 14 }}>
-              <Note>Les montants circulent en centimes, en nombre entier : aucun arrondi flottant
-                ne peut s&apos;introduire dans une somme d&apos;argent.</Note>
+              <Note>L&apos;écriture d&apos;origine n&apos;est pas modifiée : la réponse est une
+                nouvelle écriture, chaînée, qui la compense. Les montants circulent en centimes,
+                en nombre entier — aucun arrondi flottant dans une somme d&apos;argent.</Note>
             </div>
           </div>
         </section>
@@ -1077,8 +1358,8 @@ function ApiView() {
           <div className="card__hd"><h3>Sécurité des échanges</h3></div>
           <div className="card__bd" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {[["HTTPS obligatoire", "Aucun échange en clair ; en production, HSTS et certificat de l'État."],
-              ["Jeton à usage unique", "Cinq minutes de validité, invalidé dès le premier encaissement."],
-              ["Écriture définitive", "Aucune route ne permet de modifier ou supprimer une transaction."],
+              ["Jeton à usage unique", "Trente minutes de validité, invalidé dès le premier encaissement."],
+              ["Écriture définitive", "Aucune route ne modifie ni ne supprime une transaction ; l'annulation en ajoute une."],
               ["Authentification par rôle", "Salarié, partenaire et administration ont des périmètres disjoints."]
             ].map(([t, d]) => (
               <div key={t} style={{ display: "flex", gap: 11 }}>

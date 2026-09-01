@@ -1,10 +1,11 @@
 "use client";
 /* Connexion et inscription. Deux portes distinctes, un même cadre. */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "../lib/icons.jsx";
 import { useNav, useApi, useToast, useDB } from "../lib/app.jsx";
-import { CATEGORIES, REGIONS } from "../lib/data.js";
+import { usePageTitle } from "../components/ui.jsx";
+import { REGIONS } from "../lib/data.js";
 
 const HOME = { employee: "/salarie", partner: "/partenaire", admin: "/admin" };
 
@@ -23,6 +24,7 @@ function Side({ title, lead, points }) {
 }
 
 export function Login() {
+  usePageTitle("Connexion");
   const { push } = useNav();
   const api = useApi();
   const toast = useToast();
@@ -106,14 +108,26 @@ export function Login() {
 }
 
 export function Signup({ initialRole }) {
+  usePageTitle("Créer un compte");
   const { push } = useNav();
   const api = useApi();
   const toast = useToast();
   const db = useDB();
   const [role, setRole] = useState(initialRole === "partner" ? "partner" : "employee");
+  const [cats, setCats] = useState([]);
   const [f, setF] = useState({ name: "", email: "", password: "", code: "",
-                               category: "restauration", region: REGIONS[0],
-                               address: "", city: "", siret: "" });
+                               category: "", region: REGIONS[0],
+                               address: "", city: "", siren: "", objetSocial: "" });
+
+  useEffect(() => {
+    let alive = true;
+    api.get("/categories").then(r => {
+      if (!alive) return;
+      setCats(r.items);
+      setF(v => (v.category ? v : { ...v, category: r.items[0] ? r.items[0].id : "" }));
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [api]);
   const [busy, setBusy] = useState(false);
   const set = k => e => setF(v => ({ ...v, [k]: e.target.value }));
 
@@ -122,6 +136,16 @@ export function Signup({ initialRole }) {
     if (!f.name.trim() || !f.email.trim()) {
       toast("bad", "Formulaire incomplet", "Le nom et l'adresse électronique sont obligatoires.");
       return;
+    }
+    if (role === "partner") {
+      if (!/^\d{9}$/.test(f.siren.replace(/\s/g, ""))) {
+        toast("bad", "SIREN invalide", "Neuf chiffres attendus, sans lettre ni séparateur.");
+        return;
+      }
+      if (f.objetSocial.trim().length < 10) {
+        toast("bad", "Objet social manquant", "Décrivez l'activité de l'établissement.");
+        return;
+      }
     }
     setBusy(true);
     try {
@@ -201,7 +225,7 @@ export function Signup({ initialRole }) {
                 <label className="field">
                   <span className="field__lb">Catégorie</span>
                   <select className="select" value={f.category} onChange={set("category")}>
-                    {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    {cats.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
                 </label>
                 <label className="field">
@@ -222,8 +246,22 @@ export function Signup({ initialRole }) {
                 </label>
               </div>
               <label className="field">
-                <span className="field__lb">SIRET</span>
-                <input className="input mono" value={f.siret} onChange={set("siret")} placeholder="000 000 000 00000" />
+                <span className="field__lb">SIREN</span>
+                <input className="input mono" value={f.siren} onChange={set("siren")}
+                       inputMode="numeric" maxLength={11} placeholder="404 833 048" />
+                <span className="field__hint">
+                  Neuf chiffres. La clé de contrôle est vérifiée à la saisie ; l&apos;existence au
+                  répertoire Sirene sera vérifiée à l&apos;instruction.
+                </span>
+              </label>
+              <label className="field">
+                <span className="field__lb">Objet social</span>
+                <textarea className="textarea" value={f.objetSocial} onChange={set("objetSocial")}
+                          style={{ minHeight: 70 }}
+                          placeholder="Activité déclarée de l'établissement, telle qu'elle figure au registre." />
+                <span className="field__hint">
+                  Il conditionne l&apos;éligibilité au dispositif : il est lu à l&apos;instruction.
+                </span>
               </label>
             </>
           )}

@@ -1,11 +1,12 @@
 "use client";
-/* Page publique : écran d'ouverture animé, présentation du dispositif, et les
-   deux portes d'entrée — connexion et inscription. */
+/* Page publique : écran d'ouverture animé, présentation du dispositif, le
+   Choix du Ministre, et les deux portes d'entrée — connexion et inscription. */
 
 import { useEffect, useState } from "react";
 import { Icon } from "../lib/icons.jsx";
 import { useNav, useDB } from "../lib/app.jsx";
 import { eur, nfr } from "../lib/format.js";
+import { catIco, catLabel } from "../lib/data.js";
 
 export function Splash({ onDone }) {
   useEffect(() => {
@@ -31,18 +32,18 @@ export function Splash({ onDone }) {
 }
 
 const FEATURES = [
-  ["qr", "Payer par QR code", "Le salarié présente un code à usage unique, valable cinq minutes. Le partenaire scanne, saisit le montant, valide."],
-  ["offline", "Résistant à la coupure réseau", "En connectivité dégradée, le jeton est produit localement et l'encaissement rejoué dès le retour du réseau."],
-  ["lock", "Écritures inaltérables", "Chaque transaction est chaînée à la précédente par une empreinte. Une ligne modifiée se détecte immédiatement."],
-  ["store", "Réseau de partenaires référencés", "Catalogue consultable, recherche par ville et par catégorie, adhésion soumise à validation du Ministère."],
+  ["qr", "Payer par QR code", "Le salarié présente un code à usage unique, valable cinq minutes, régénérable en un geste s’il expire."],
+  ["spark", "Le Choix du Ministre", "Le ministre met en avant lui-même les partenaires qu'il veut recommander, sans passer par une mise à jour technique."],
+  ["shield", "Un sceau qui se mérite", "Chaque partenaire est validé à la main par le Ministère, et porte le badge « Partenaire Officiel »."],
+  ["lock", "Écritures inaltérables", "Une transaction validée n'est jamais réécrite. Une annulation ajoute une écriture inverse, rattachée à la première."],
   ["chat", "Une réclamation, une réponse", "Le salarié saisit l'administration depuis son espace ; l'agent instruit, répond et régularise dans le même fil."],
-  ["key", "Interopérable avec les SIRH", "Une API REST documentée expose le solde d'un bénéficiaire aux systèmes de paie des employeurs."]
+  ["chart", "Pilotage en direct", "Volume échangé, partenaires actifs, encours non dépensé : le Ministère suit le dispositif au jour le jour."]
 ];
 
 const STEPS = [
-  ["L'employeur crédite", "Le Ministère enregistre la dotation ; le solde du salarié est disponible immédiatement."],
-  ["Le salarié paie", "Un QR code présenté en caisse chez l'un des partenaires référencés."],
-  ["Le partenaire encaisse", "La validation débite le solde, écrit au registre et déclenche le reversement."]
+  ["L'employeur crédite", "Le Ministère enregistre la dotation ; le budget du salarié est disponible immédiatement."],
+  ["Le salarié en profite", "Un QR code présenté chez l'un des partenaires choisis par le Ministère."],
+  ["Le partenaire encaisse", "La validation débite le budget, écrit au registre et déclenche le reversement."]
 ];
 
 export function Landing() {
@@ -57,8 +58,11 @@ export function Landing() {
     try { sessionStorage.setItem("cartepro.splash", "1"); } catch (e) { /* sans effet */ }
   };
 
-  const partenaires = db.partners.filter(p => p.status === "active").length;
-  const volume = db.txns.reduce((s, t) => s + t.amount, 0);
+  const actifs = db.partners.filter(p => p.status === "active");
+  const enCours = db.partners.filter(p => p.status === "pending");
+  const mis = actifs.filter(p => p.featured);
+  const volume = db.txns.filter(t => (t.kind || "payment") === "payment")
+    .reduce((s, t) => s + t.amount, 0);
 
   return (
     <>
@@ -67,12 +71,12 @@ export function Landing() {
       <section className="hero">
         <div className="hero__in">
           <div>
-            <span className="hero__eyebrow"><Icon name="spark" /> Dispositif public — expérimentation 2026</span>
-            <h1>Le titre d&apos;avantages salariés, dématérialisé de bout en bout.</h1>
+            <span className="hero__eyebrow"><Icon name="spark" /> Dispositif public — lancement 2026</span>
+            <h1>Les travailleurs français méritent de profiter de la vie, pas seulement de manger un sandwich.</h1>
             <p className="lead">
-              CartePro permet à un employeur de créditer ses salariés d&apos;un budget utilisable
-              chez les partenaires référencés par le Ministère. Pas de carte plastique, pas de
-              carnet de titres : un solde, un QR code, un réseau.
+              Le CartePro, c&apos;est le principe du titre-restaurant, sans le restaurant. Votre
+              employeur crédite votre budget ; vous le dépensez chez les partenaires référencés par
+              le Ministère — poney club, costumier, glacier, chapelier.
             </p>
             <div className="hero__acts">
               <button className="btn btn--lg btn--onDark" type="button" onClick={() => push("/inscription")}>
@@ -83,9 +87,9 @@ export function Landing() {
               </button>
             </div>
             <div className="hero__facts">
-              <div className="hero__fact"><b>{nfr(partenaires)}</b><span>partenaires actifs</span></div>
+              <div className="hero__fact"><b>{nfr(actifs.length)}</b><span>partenaires officiels</span></div>
               <div className="hero__fact"><b>{eur(volume, { maximumFractionDigits: 0 })}</b><span>échangés depuis l&apos;ouverture</span></div>
-              <div className="hero__fact"><b>5 min</b><span>de validité par QR code</span></div>
+              <div className="hero__fact"><b>30 min</b><span>de validité par QR code</span></div>
             </div>
           </div>
 
@@ -98,8 +102,11 @@ export function Landing() {
               <div className="showcard__chip" />
             </div>
             <div style={{ marginTop: 20, fontSize: 10.5, letterSpacing: ".06em",
-                          textTransform: "uppercase", opacity: .74 }}>Solde disponible</div>
+                          textTransform: "uppercase", opacity: .74 }}>À dépenser</div>
             <div className="showcard__bal num">{eur(db.employees[0].balance)}</div>
+            <div style={{ fontSize: 12, opacity: .8, marginTop: 4 }}>
+              chez vos partenaires préférés !
+            </div>
             <div className="showcard__row">
               <span className="mono num" style={{ letterSpacing: ".12em" }}>4021 0042 88</span>
               <span style={{ marginLeft: "auto" }}>Groupe Vallonis</span>
@@ -107,6 +114,60 @@ export function Landing() {
           </div>
         </div>
       </section>
+
+      {mis.length ? (
+        <div className="band">
+          <div className="section">
+            <div className="section__h">
+              <h2>Le Choix du Ministre</h2>
+              <p>Sélection personnelle de Jean-Eudes Berlier, Ministre du Job et Bonheur.</p>
+            </div>
+            <div className="grid g-2">
+              {mis.map(p => (
+                <article className="feat pickfeat" key={p.id}>
+                  <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                    <span className="feat__ico"><Icon name={catIco(p.category)} /></span>
+                    <div style={{ minWidth: 0 }}>
+                      <h3>{p.name} <span className="pick__star">★</span></h3>
+                      <p style={{ marginTop: 2 }}>{catLabel(p.category)} · {p.city} · {p.channel}</p>
+                    </div>
+                  </div>
+                  {p.ministerNote ? (
+                    <p className="quote">« {p.ministerNote} » — Jean-Eudes Berlier</p>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="section">
+        <div className="section__h">
+          <h2>Les partenaires du lancement</h2>
+          <p>Établissements validés par le Ministère. D&apos;autres sont en cours de signature.</p>
+        </div>
+        <div className="grid g-4">
+          {actifs.map(p => (
+            <article className="feat" key={p.id}>
+              <span className="feat__ico"><Icon name={catIco(p.category)} /></span>
+              <h3>{p.name}</h3>
+              <p>{catLabel(p.category)}<br />{p.city}<br />
+                <span style={{ color: "var(--ink-4)" }}>{p.channel}</span></p>
+              <span className="official official--sm" style={{ marginTop: "auto" }}>
+                <span className="official__seal" aria-hidden="true">★</span>
+                Partenaire Officiel
+              </span>
+            </article>
+          ))}
+        </div>
+        {enCours.length ? (
+          <p style={{ textAlign: "center", marginTop: 22, fontSize: 13, color: "var(--ink-3)" }}>
+            {enCours.length} autres établissements sont en cours de signature :{" "}
+            {enCours.slice(0, 4).map(p => p.name).join(", ")}…
+          </p>
+        ) : null}
+      </div>
 
       <div className="band">
         <div className="section">
@@ -125,7 +186,7 @@ export function Landing() {
       <div className="section">
         <div className="section__h">
           <h2>Ce que fait la plateforme</h2>
-          <p>Les fonctions attendues au cahier des charges JEB/DNI/2026-002, toutes démontrables.</p>
+          <p>Les fonctions attendues au cahier des charges JEB/DNI/2026-002 v2.0, toutes démontrables.</p>
         </div>
         <div className="grid g-3">
           {FEATURES.map(([ico, t, d]) => (
@@ -146,9 +207,9 @@ export function Landing() {
           </div>
           <div className="grid g-3">
             {[
-              ["wallet", "Salarié", "Consultez votre solde, payez par QR code, retrouvez vos opérations, localisez les partenaires et saisissez l'administration en cas de litige.", "/inscription?role=employee", "Créer mon compte"],
-              ["store", "Partenaire", "Encaissez les paiements CartePro, suivez vos recettes et vos reversements, rejoignez le réseau référencé.", "/inscription?role=partner", "Demander l'adhésion"],
-              ["shield", "Administration", "Instruisez les adhésions, pilotez les comptes, créditez les bénéficiaires et suivez la volumétrie nationale.", "/connexion", "Accès agents"]
+              ["wallet", "Salarié", "Consultez votre budget, payez par QR code, retrouvez vos opérations, localisez les partenaires et saisissez l'administration en cas de litige.", "/inscription?role=employee", "Créer mon compte"],
+              ["store", "Partenaire", "Encaissez les paiements CartePro, suivez vos recettes, arborez le sceau officiel du Ministère.", "/inscription?role=partner", "Demander l'adhésion"],
+              ["shield", "Ministère", "Validez les adhésions, désignez le Choix du Ministre, pilotez les comptes et suivez la volumétrie nationale.", "/connexion", "Accès agents"]
             ].map(([ico, t, d, href, cta]) => (
               <div className="feat" key={t}>
                 <span className="feat__ico"><Icon name={ico} /></span>
@@ -166,10 +227,10 @@ export function Landing() {
         <div className="note">
           <Icon name="info" />
           <div>
-            <b>Simulation fonctionnelle.</b> Aucune opération financière réelle n&apos;est effectuée
-            (§5 du cahier des charges). Les données sont fictives et conservées dans ce navigateur
-            uniquement ; la barre noire en bas de page permet de changer d&apos;espace, de simuler une
-            coupure réseau et de tout réinitialiser.
+            <b>Simulation fonctionnelle.</b> Aucune opération financière réelle n&apos;est effectuée.
+            Les données sont fictives et conservées dans ce navigateur uniquement ; la barre noire en
+            bas de page permet de changer d&apos;espace, de changer d&apos;appareil et de tout
+            réinitialiser.
           </div>
         </div>
       </div>
@@ -178,7 +239,7 @@ export function Landing() {
         <div className="footer">
           <span><b style={{ color: "var(--ink-2)" }}>CartePro</b> — Ministère du Job et Bonheur</span>
           <span>Direction du Numérique et de l&apos;Innovation</span>
-          <span style={{ marginLeft: "auto" }} className="mono">JEB/DNI/2026-002 · v1.0</span>
+          <span style={{ marginLeft: "auto" }} className="mono">JEB/DNI/2026-002 · v2.0</span>
         </div>
       </footer>
     </>

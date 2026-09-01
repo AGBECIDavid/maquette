@@ -1,0 +1,308 @@
+openapi: 3.0.3
+info:
+  title: API CartePro
+  version: 2.0.0
+  description: |
+    Interface du dispositif CartePro — Ministère du Job et Bonheur,
+    référence JEB/DNI/2026-002 v2.0.
+
+    **Simulation fonctionnelle.** Aucune valeur monétaire réelle ne circule.
+    Toute réponse portant un montant porte également `simulation: true`.
+
+    Les montants sont des **entiers, en centimes**. Aucun flottant n'apparaît
+    dans une somme d'argent.
+  contact:
+    name: Direction du Numérique et de l'Innovation
+    email: t.vignal@job-et-bonheur.fr
+servers:
+  - url: /api/v1
+    description: Instance locale
+
+tags:
+  - name: Authentification
+  - name: Salariés
+  - name: Codes de paiement
+  - name: Écritures
+  - name: Partenaires
+  - name: Administration
+  - name: Service
+
+paths:
+  /auth/login:
+    post:
+      tags: [Authentification]
+      summary: Ouvre une session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        "201":
+          description: Session ouverte
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role: { type: string, enum: [employee, partner, admin] }
+                  id: { type: string }
+                  name: { type: string }
+        "401": { $ref: "#/components/responses/Erreur" }
+
+  /employees/{id}/balance:
+    get:
+      tags: [Salariés]
+      summary: Solde d'un bénéficiaire
+      description: |
+        **Contrat figé** (§5.3). Destiné à l'interconnexion avec les systèmes de
+        paie des employeurs. Toute évolution incompatible passera par `/api/v2`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string }, example: SAL-0042 }
+      responses:
+        "200":
+          description: Solde du bénéficiaire
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Solde" }
+              example:
+                employeeId: SAL-0042
+                balance: 24760
+                currency: EUR
+                status: active
+                simulation: true
+                asOf: "2026-09-01T09:12:44.108Z"
+        "404":
+          description: Aucun bénéficiaire ne porte cet identifiant
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Erreur" }
+              example:
+                error: employee_not_found
+                message: Aucun bénéficiaire ne porte cet identifiant.
+
+  /payment-tokens:
+    post:
+      tags: [Codes de paiement]
+      summary: Émet un code de paiement
+      description: Usage unique, cinq minutes de validité (R4).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [employeeId]
+              properties:
+                employeeId: { type: string, example: SAL-0042 }
+      responses:
+        "201":
+          description: Code émis
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CodePaiement" }
+        "402": { $ref: "#/components/responses/Erreur" }
+        "403": { $ref: "#/components/responses/Erreur" }
+
+  /payment-tokens/{token}:
+    get:
+      tags: [Codes de paiement]
+      summary: Résout un code présenté en caisse
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Code valide }
+        "409":
+          description: Code déjà consommé (R4)
+        "410":
+          description: Code expiré (R4)
+
+  /transactions:
+    post:
+      tags: [Écritures]
+      summary: Valide un encaissement
+      description: |
+        Écriture définitive (R1). Le champ `idempotencyKey` rend l'appel
+        rejouable sans risque : la même clé renvoie la transaction déjà écrite,
+        avec le même identifiant et sans nouvelle écriture (R3).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, partnerId, amount]
+              properties:
+                token: { type: string }
+                partnerId: { type: string, example: PRT-001 }
+                amount: { type: integer, description: En centimes, example: 1850 }
+                channel: { type: string, enum: [qr, offline], default: qr }
+                idempotencyKey:
+                  type: string
+                  description: Clé forgée par le point de vente avant l'appel.
+                  example: "caisse-01:9f3a…:1850"
+      responses:
+        "201":
+          description: Écriture passée
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ecriture" }
+        "200":
+          description: Rejeu d'une clé d'idempotence connue — écriture existante renvoyée
+        "402":
+          description: Solde insuffisant (R2)
+          content:
+            application/json:
+              example:
+                error: insufficient_funds
+                message: "Solde insuffisant : 16,12 € disponibles pour un encaissement de 18,50 € (simulation)."
+        "409": { description: Code déjà consommé }
+        "410": { description: Code expiré }
+
+  /transactions/{ref}/cancel:
+    post:
+      tags: [Écritures]
+      summary: Annule une écriture par une écriture inverse
+      description: |
+        L'écriture d'origine n'est **jamais** modifiée ni supprimée (R1). Une
+        écriture de nature `reversal` est ajoutée, chaînée comme les autres, et
+        rattachée à celle qu'elle compense ; le bénéficiaire est recrédité.
+      parameters:
+        - { name: ref, in: path, required: true, schema: { type: string }, example: TRX-000104 }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, example: double encaissement constaté }
+      responses:
+        "201":
+          description: Écriture inverse créée
+          content:
+            application/json:
+              example:
+                ref: TRX-000110
+                kind: reversal
+                reverses: TRX-000104
+                amount: 4200
+                currency: EUR
+                integrity: { prev: 9c1f0ab3, hash: 4d77e2b1 }
+        "409":
+          description: Écriture déjà annulée, ou tentative d'annuler une annulation
+
+  /partners:
+    get:
+      tags: [Partenaires]
+      summary: Catalogue paginé
+      parameters:
+        - { name: query, in: query, schema: { type: string } }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 10, maximum: 100 } }
+      responses:
+        "200":
+          description: Page de résultats
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Page" }
+
+  /partners/{id}/featured:
+    patch:
+      tags: [Administration]
+      summary: Met un partenaire en avant — « Sélection du Ministre »
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                featured: { type: boolean }
+                note: { type: string, maxLength: 160 }
+      responses:
+        "200": { description: Partenaire mis à jour }
+        "409": { description: Un partenaire non actif ne peut pas être mis en avant }
+
+  /categories:
+    get:
+      tags: [Service]
+      summary: Catégories de partenaires
+      description: §6.3 — les catégories sont une donnée, jamais une liste écrite dans un gabarit.
+      responses:
+        "200": { description: Liste des catégories, avec le nombre de partenaires actifs }
+
+  /health:
+    get:
+      tags: [Service]
+      summary: État applicatif et version
+      responses:
+        "200":
+          description: Service disponible
+          content:
+            application/json:
+              example:
+                status: ok
+                application: cartepro
+                version: 2.0.0
+                simulation: true
+
+components:
+  schemas:
+    Solde:
+      type: object
+      required: [employeeId, balance, currency, simulation, asOf]
+      properties:
+        employeeId: { type: string }
+        balance: { type: integer, description: En centimes }
+        currency: { type: string, enum: [EUR] }
+        status: { type: string }
+        simulation: { type: boolean, description: Toujours vrai tant que le dispositif n'a pas d'agrément }
+        asOf: { type: string, format: date-time }
+    CodePaiement:
+      type: object
+      properties:
+        token: { type: string }
+        employeeId: { type: string }
+        issuedAt: { type: integer }
+        expiresAt: { type: integer }
+    Ecriture:
+      type: object
+      properties:
+        ref: { type: string }
+        kind: { type: string, enum: [payment, reversal] }
+        reverses: { type: string, nullable: true }
+        amount: { type: integer }
+        currency: { type: string }
+        integrity:
+          type: object
+          properties:
+            prev: { type: string }
+            hash: { type: string }
+    Page:
+      type: object
+      properties:
+        items: { type: array, items: { type: object } }
+        page: { type: integer }
+        size: { type: integer }
+        pages: { type: integer }
+        total: { type: integer }
+    Erreur:
+      type: object
+      required: [error, message]
+      properties:
+        error: { type: string }
+        message: { type: string }
+  responses:
+    Erreur:
+      description: Erreur typée
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erreur" }

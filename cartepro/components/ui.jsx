@@ -246,3 +246,41 @@ export function CopyButton({ value, label = "Copier", className, onDone }) {
     </button>
   );
 }
+
+
+/* ---- Mention de simulation (§4.1) -----------------------------------------
+   « Un astérisque en pied de page ne suffit pas » : la mention est posée à côté
+   de chaque valeur monétaire, dans le flux, et elle est lisible par un lecteur
+   d'écran comme le reste du texte. */
+
+export function Sim({ onDark, className }) {
+  return (
+    <span className={"sim" + (onDark ? " sim--onDark" : "") + (className ? " " + className : "")}>
+      Simulation
+    </span>
+  );
+}
+
+export function SimBar({ children }) {
+  return (
+    <div className="simbar" role="note">
+      <Sim />
+      <span>
+        {children || (
+          <>
+            <b>Aucune valeur réelle ne circule.</b> Les montants affichés sur cet écran sont
+            fictifs : CartePro est une simulation fonctionnelle, pas un service de paiement.
+          </>
+        )}
+      </span>
+    </div>
+  );
+}
+
+/* Le titre de l'onglet porte lui aussi la mention (§4.1). */
+export function usePageTitle(titre) {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.title = (titre ? titre + " — " : "") + "CartePro (simulation)";
+  }, [titre]);
+}

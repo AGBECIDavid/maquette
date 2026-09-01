@@ -1,70 +1,86 @@
 /* ============================================================================
-   Modèle de données et jeu de démonstration.
+   Modèle de données et jeu de démonstration — CartePro.
 
    Le schéma reproduit celui d'une base relationnelle — employeurs, salariés,
    partenaires, transactions, rechargements, jetons, réclamations — pour que le
    passage à un vrai backend soit une transposition, pas une réécriture.
+
+   Les partenaires actifs sont ceux que le ministre a désignés ; les autres sont
+   « en cours de signature », c'est-à-dire en attente d'instruction. Les
+   catégories, elles, sont une table : voir §6.3.
    ========================================================================= */
 
 import { fnv1a } from "./format.js";
 
-export const CATEGORIES = [
-  { id: "restauration", label: "Restauration", ico: "store" },
-  { id: "boulangerie",  label: "Boulangerie",  ico: "store" },
-  { id: "alimentation", label: "Alimentation", ico: "store" },
-  { id: "culture",      label: "Culture",      ico: "ticket" },
-  { id: "sport",        label: "Sport",        ico: "chart" },
-  { id: "bienetre",     label: "Bien-être",    ico: "users" },
-  { id: "transport",    label: "Transport",    ico: "pin" }
+export const CATEGORIES_SEED = [
+  { id: "loisirs",     label: "Loisirs & nature",       ico: "spark" },
+  { id: "creation",    label: "Création & fête",        ico: "ticket" },
+  { id: "gourmandise", label: "Gourmandise",            ico: "store" },
+  { id: "mode",        label: "Mode & artisanat",       ico: "user" },
+  { id: "bienetre",    label: "Bien-être",              ico: "users" },
+  { id: "culture",     label: "Culture",                ico: "ticket" },
+  { id: "sport",       label: "Sport",                  ico: "chart" }
 ];
-export const catLabel = id => (CATEGORIES.find(c => c.id === id) || { label: id }).label;
+/* Les catégories sont une table, pas une liste écrite dans les gabarits : en
+   ajouter, en renommer ou en retirer ne touche aucune ligne d'interface. Les
+   deux fonctions ci-dessous retombent proprement sur un libellé et une icône
+   par défaut quand une catégorie inconnue apparaît. */
+let CATEGORIES = CATEGORIES_SEED.slice();
+export const setCategories = list => { CATEGORIES = list && list.length ? list : CATEGORIES_SEED.slice(); };
+export const getCategories = () => CATEGORIES.slice();
+export const catLabel = id => (CATEGORIES.find(c => c.id === id) || { label: id || "Non classé" }).label;
 export const catIco   = id => (CATEGORIES.find(c => c.id === id) || { ico: "store" }).ico;
 
 export const REGIONS = ["Île-de-France", "Auvergne-Rhône-Alpes", "Provence-Alpes-Côte d'Azur",
   "Hauts-de-France", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Grand Est"];
 
 export const STATUS = {
-  active:    { label: "Actif",        pill: "pill--good" },
-  pending:   { label: "En attente",   pill: "pill--warn" },
-  suspended: { label: "Suspendu",     pill: "pill--crit" },
-  closed:    { label: "Clôturé",      pill: "pill--mute" },
-  rejected:  { label: "Refusé",       pill: "pill--mute" }
+  active:    { label: "Actif",      pill: "pill--good" },
+  pending:   { label: "En attente", pill: "pill--warn" },
+  suspended: { label: "Suspendu",   pill: "pill--crit" },
+  closed:    { label: "Clôturé",    pill: "pill--mute" },
+  rejected:  { label: "Refusé",     pill: "pill--mute" }
 };
 
 export const CLAIM_STATUS = {
-  open:        { label: "Ouverte",     pill: "pill--warn" },
+  open:        { label: "Ouverte",        pill: "pill--warn" },
   in_progress: { label: "En instruction", pill: "pill--info" },
-  resolved:    { label: "Résolue",     pill: "pill--good" },
-  rejected:    { label: "Rejetée",     pill: "pill--mute" }
+  resolved:    { label: "Résolue",        pill: "pill--good" },
+  rejected:    { label: "Rejetée",        pill: "pill--mute" }
 };
 
 export const CLAIM_CATEGORIES = [
   { id: "operation", label: "Opération contestée" },
   { id: "solde",     label: "Solde incorrect" },
-  { id: "acces",     label: "Accès ou carte bloquée" },
+  { id: "acces",     label: "Accès ou compte bloqué" },
   { id: "autre",     label: "Autre demande" }
 ];
 
-/* Générateur pseudo-aléatoire à graine : l'historique doit être identique à
-   chaque réinitialisation, sinon les graphiques changent de forme entre deux
-   présentations. */
+/* Durée de validité d'un jeton de paiement (R4). Le ministre demandait 30
+   minutes, la sécurité impose 5 : l'arbitrage §7 retient 5 minutes assorties
+   d'un bouton de régénération, pour que l'exigence n'ait pas de coût d'usage. */
+export const TOKEN_TTL = 5 * 60e3;
+
 function rng(seed) {
   let s = seed >>> 0;
   return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
 }
 
-/* Enregistre une transaction et chaîne son empreinte à la précédente. Une fois
-   écrite, une transaction n'est ni modifiée ni supprimée (§2.2, §3.2). */
-export function commitTxn(db, employee, partner, amount, at, channel) {
+/* Écrit une transaction et chaîne son empreinte à la précédente. Une écriture
+   n'est jamais modifiée ni supprimée : une annulation est une écriture de plus,
+   de sens inverse, qui référence celle qu'elle compense. */
+export function commitTxn(db, employee, partner, amount, at, channel, extra) {
   const prev = db.txns.length ? db.txns[db.txns.length - 1].hash : "0".repeat(8);
   const ref = "TRX-" + String(++db.counters.txn).padStart(6, "0");
-  const t = {
+  const t = Object.assign({
     id: ref, ref, employeeId: employee.id, partnerId: partner.id,
     amount, at: at || Date.now(), channel: channel || "qr",
-    status: "validated", prev, hash: ""
-  };
-  t.hash = fnv1a([prev, ref, t.employeeId, t.partnerId, t.amount, t.at].join("|"));
-  employee.balance -= amount;
+    kind: "payment", status: "validated", reversedBy: null, reverses: null,
+    prev, hash: ""
+  }, extra || {});
+  t.hash = fnv1a([prev, ref, t.kind, t.employeeId, t.partnerId, t.amount, t.at].join("|"));
+  if (t.kind === "reversal") employee.balance += amount;
+  else employee.balance -= amount;
   db.txns.push(t);
   return t;
 }
@@ -73,7 +89,7 @@ export function rechain(db) {
   let prev = "0".repeat(8);
   db.txns.forEach(t => {
     t.prev = prev;
-    t.hash = fnv1a([prev, t.ref, t.employeeId, t.partnerId, t.amount, t.at].join("|"));
+    t.hash = fnv1a([prev, t.ref, t.kind || "payment", t.employeeId, t.partnerId, t.amount, t.at].join("|"));
     prev = t.hash;
   });
 }
@@ -82,7 +98,7 @@ export function verifyLedger(db) {
   let prev = "0".repeat(8);
   for (let i = 0; i < db.txns.length; i++) {
     const t = db.txns[i];
-    const h = fnv1a([prev, t.ref, t.employeeId, t.partnerId, t.amount, t.at].join("|"));
+    const h = fnv1a([prev, t.ref, t.kind || "payment", t.employeeId, t.partnerId, t.amount, t.at].join("|"));
     if (t.prev !== prev || t.hash !== h)
       return { ok: false, index: i, ref: t.ref, expected: h, found: t.hash };
     prev = t.hash;
@@ -91,7 +107,7 @@ export function verifyLedger(db) {
 }
 
 export function seed() {
-  const R = rng(20260202);
+  const R = rng(20260109);
   const pick = arr => arr[Math.floor(R() * arr.length)];
   const between = (a, b) => a + Math.floor(R() * (b - a + 1));
 
@@ -114,44 +130,81 @@ export function seed() {
     E("SAL-0103", "Hugo Delcourt",   "h.delcourt@ardenne.fr",  "EMP-ARDENNE",  "2026-03-02")
   ];
 
+  /* Le ministre signe lui-même les adhésions et met les partenaires en avant :
+     son compte porte donc des pouvoirs que les autres agents n'ont pas. */
   const admins = [
-    { id: "AGT-001", name: "Thomas Vignal", email: "t.vignal@jeb.gouv.fr",
+    { id: "AGT-000", name: "Jean-Eudes Berlier", email: "je.berlier@job-et-bonheur.fr",
+      role: "Ministre du Job et Bonheur", minister: true, password: "demo" },
+    { id: "AGT-001", name: "Thomas Vignal", email: "t.vignal@job-et-bonheur.fr",
       role: "Conseiller numérique", password: "demo" },
-    { id: "AGT-002", name: "Florine Pontaillac", email: "f.pontaillac@jeb.gouv.fr",
-      role: "Conseillère juridique", password: "demo" }
+    { id: "AGT-002", name: "Florine Pontaillac", email: "f.pontaillac@job-et-bonheur.fr",
+      role: "Conseillère juridique", password: "demo" },
+    { id: "AGT-003", name: "Benjamin Sellami", email: "b.sellami@job-et-bonheur.fr",
+      role: "Conseiller communication", password: "demo" }
   ];
 
-  const P = (id, name, cat, addr, city, region, x, y, st, days) => ({
-    id, name, category: cat, address: addr, city, region, x, y, status: st,
+  const P = (o) => Object.assign({
+    password: "demo", featured: false, ministerNote: "",
+    siren: String(between(300000000, 899999999)),
+    objetSocial: "Activité de commerce et de services aux particuliers",
+    refusal: null,
     siret: between(100, 899) + " " + between(100, 899) + " " + between(100, 899) + " 000" + between(10, 99),
-    contact: name.toLowerCase().replace(/[^a-z]+/g, ".").replace(/^\.|\.$/g, "") + "@partenaire.fr",
-    password: "demo",
-    createdAt: Date.now() - days * 864e5,
     iban: "FR76 " + between(1000, 9999) + " " + between(1000, 9999) + " "
         + between(1000, 9999) + " " + between(1000, 9999)
-  });
+  }, o);
 
+  /* Les quatre partenaires du lancement, choisis par le ministre. */
   const partners = [
-    P("PRT-001", "Le Comptoir des Halles", "restauration", "12 rue des Halles",      "Paris",      "Île-de-France",              0.34, 0.30, "active", 96),
-    P("PRT-002", "Boulangerie Sarrazin",   "boulangerie",  "4 place Victor Hugo",    "Paris",      "Île-de-France",              0.52, 0.44, "active", 94),
-    P("PRT-003", "Librairie Ampère",       "culture",      "27 rue Ampère",          "Lyon",       "Auvergne-Rhône-Alpes",       0.68, 0.24, "active", 88),
-    P("PRT-004", "Studio Forme",           "sport",        "9 avenue de la Gare",    "Lille",      "Hauts-de-France",            0.22, 0.62, "active", 81),
-    P("PRT-005", "Le Panier Bio",          "alimentation", "55 cours Berriat",       "Grenoble",   "Auvergne-Rhône-Alpes",       0.78, 0.56, "active", 76),
-    P("PRT-006", "Cinéma Le Rex",          "culture",      "3 boulevard Gambetta",   "Bordeaux",   "Nouvelle-Aquitaine",         0.44, 0.72, "active", 70),
-    P("PRT-007", "Table de Marseille",     "restauration", "18 quai du Port",        "Marseille",  "Provence-Alpes-Côte d'Azur", 0.60, 0.80, "active", 64),
-    P("PRT-008", "Vélo Cité",              "transport",    "2 rue Nationale",        "Nantes",     "Pays de la Loire",           0.14, 0.40, "active", 58),
-    P("PRT-009", "Institut Bellevue",      "bienetre",     "31 rue Saint-Rome",      "Toulouse",   "Occitanie",                  0.86, 0.34, "active", 51),
-    P("PRT-010", "Épicerie Kléber",        "alimentation", "76 avenue Kléber",       "Strasbourg", "Grand Est",                  0.30, 0.18, "active", 44),
-    P("PRT-011", "Café des Facultés",      "restauration", "1 place de la Sorbonne", "Paris",      "Île-de-France",              0.48, 0.62, "suspended", 39),
-    P("PRT-012", "Fournil de Lyon",        "boulangerie",  "14 rue de la Charité",   "Lyon",       "Auvergne-Rhône-Alpes",       0.72, 0.68, "active", 33),
-    P("PRT-013", "Escapade Nautique",      "sport",        "8 quai des Chartrons",   "Bordeaux",   "Nouvelle-Aquitaine",         0.20, 0.30, "pending", 4),
-    P("PRT-014", "Maison Perrin",          "boulangerie",  "40 rue du Marché",       "Lille",      "Hauts-de-France",            0.62, 0.14, "pending", 2)
+    P({ id: "PRT-001", name: "Poney Dream 78", category: "loisirs",
+        address: "Route des Écuries", city: "Saint-Rémy-lès-Chevreuse", region: "Île-de-France",
+        channel: "Sur place", contact: "contact@poneydream78.fr",
+        x: 0.30, y: 0.28, status: "active", createdAt: Date.now() - 96 * 864e5,
+        featured: true, ministerNote: "Parfait pour souder une équipe et renouer avec la nature.",
+        basket: [3200, 6800] }),
+    P({ id: "PRT-002", name: "KostumParty", category: "creation",
+        address: "34 rue Oberkampf, Paris 11ᵉ", city: "Paris", region: "Île-de-France",
+        channel: "Sur place", contact: "bonjour@kostumparty.fr",
+        x: 0.52, y: 0.44, status: "active", createdAt: Date.now() - 92 * 864e5,
+        featured: true, ministerNote: "La créativité est la clé du bonheur au travail.",
+        basket: [2400, 9500] }),
+    P({ id: "PRT-003", name: "Glaces Artisanales Corrèze", category: "gourmandise",
+        address: "8 avenue de la Gare", city: "Brive-la-Gaillarde", region: "Nouvelle-Aquitaine",
+        channel: "En ligne et retrait en boutique", contact: "commandes@glaces-correze.fr",
+        x: 0.44, y: 0.70, status: "active", createdAt: Date.now() - 88 * 864e5,
+        ministerNote: "", basket: [450, 1900] }),
+    P({ id: "PRT-004", name: "Chapelier Fontaine", category: "mode",
+        address: "12 rue Saint-Rome", city: "Toulouse", region: "Occitanie",
+        channel: "Sur place", contact: "atelier@chapelier-fontaine.fr",
+        x: 0.82, y: 0.62, status: "active", createdAt: Date.now() - 80 * 864e5,
+        ministerNote: "", basket: [4500, 12500] })
   ];
 
+  /* « Autres partenaires en cours de signature » : ils attendent la validation
+     du ministre et n'apparaissent donc pas encore au catalogue. */
+  const enCours = [
+    ["Les Serres de Bagatelle", "loisirs",     "Allée de Longchamp",     "Paris",     "Île-de-France",              12],
+    ["Atelier Céramique du Marais", "creation","9 rue de Turenne",       "Paris",     "Île-de-France",               9],
+    ["Savonnerie de Grasse",   "bienetre",     "3 chemin des Aromes",    "Grasse",    "Provence-Alpes-Côte d'Azur",  7],
+    ["Le Vinyle Retrouvé",     "culture",      "22 rue Esquermoise",     "Lille",     "Hauts-de-France",             5],
+    ["Escalade Verticale",     "sport",        "40 quai Perrache",       "Lyon",      "Auvergne-Rhône-Alpes",        3],
+    ["Miellerie des Cévennes", "gourmandise",  "6 place aux Herbes",     "Nîmes",     "Occitanie",                   2]
+  ];
+  enCours.forEach(([name, category, address, city, region, days], i) => {
+    partners.push(P({
+      id: "PRT-" + String(partners.length + 1).padStart(3, "0"),
+      name, category, address, city, region, channel: "Sur place",
+      contact: name.toLowerCase().replace(/[^a-z]+/g, ".").replace(/^\.|\.$/g, "") + "@partenaire.fr",
+      x: 0.15 + (i % 3) * 0.3, y: 0.2 + Math.floor(i / 3) * 0.35,
+      status: "pending", createdAt: Date.now() - days * 864e5, basket: [1500, 5000]
+    }));
+  });
+
   const db = {
-    version: 1,
+    version: 3,
+    categories: CATEGORIES_SEED.slice(),
     employers, employees, partners, admins,
-    txns: [], topups: [], tokens: [], audit: [], outbox: [], claims: [],
+    txns: [], topups: [], tokens: [], audit: [], claims: [], outbox: [],
+    idempotency: {},
     session: null,
     degraded: false,
     counters: { txn: 0, topup: 0, claim: 0 }
@@ -173,35 +226,35 @@ export function seed() {
     });
   }
 
+  /* Un historique aux montants plausibles : une séance de poney ne coûte pas
+     le prix d'un cornet de glace. */
   for (let d = 88; d >= 0; d--) {
     const day = new Date(now - d * 864e5);
     const we = day.getDay() === 0 || day.getDay() === 6;
-    const count = we ? between(0, 2) : between(1, 4);
+    const count = we ? between(1, 3) : between(0, 2);
     for (let k = 0; k < count; k++) {
       const e = pick(employees), p = pick(actifs);
-      const amount = between(340, 4200);
+      const amount = between(p.basket[0], p.basket[1]);
       if (e.balance < amount) continue;
       const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(),
-                          between(8, 20), between(0, 59)).getTime();
+                          between(9, 19), between(0, 59)).getTime();
       commitTxn(db, e, p, amount, at, "qr");
     }
   }
   db.txns.sort((a, b) => a.at - b.at);
   rechain(db);
 
-  /* Deux réclamations déjà ouvertes : la relation entre l'administration et le
-     salarié doit être visible dès l'ouverture du démonstrateur, des deux côtés. */
   const contestee = db.txns.filter(t => t.employeeId === "SAL-0043").slice(-1)[0];
   db.claims = [
     {
       id: "REC-" + String(++db.counters.claim).padStart(4, "0"),
       employeeId: "SAL-0043", category: "operation",
       txnRef: contestee ? contestee.ref : null,
-      subject: "Montant débité deux fois chez Boulangerie Sarrazin",
+      subject: "Montant débité deux fois chez KostumParty",
       status: "open", createdAt: now - 2 * 864e5, updatedAt: now - 2 * 864e5,
       messages: [{ from: "employee", author: "Youssef Kaddour", at: now - 2 * 864e5,
-        body: "Bonjour, le commerçant a scanné deux fois mon QR code lundi. "
-            + "Je vois bien deux débits alors que je n'ai payé qu'une fois." }]
+        body: "Bonjour, la boutique a scanné deux fois mon QR code samedi. Je vois deux "
+            + "débits alors que je n'ai loué qu'un seul costume." }]
     },
     {
       id: "REC-" + String(++db.counters.claim).padStart(4, "0"),
@@ -213,8 +266,8 @@ export function seed() {
         { from: "employee", author: "Sophie Ravel", at: now - 5 * 864e5,
           body: "Mes collègues ont reçu leur dotation, pas moi. Pouvez-vous vérifier ?" },
         { from: "admin", author: "Thomas Vignal", at: now - 1 * 864e5,
-          body: "Bonjour, votre dossier est bien pris en compte. Nous vérifions le "
-              + "fichier de rechargement transmis par Ardenne Industries." }
+          body: "Bonjour, votre dossier est bien pris en compte. Nous vérifions le fichier "
+              + "de rechargement transmis par Ardenne Industries." }
       ]
     }
   ];

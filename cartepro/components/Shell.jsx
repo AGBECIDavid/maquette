@@ -34,7 +34,7 @@ function Masthead() {
             <span className="crest__dir">Direction du Numérique et de l&apos;Innovation</span>
           </span>
         </button>
-        <div className="wordmark"><b>CartePro</b> <span>JEB/DNI/2026-002 · v1.0</span></div>
+        <div className="wordmark"><b>CartePro</b> <span>JEB/DNI/2026-002 · v2.0</span></div>
         <div className="masthead__spacer" />
         <span className="envpill">Démonstrateur — aucune transaction réelle</span>
         {session ? (
@@ -111,17 +111,25 @@ function Dock() {
   useEffect(() => API.onLog(() => setLogCount(API.logs.length)), []);
 
   const switchRole = async role => {
-    await API.post("/auth/session", { role });
-    push(ROLE_HOME[role]);
+    try {
+      await API.post("/auth/session", { role });
+      push(ROLE_HOME[role]);
+    } catch (e) {
+      toast("bad", "Changement d'espace impossible",
+        (e.body && e.body.message) || "Le serveur n'a pas répondu.");
+    }
   };
 
+  /* §5.5 — connectivité limitée côté partenaire : comportement défini, pas
+     échec silencieux. La bascule sert à le démontrer. */
   const toggleDegraded = () => {
     db.degraded = !db.degraded;
     store.save();
     toast(db.degraded ? "info" : "good",
-      db.degraded ? "Mode dégradé activé" : "Réseau rétabli",
-      db.degraded ? "Les appels serveur échouent ; le QR et les encaissements passent en local."
-                  : "Les encaissements en attente peuvent être synchronisés.");
+      db.degraded ? "Connectivité limitée simulée" : "Réseau rétabli",
+      db.degraded
+        ? "Les encaissements sont mis en file d'attente au lieu d'être perdus."
+        : "La file d'attente du partenaire peut être transmise.");
   };
 
   const reset = () => {
@@ -158,8 +166,8 @@ function Dock() {
         <div className="dock__spacer" />
         <button className="dockbtn" type="button" onClick={toggleDegraded}
                 aria-pressed={db.degraded ? "true" : "false"}
-                title="Simule une perte de connectivité chez le partenaire">
-          <Icon name="offline" /> Mode dégradé
+                title="Simule une connectivité limitée chez le partenaire">
+          <Icon name="offline" /> Réseau limité
         </button>
         <button className="dockbtn" type="button" onClick={() => setConsole(v => !v)}
                 aria-pressed={console_ ? "true" : "false"}>

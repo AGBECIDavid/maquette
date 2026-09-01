@@ -7,9 +7,10 @@
    ========================================================================= */
 
 import { uid } from "./format.js";
-import { seed, commitTxn, verifyLedger, catLabel, STATUS, REGIONS } from "./data.js";
+import { seed, commitTxn, verifyLedger, catLabel, setCategories, STATUS, REGIONS, TOKEN_TTL } from "./data.js";
 
 const KEY = "cartepro.demo.v2";
+export const APP_VERSION = "2.0.0";
 
 /* ---- Magasin observable ---------------------------------------------------
    Un compteur de version sert d'instantané : React s'y abonne et redessine
@@ -24,6 +25,8 @@ export const store = {
     this.db = this.load() || seed();
     if (!this.db.claims) this.db.claims = [];
     if (!this.db.outbox) this.db.outbox = [];
+    if (!this.db.idempotency) this.db.idempotency = {};
+    setCategories(this.db.categories);
     return this.db;
   },
   load() {
@@ -38,7 +41,7 @@ export const store = {
     try { localStorage.setItem(KEY, JSON.stringify(this.db)); } catch (e) { /* sans effet */ }
     this.notify();
   },
-  reset() { this.db = seed(); this.save(); },
+  reset() { this.db = seed(); setCategories(this.db.categories); this.save(); },
   notify() { this.v++; this.listeners.forEach(fn => fn()); },
   subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); },
   snapshot() { return this.v; }
@@ -64,6 +67,8 @@ function publicTxn(t) {
   return {
     ref: t.ref, at: new Date(t.at).toISOString(), amount: t.amount, currency: "EUR",
     status: t.status, channel: t.channel,
+    kind: t.kind || "payment", reverses: t.reverses || null, reversedBy: t.reversedBy || null,
+    reason: t.reason || null,
     partner: p ? { id: p.id, name: p.name, category: p.category, city: p.city } : null,
     employee: e ? { id: e.id, name: e.name } : null,
     integrity: { prev: t.prev, hash: t.hash }
@@ -71,11 +76,14 @@ function publicTxn(t) {
 }
 function publicPartner(p, full) {
   const base = { id: p.id, name: p.name, category: p.category, categoryLabel: catLabel(p.category),
-                 city: p.city, region: p.region, address: p.address, status: p.status, x: p.x, y: p.y };
+                 city: p.city, region: p.region, address: p.address, status: p.status,
+                 channel: p.channel || "Sur place", featured: !!p.featured,
+                 ministerNote: p.ministerNote || "", x: p.x, y: p.y };
   if (!full) return base;
   const rows = db().txns.filter(t => t.partnerId === p.id);
   return Object.assign(base, {
-    siret: p.siret, contact: p.contact, iban: p.iban,
+    siret: p.siret, siren: p.siren, objetSocial: p.objetSocial,
+    refusal: p.refusal || null, contact: p.contact, iban: p.iban,
     createdAt: new Date(p.createdAt).toISOString(),
     totals: { count: rows.length, amount: rows.reduce((s, t) => s + t.amount, 0) }
   });
@@ -110,17 +118,20 @@ function paginate(rows, q) {
 function stats() {
   const d = db(), now = Date.now(), s30 = now - 30 * 864e5, s60 = now - 60 * 864e5;
   const sum = a => a.reduce((s, t) => s + t.amount, 0);
-  const cur = d.txns.filter(t => t.at >= s30);
-  const prev = d.txns.filter(t => t.at >= s60 && t.at < s30);
+  const paiements = d.txns.filter(t => (t.kind || "payment") === "payment");
+  const cur = paiements.filter(t => t.at >= s30);
+  const prev = paiements.filter(t => t.at >= s60 && t.at < s30);
   const byRegion = {}, byCategory = {};
-  d.txns.forEach(t => {
+  paiements.forEach(t => {
     const p = prt(t.partnerId); if (!p) return;
     byRegion[p.region] = (byRegion[p.region] || 0) + t.amount;
     byCategory[p.category] = (byCategory[p.category] || 0) + t.amount;
   });
   return {
-    volume: sum(d.txns), volume30: sum(cur), volume30prev: sum(prev),
-    count: d.txns.length, count30: cur.length,
+    volume: sum(paiements) - sum(d.txns.filter(t => t.kind === "reversal")),
+    volume30: sum(cur), volume30prev: sum(prev),
+    count: paiements.length, count30: cur.length,
+    reversals: d.txns.filter(t => t.kind === "reversal").length,
     partnersActive: d.partners.filter(p => p.status === "active").length,
     partnersPending: d.partners.filter(p => p.status === "pending").length,
     partnersTotal: d.partners.length,
@@ -128,12 +139,25 @@ function stats() {
     employeesSuspended: d.employees.filter(e => e.status !== "active").length,
     claimsOpen: d.claims.filter(c => c.status === "open" || c.status === "in_progress").length,
     outstanding: d.employees.reduce((s, e) => s + e.balance, 0),
-    average: d.txns.length ? Math.round(sum(d.txns) / d.txns.length) : 0,
+    average: paiements.length ? Math.round(sum(paiements) / paiements.length) : 0,
     byRegion, byCategory
   };
 }
 
 /* ---- Table de routage ----------------------------------------------------- */
+/* Contrôle de forme du SIREN : neuf chiffres et clé de Luhn. Ce n'est pas une
+   vérification d'existence — elle demanderait l'API Sirene — mais elle écarte
+   les saisies manifestement fausses (§2.2, Pontaillac). */
+export function luhn(num) {
+  let sum = 0;
+  for (let i = 0; i < num.length; i++) {
+    let d = Number(num[num.length - 1 - i]);
+    if (i % 2 === 1) { d *= 2; if (d > 9) d -= 9; }
+    sum += d;
+  }
+  return sum % 10 === 0;
+}
+
 const fail = (status, error, message) => {
   const e = new Error(message); e.status = status; e.body = { error, message }; throw e;
 };
@@ -178,11 +202,20 @@ const ROUTES = [
       }
       if (b.role === "partner") {
         if (!b.name || !b.city) fail(400, "missing_fields", "Raison sociale et ville sont obligatoires.");
+        const siren = String(b.siren || "").replace(/\s/g, "");
+        if (!/^\d{9}$/.test(siren))
+          fail(400, "invalid_siren", "Le SIREN doit comporter exactement neuf chiffres.");
+        if (!luhn(siren))
+          fail(400, "invalid_siren", "Ce SIREN ne satisfait pas la clé de contrôle (Luhn).");
+        if (String(b.objetSocial || "").trim().length < 10)
+          fail(400, "missing_objet", "L'objet social doit être renseigné (dix caractères minimum).");
         const p = {
           id: "PRT-" + String(d.partners.length + 1).padStart(3, "0"),
           name: b.name, category: b.category || "restauration", address: b.address || "",
           city: b.city, region: b.region || REGIONS[0], siret: b.siret || "",
           contact: b.email, password: b.password || "demo", iban: b.iban || "",
+          siren, objetSocial: String(b.objetSocial).trim(), refusal: null,
+          featured: false, ministerNote: "", channel: b.channel || "Sur place",
           x: 0.2 + Math.random() * 0.6, y: 0.2 + Math.random() * 0.6,
           status: "pending", createdAt: Date.now()      // validation manuelle (§2.2)
         };
@@ -219,11 +252,13 @@ const ROUTES = [
   { m: "GET", p: /^\/employees\/([\w-]+)$/, h: a =>
       publicEmployee(emp(a[1]) || fail(404, "not_found", "Salarié inconnu"), true) },
 
-  // Point d'entrée prévu pour l'interconnexion avec les SIRH employeurs (§3.3)
+  /* §5.3 — contrat figé, exposé dès maintenant pour les SIRH employeurs.
+     Réponse documentée dans openapi.yaml ; identifiant inconnu → 404 typé. */
   { m: "GET", p: /^\/employees\/([\w-]+)\/balance$/, offline: true, h: a => {
-      const e = emp(a[1]) || fail(404, "not_found", "Salarié inconnu");
-      return { employeeId: e.id, balance: e.balance, currency: "EUR",
-               status: e.status, asOf: new Date().toISOString() };
+      const e = emp(a[1]);
+      if (!e) fail(404, "employee_not_found", "Aucun bénéficiaire ne porte cet identifiant.");
+      return { employeeId: e.id, balance: e.balance, currency: "EUR", status: e.status,
+               simulation: true, asOf: new Date().toISOString() };
     } },
 
   { m: "PATCH", p: /^\/employees\/([\w-]+)$/, h: (a, b) => {
@@ -257,8 +292,10 @@ const ROUTES = [
       if (e.status !== "active") fail(403, "account_inactive", "Compte salarié " + STATUS[e.status].label.toLowerCase());
       if (e.balance <= 0) fail(402, "empty_balance", "Solde épuisé");
       d.tokens = d.tokens.filter(t => t.expiresAt > Date.now() - 3600e3);
+      // R4 — 5 minutes, usage unique. La régénération côté salarié couvre le
+      // cas du client resté dans la file (arbitrage §7).
       const tok = { token: uid(16), employeeId: e.id, issuedAt: Date.now(),
-                    expiresAt: Date.now() + 5 * 60e3, usedAt: null, offline: !!d.degraded };
+                    expiresAt: Date.now() + TOKEN_TTL, usedAt: null };
       d.tokens.push(tok);
       return tok;
     } },
@@ -271,25 +308,42 @@ const ROUTES = [
       return { token: t.token, employee: { id: e.id, name: e.name }, expiresAt: t.expiresAt };
     } },
 
-  { m: "POST", p: /^\/transactions$/, h: (_, b) => {
+  { m: "POST", p: /^\/transactions$/,
+    // R5 : sérialisé par bénéficiaire (le jeton porte le salarié).
+    lockBy: (_, b) => {
+      const tok = (store.db && store.db.tokens || []).find(x => x.token === b.token);
+      return "employee:" + (tok ? tok.employeeId : "inconnu");
+    },
+    h: (_, b) => {
       const d = db();
+
+      /* R3 — idempotence. Un double scan, un clic répété ou un rejeu de la file
+         hors ligne ne débitent qu'une fois : la même clé renvoie la transaction
+         déjà écrite, avec le même identifiant, sans nouvelle écriture. */
+      const key = b.idempotencyKey ? String(b.idempotencyKey) : null;
+      if (key && d.idempotency[key]) {
+        const deja = d.txns.find(x => x.ref === d.idempotency[key]);
+        if (deja) return Object.assign(publicTxn(deja), { __replayed: true });
+      }
+
       const t = d.tokens.find(x => x.token === b.token) || fail(404, "unknown_token", "Jeton inconnu");
       if (t.usedAt) fail(409, "token_used", "Jeton déjà utilisé");
-      // Un encaissement capturé hors ligne est daté par le partenaire : c'est
-      // cette date qui est comparée à la validité du jeton, sinon aucune reprise
-      // de connexion ne pourrait aboutir (§2.2, mode dégradé).
-      const captured = b.capturedAt ? Number(b.capturedAt) : Date.now();
-      if (t.expiresAt < captured) fail(410, "token_expired", "Jeton expiré");
+      if (t.expiresAt < Date.now()) fail(410, "token_expired", "Jeton expiré");
       const p = prt(b.partnerId) || fail(404, "not_found", "Partenaire inconnu");
       if (p.status !== "active") fail(403, "partner_inactive", "Compte partenaire non actif");
       const amount = Math.round(Number(b.amount));
       if (!(amount > 0)) fail(400, "invalid_amount", "Montant invalide");
       const e = emp(t.employeeId);
       if (e.status !== "active") fail(403, "account_inactive", "Compte salarié non actif");
-      if (e.balance < amount) fail(402, "insufficient_funds", "Solde insuffisant");
+      if (e.balance < amount)
+        fail(402, "insufficient_funds",
+             "Solde insuffisant : " + (e.balance / 100).toFixed(2).replace(".", ",") + " € disponibles"
+             + " pour un encaissement de " + (amount / 100).toFixed(2).replace(".", ",") + " €"
+             + " (simulation).");
 
       t.usedAt = Date.now();                                   // usage unique (§3.2)
-      const txn = commitTxn(d, e, p, amount, captured, b.channel || "qr");
+      const txn = commitTxn(d, e, p, amount, Date.now(), b.channel || "qr");
+      if (key) d.idempotency[key] = txn.ref;
       BUS.emit("txn", { txn, employee: e, partner: p });
       return publicTxn(txn);
     } },
@@ -313,10 +367,19 @@ const ROUTES = [
   { m: "PATCH", p: /^\/partners\/([\w-]+)$/, h: (a, b) => {
       const p = prt(a[1]) || fail(404, "not_found", "Partenaire inconnu");
       if (!STATUS[b.status]) fail(400, "invalid_status", "Statut inconnu");
+      // Un refus, une suspension ou une clôture doivent porter un motif écrit :
+      // le partenaire a le droit de savoir pourquoi (§2.3, Pontaillac).
+      const motive = String(b.note || "").trim();
+      if (["rejected", "suspended", "closed"].includes(b.status) && motive.length < 10)
+        fail(400, "motive_required",
+             "Un motif écrit d'au moins dix caractères est obligatoire pour cette décision.");
       const before = p.status;
       p.status = b.status;
-      db().audit.unshift({ at: Date.now(), actor: "admin", target: p.id,
-        action: "status", from: before, to: b.status, note: b.note || "" });
+      if (b.status === "rejected" || b.status === "suspended")
+        p.refusal = { status: b.status, motive, at: Date.now(), agent: b.author || "Administration" };
+      if (b.status === "active") p.refusal = null;
+      db().audit.unshift({ at: Date.now(), actor: b.author || "Administration", agentId: b.authorId || null,
+        target: p.id, action: "status", from: before, to: b.status, note: motive });
       return publicPartner(p, true);
     } },
 
@@ -325,6 +388,40 @@ const ROUTES = [
       let rows = db().txns.filter(t => t.partnerId === p.id).slice().reverse();
       if (q.since) rows = rows.filter(t => t.at >= Number(q.since));
       return paginate(rows.map(publicTxn), q);
+    } },
+
+  /* -- Mise en avant : le « Choix du Ministre » ---------------------------- */
+  { m: "PATCH", p: /^\/partners\/([\w-]+)\/featured$/, h: (a, b) => {
+      const p = prt(a[1]) || fail(404, "not_found", "Partenaire inconnu");
+      if (p.status !== "active" && b.featured)
+        fail(409, "partner_inactive", "Seul un partenaire actif peut être mis en avant.");
+      p.featured = !!b.featured;
+      p.ministerNote = b.featured ? String(b.note || "").slice(0, 160) : "";
+      db().audit.unshift({ at: Date.now(), actor: b.author || "Ministre", target: p.id,
+        action: "featured", to: p.featured ? "mis en avant" : "retiré", note: p.ministerNote });
+      BUS.emit("featured", { partner: p });
+      return publicPartner(p, true);
+    } },
+
+  /* -- Annulation d'une transaction ---------------------------------------
+     Le ministre veut pouvoir annuler (annotation §2.2), et une écriture
+     validée reste inaltérable. Les deux tiennent ensemble d'une seule façon :
+     l'annulation est une écriture DE PLUS, de sens inverse, chaînée comme les
+     autres et rattachée à celle qu'elle compense. Rien n'est réécrit. */
+  { m: "POST", p: /^\/transactions\/([\w-]+)\/cancel$/, h: (a, b) => {
+      const d = db();
+      const t = d.txns.find(x => x.ref === a[1]) || fail(404, "not_found", "Transaction inconnue");
+      if (t.kind === "reversal") fail(409, "already_reversal", "Une annulation ne s'annule pas.");
+      if (t.reversedBy) fail(409, "already_reversed", "Cette transaction a déjà été annulée par " + t.reversedBy + ".");
+      const e = emp(t.employeeId) || fail(404, "not_found", "Salarié inconnu");
+      const p = prt(t.partnerId) || fail(404, "not_found", "Partenaire inconnu");
+      const rev = commitTxn(d, e, p, t.amount, Date.now(), t.channel,
+        { kind: "reversal", reverses: t.ref, reason: String(b.reason || "").slice(0, 200) });
+      t.reversedBy = rev.ref;
+      d.audit.unshift({ at: Date.now(), actor: b.author || "admin", target: t.ref,
+        action: "cancel", to: rev.ref, note: b.reason || "" });
+      BUS.emit("txn", { txn: rev, employee: e, partner: p });
+      return publicTxn(rev);
     } },
 
   /* -- Rechargements et régularisations ----------------------------------- */
@@ -422,7 +519,25 @@ const ROUTES = [
   /* -- Pilotage ----------------------------------------------------------- */
   { m: "GET", p: /^\/admin\/stats$/, h: () => stats() },
   { m: "GET", p: /^\/ledger\/verify$/, h: () => verifyLedger(db()) },
-  { m: "GET", p: /^\/employers$/, h: () => ({ items: db().employers }) }
+  { m: "GET", p: /^\/employers$/, h: () => ({ items: db().employers }) },
+
+  /* §6.3 — les catégories sont une donnée. L'interface les lit ici ; en
+     ajouter ou en retirer ne demande aucune modification de gabarit. */
+  { m: "GET", p: /^\/categories$/, offline: true, h: () => {
+      const d = db();
+      return { items: d.categories.map(c => Object.assign({}, c, {
+        partners: d.partners.filter(p => p.category === c.id && p.status === "active").length
+      })) };
+    } },
+
+  /* §5.2 — sonde de vie, état applicatif et version. */
+  { m: "GET", p: /^\/health$/, offline: true, h: () => ({
+      status: "ok", version: APP_VERSION, simulation: true,
+      storage: typeof localStorage === "undefined" ? "memory" : "localStorage",
+      counts: { partners: db().partners.length, employees: db().employees.length,
+                transactions: db().txns.length },
+      at: new Date().toISOString()
+    }) }
 ];
 
 const CLAIM_ALLOWED = ["open", "in_progress", "resolved", "rejected"];
@@ -434,8 +549,8 @@ export const DOC = [
   ["POST",  "/auth/logout",                   "Ferme la session"],
   ["GET",   "/employees",                     "Liste des salariés (?query&status&employerId&page&size)"],
   ["GET",   "/employees/{id}",                "Fiche salarié"],
-  ["GET",   "/employees/{id}/balance",        "Solde — point d'entrée SIRH employeur (§3.3)"],
   ["PATCH", "/employees/{id}",                "Change le statut d'un compte salarié"],
+  ["GET",   "/employees/{id}/balance",        "Solde — contrat figé pour les SIRH employeurs (§5.3)"],
   ["GET",   "/employees/{id}/transactions",   "Historique paginé (?page&size&month)"],
   ["GET",   "/employees/{id}/topups",         "Rechargements et régularisations du salarié"],
   ["POST",  "/payment-tokens",                "Émet un jeton de paiement, 5 min, usage unique"],
@@ -445,12 +560,15 @@ export const DOC = [
   ["GET",   "/partners/{id}",                 "Fiche partenaire"],
   ["PATCH", "/partners/{id}",                 "Change le statut — réservé à l'administration"],
   ["GET",   "/partners/{id}/transactions",    "Encaissements du partenaire (?since)"],
+  ["POST",  "/transactions/{ref}/cancel",     "Annule une écriture par une écriture inverse chaînée"],
   ["POST",  "/topups",                        "Rechargement employeur ou régularisation"],
   ["GET",   "/claims",                        "Réclamations (?employeeId&status&open)"],
   ["GET",   "/claims/{id}",                   "Réclamation et fil de messages"],
   ["POST",  "/claims",                        "Ouvre une réclamation côté salarié"],
   ["POST",  "/claims/{id}/messages",          "Ajoute un message au fil"],
   ["PATCH", "/claims/{id}",                   "Instruit la réclamation, avec régularisation éventuelle"],
+  ["GET",   "/categories",                    "Catégories de partenaires — table, pas gabarit (§6.3)"],
+  ["GET",   "/health",                        "État applicatif et version (§5.2)"],
   ["GET",   "/admin/stats",                   "Indicateurs nationaux"],
   ["GET",   "/ledger/verify",                 "Vérifie la chaîne d'empreintes du registre"]
 ];
@@ -459,6 +577,21 @@ export const DOC = [
 const logs = [];
 const logListeners = new Set();
 const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/* R5 — concurrence. Deux encaissements simultanés sur le même salarié ne
+   doivent pas pouvoir passer tous les deux si leur somme dépasse le solde. Ici
+   les requêtes sont sérialisées par bénéficiaire : la seconde attend que la
+   première ait lu, vérifié et débité. C'est la transposition en JavaScript de
+   ce que ferait un vrai backend avec un verrou de ligne (SELECT … FOR UPDATE)
+   ou une contrainte CHECK (balance >= 0) sous isolation SERIALIZABLE.
+   Voir docs/note-concurrence.md. */
+const locks = new Map();
+function withLock(key, fn) {
+  const prev = locks.get(key) || Promise.resolve();
+  const run = prev.then(fn, fn);
+  locks.set(key, run.then(() => {}, () => {}));
+  return run;
+}
 
 function parseQuery(path) {
   const i = path.indexOf("?");
@@ -482,22 +615,41 @@ async function call(method, path, body) {
   const full = "/api/v1" + path;
   const { clean, q } = parseQuery(path);
   const route = ROUTES.find(r => r.m === method && r.p.test(clean));
-  if (!route) return finish(method, full, 404, { error: "no_route", message: "Endpoint inconnu" }, t0, true);
+  // Un endpoint inconnu échoue comme tous les autres échecs : en levant. Le
+  // retourner silencieusement laisserait un appelant croire à un succès.
+  if (!route) {
+    const body = { error: "no_route", message: "Endpoint inconnu : " + method + " " + full };
+    finish(method, full, 404, body, t0, true);
+    const e = new Error(body.message); e.status = 404; e.body = body; throw e;
+  }
 
+  // §5.5 — connectivité limitée : l'appel échoue franchement, avec un code
+  // identifiable, pour que l'appelant puisse mettre l'opération en file
+  // plutôt que de la perdre en silence.
   if (store.init().degraded && !route.offline) {
-    await wait(500 + Math.random() * 300);
+    await wait(450 + Math.random() * 250);
     finish(method, full, 0, { error: "network_unreachable", message: "Aucune réponse du serveur" }, t0, true);
     const e = new Error("Réseau indisponible"); e.network = true; e.status = 0; throw e;
   }
-  await wait(60 + Math.random() * 120);
-  try {
-    const out = route.h(clean.match(route.p), body || {}, q);
-    if (method !== "GET") store.save(); else store.notify();
-    return finish(method, full, method === "POST" ? 201 : 200, out, t0, false);
-  } catch (e) {
-    finish(method, full, e.status || 500, e.body || { error: "server_error", message: e.message }, t0, true);
-    throw e;
-  }
+
+  const exec = async () => {
+    await wait(60 + Math.random() * 120);
+    try {
+      const out = route.h(clean.match(route.p), body || {}, q);
+      if (method !== "GET") store.save(); else store.notify();
+      return finish(method, full, out && out.__replayed ? 200 : (method === "POST" ? 201 : 200),
+                    strip(out), t0, false);
+    } catch (e) {
+      finish(method, full, e.status || 500, e.body || { error: "server_error", message: e.message }, t0, true);
+      throw e;
+    }
+  };
+  return route.lockBy ? withLock(route.lockBy(clean.match(route.p), body || {}), exec) : exec();
+}
+
+function strip(out) {
+  if (out && out.__replayed) { const c = Object.assign({}, out); delete c.__replayed; return c; }
+  return out;
 }
 
 export const API = {

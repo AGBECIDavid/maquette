@@ -28,6 +28,7 @@ const ROUTES = [
   [/^\/partenaire\/compte/,      () => <PartnerSpace section="compte" />],
   [/^\/partenaire/,              () => <PartnerSpace section="bord" />],
   [/^\/admin\/validations/,      () => <AdminSpace section="validations" />],
+  [/^\/admin\/vitrine/,         () => <AdminSpace section="vitrine" />],
   [/^\/admin\/salaries/,         () => <AdminSpace section="salaries" />],
   [/^\/admin\/reclamations/,     () => <AdminSpace section="reclamations" />],
   [/^\/admin\/comptes/,          () => <AdminSpace section="comptes" />],

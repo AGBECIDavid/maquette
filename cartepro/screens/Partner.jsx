@@ -6,8 +6,10 @@ import { Icon } from "../lib/icons.jsx";
 import { eur, eurShort, dateFR, heureFR, jourRelatif, centimes } from "../lib/format.js";
 import { catIco, catLabel, STATUS } from "../lib/data.js";
 import { store } from "../lib/api.js";
+import { uid } from "../lib/format.js";
 import { useApi, useToast, useDB, useSession, useNav, useModal } from "../lib/app.jsx";
-import { Pager, Note, Empty, StatTile, ColumnChart, Pill, CopyButton } from "../components/ui.jsx";
+import { Pager, Note, Empty, StatTile, ColumnChart, Pill, CopyButton, Sim, SimBar, usePageTitle } from "../components/ui.jsx";
+import { OfficialBadge } from "./Employee.jsx";
 
 const SECTIONS = [
   ["bord",         "chart", "Tableau de bord", "/partenaire"],
@@ -39,6 +41,7 @@ export function PartnerSpace({ section = "bord" }) {
   }
 
   const p = session.who;
+  if (p.status === "rejected" || p.status === "suspended") return <Refuse p={p} />;
   return (
     <div className="workspace">
       <aside className="rail">
@@ -48,8 +51,6 @@ export function PartnerSpace({ section = "bord" }) {
             <button key={id} className="navitem" type="button" onClick={() => push(href)}
                     aria-current={section === id ? "true" : undefined}>
               <span className="navitem__ico"><Icon name={ico} /></span>{label}
-              {id === "encaisser" && db.outbox.length
-                ? <span className="navitem__badge">{db.outbox.length}</span> : null}
             </button>
           ))}
         </div>
@@ -59,6 +60,9 @@ export function PartnerSpace({ section = "bord" }) {
             <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
             <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginBottom: 8 }}>{p.city}</div>
             <Pill kind={STATUS[p.status].pill.replace("pill--", "")}>{STATUS[p.status].label}</Pill>
+            {p.status === "active" ? (
+              <div style={{ marginTop: 10 }}><OfficialBadge small /></div>
+            ) : null}
           </div>
         </div>
       </aside>
@@ -73,8 +77,58 @@ export function PartnerSpace({ section = "bord" }) {
   );
 }
 
+/* Un partenaire refusé ou suspendu doit savoir pourquoi, par qui et quand : la
+   décision lui est opposable, elle lui est donc montrée (§2.2). */
+function Refuse({ p }) {
+  usePageTitle("Décision sur votre adhésion");
+  const { push } = useNav();
+  const r = p.refusal || {};
+  const refuse = p.status === "rejected";
+  return (
+    <div className="stage stage--narrow" style={{ paddingTop: 40 }}>
+      <div className="pagehead"><div>
+        <h1>{refuse ? "Adhésion refusée" : "Compte suspendu"}</h1>
+        <p>Décision de la Direction du Numérique et de l&apos;Innovation concernant
+          l&apos;établissement {p.name}.</p>
+      </div></div>
+
+      <section className="card">
+        <div className="card__hd">
+          <h3>{p.name}</h3>
+          <span className="act">
+            <Pill kind={STATUS[p.status].pill.replace("pill--", "")}>{STATUS[p.status].label}</Pill>
+          </span>
+        </div>
+        <div className="card__bd">
+          <Note kind="warn">
+            <b>Motif de la décision</b>
+            <div style={{ marginTop: 6 }}>{r.motive || "Motif non renseigné."}</div>
+          </Note>
+          <div style={{ marginTop: 16, fontSize: 13, color: "var(--ink-3)",
+                        display: "flex", flexDirection: "column", gap: 6 }}>
+            <div>Décision prise le {r.at ? dateFR(r.at, true) : "—"}</div>
+            <div>Agent instructeur : {r.agent || "—"}</div>
+            <div>Référence de l&apos;établissement : <span className="mono">{p.id}</span></div>
+          </div>
+          <hr className="sep" />
+          <p style={{ fontSize: 13, color: "var(--ink-3)" }}>
+            Vous pouvez déposer une nouvelle demande après avoir corrigé les points signalés,
+            ou écrire au cabinet à l&apos;adresse f.pontaillac@job-et-bonheur.fr.
+          </p>
+        </div>
+        <div className="card__ft">
+          <button className="btn" type="button" onClick={() => push("/inscription?role=partner")}>
+            Déposer une nouvelle demande
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 /* ---- Tableau de bord ------------------------------------------------------ */
 function Bord({ p }) {
+  usePageTitle("Tableau de bord partenaire");
   const db = useDB();
   const { push } = useNav();
   const now = Date.now();
@@ -106,6 +160,11 @@ function Bord({ p }) {
           </button>
         </div>
       </div>
+
+      <SimBar>
+        <b>Tableau de bord de simulation.</b> Les montants ci-dessous ne correspondent à aucun
+        encaissement réel et ne donnent lieu à aucun reversement.
+      </SimBar>
 
       <div className="grid g-4" style={{ marginBottom: 16 }}>
         <StatTile label="Encaissé aujourd'hui" value={eur(sum(today))}
@@ -160,6 +219,7 @@ function Bord({ p }) {
 
 /* ---- Encaisser ------------------------------------------------------------ */
 function Encaisser({ p }) {
+  usePageTitle("Encaisser");
   const api = useApi();
   const toast = useToast();
   const db = useDB();
@@ -187,14 +247,16 @@ function Encaisser({ p }) {
     try {
       const r = await api.raw.get("/payment-tokens/" + token);
       setScan({ token: r.token, employee: r.employee });
-      toast("good", "Jeton reconnu", r.employee.name);
+      toast("good", "Code reconnu", r.employee.name);
     } catch (e) {
       if (e.network) {
-        // Hors ligne : le jeton est accepté sur sa présentation et vérifié à la synchronisation.
-        setScan({ token, employee: { name: "Salarié (vérification différée)" } });
-        toast("info", "Capturé hors ligne", "Le jeton sera vérifié à la reconnexion.");
+        /* §5.5 — sans réseau, le code est accepté sur sa présentation et sera
+           vérifié à la transmission. Le partenaire est prévenu que la
+           vérification est différée : rien n'est promis à tort. */
+        setScan({ token, employee: { name: "Bénéficiaire — vérification différée" } });
+        toast("info", "Capturé hors réseau", "Le code sera vérifié à la reconnexion.");
       } else {
-        toast("bad", "Jeton refusé", (e.body && e.body.message) || "Erreur");
+        toast("bad", "Code refusé", (e.body && e.body.message) || "Erreur");
       }
     }
   };
@@ -238,18 +300,23 @@ function Encaisser({ p }) {
   const valider = async () => {
     const cts = centimes(amount);
     if (!cts) { toast("bad", "Montant invalide", "Saisissez un montant supérieur à zéro."); return; }
-    const capturedAt = Date.now();
+    /* R3 — la clé est forgée ici, avant l'appel : c'est elle qui rend un double
+       clic, un rejeu réseau ou une reprise de file d'attente sans effet. */
+    const idempotencyKey = p.id + ":" + scan.token + ":" + cts;
     try {
       const t = await api.raw.post("/transactions",
-        { token: scan.token, partnerId: p.id, amount: cts, capturedAt, channel: "qr" });
+        { token: scan.token, partnerId: p.id, amount: cts, channel: "qr", idempotencyKey });
       setScan({ token: null, employee: null }); setAmount("");
-      toast("good", "Encaissement validé", t.ref + " · " + eur(t.amount));
+      toast("good", "Encaissement validé", t.ref + " · " + eur(t.amount) + " (simulation)");
     } catch (e) {
       if (e.network) {
-        db.outbox.push({ token: scan.token, amount: cts, capturedAt, partnerId: p.id });
+        // §5.5 — connectivité limitée : on met en file, on le dit, on ne perd rien.
+        db.outbox.push({ id: uid(6), token: scan.token, amount: cts, partnerId: p.id,
+                         idempotencyKey, capturedAt: Date.now() });
         store.save();
         setScan({ token: null, employee: null }); setAmount("");
-        toast("info", "Mis en file d'attente", "Sera transmis dès le retour du réseau.");
+        toast("info", "Mis en file d'attente",
+          "Réseau indisponible : l'encaissement sera transmis à la reconnexion.");
       } else {
         toast("bad", "Encaissement refusé", (e.body && e.body.message) || "Erreur");
       }
@@ -263,7 +330,7 @@ function Encaisser({ p }) {
     for (const o of items) {
       try {
         await api.raw.post("/transactions", { token: o.token, partnerId: o.partnerId,
-          amount: o.amount, capturedAt: o.capturedAt, channel: "offline" });
+          amount: o.amount, channel: "offline", idempotencyKey: o.idempotencyKey });
         ok++;
       } catch (e) {
         o.error = (e.body && e.body.message) || "Échec";
@@ -271,9 +338,8 @@ function Encaisser({ p }) {
       }
     }
     store.save();
-    if (ok) toast("good", "Synchronisation terminée",
-      ok + " encaissement" + (ok > 1 ? "s" : "") + " transmis.");
-    if (db.outbox.length) toast("bad", "Reste " + db.outbox.length + " en échec", "Voir la file d'attente.");
+    if (ok) toast("good", "File transmise", ok + " encaissement" + (ok > 1 ? "s" : "") + " écrit" + (ok > 1 ? "s" : "") + " au registre.");
+    if (db.outbox.length) toast("bad", db.outbox.length + " en échec", "Voir la file d'attente.");
   };
 
   return (
@@ -284,15 +350,19 @@ function Encaisser({ p }) {
 
       <div className="grid g-main">
         <section className="card"><div className="card__bd">
+          <SimBar>
+            <b>Validation de simulation.</b> Aucun montant n&apos;est réellement encaissé ni
+            reversé : l&apos;opération n&apos;a d&apos;effet que dans le démonstrateur.
+          </SimBar>
           {db.degraded ? (
             <div style={{ marginBottom: 16 }}>
               <Note kind="warn" icon="offline">
-                <b>Mode dégradé actif.</b> L&apos;encaissement sera capturé localement, puis transmis
-                au registre dès le retour du réseau.
+                <b>Connectivité limitée.</b> L&apos;encaissement sera enregistré localement et
+                transmis dès le retour du réseau — il ne sera pas perdu, et la clé
+                d&apos;idempotence garantit qu&apos;il ne sera pas compté deux fois.
               </Note>
             </div>
           ) : null}
-
           <div className="grid g-2">
             <div>
               <span className="field__lb">1. Jeton du salarié</span>
@@ -374,23 +444,26 @@ function Encaisser({ p }) {
       {db.outbox.length ? (
         <section className="card" style={{ marginTop: 16 }}>
           <div className="card__hd">
-            <h3>File d&apos;attente hors ligne</h3>
+            <h3>File d&apos;attente</h3>
             <span className="sub">
               {db.outbox.length} encaissement{db.outbox.length > 1 ? "s" : ""} capturé
               {db.outbox.length > 1 ? "s" : ""} sans réseau
             </span>
             <span className="act">
-              <button className="btn btn--primary" type="button" onClick={synchroniser} disabled={db.degraded}>
-                <Icon name="refresh" /> Synchroniser
+              <button className="btn btn--primary" type="button" onClick={synchroniser}
+                      disabled={db.degraded}>
+                <Icon name="refresh" /> Transmettre
               </button>
             </span>
           </div>
           <div className="tblwrap">
             <table className="tbl">
-              <thead><tr><th>Capturé le</th><th>Jeton</th><th className="r">Montant</th><th>État</th></tr></thead>
+              <thead><tr>
+                <th>Capturé le</th><th>Code</th><th className="r">Montant</th><th>État</th>
+              </tr></thead>
               <tbody>
-                {db.outbox.map((o, i) => (
-                  <tr key={i}>
+                {db.outbox.map(o => (
+                  <tr key={o.id}>
                     <td className="num">{dateFR(o.capturedAt, true)}</td>
                     <td className="mono">{o.token.slice(0, 10)}…</td>
                     <td className="r num">{eur(o.amount)}</td>
@@ -402,8 +475,8 @@ function Encaisser({ p }) {
           </div>
           <div className="card__ft">
             {db.degraded
-              ? "La synchronisation reprendra à la reconnexion. Les jetons restent valides : c'est la date de capture qui fait foi."
-              : "Réseau disponible — lancez la synchronisation pour écrire ces opérations au registre."}
+              ? "La transmission reprendra à la reconnexion. Rien n'est perdu, et la clé d'idempotence garantit qu'aucun encaissement ne sera compté deux fois."
+              : "Réseau disponible — transmettez la file pour écrire ces opérations au registre."}
           </div>
         </section>
       ) : null}
@@ -413,6 +486,7 @@ function Encaisser({ p }) {
 
 /* ---- Transactions --------------------------------------------------------- */
 function Transactions({ p }) {
+  usePageTitle("Transactions");
   const api = useApi();
   const db = useDB();
   const modal = useModal();
@@ -432,7 +506,9 @@ function Transactions({ p }) {
   const total = rows.reduce((s, t) => s + t.amount, 0);
 
   const exporter = () => {
-    const csv = ["reference;date;salarie;montant_eur;canal;empreinte"].concat(rows.map(t =>
+    const csv = ["# CartePro — SIMULATION FONCTIONNELLE : aucune valeur réelle, aucun reversement",
+                 "# Export du " + dateFR(Date.now(), true) + " — " + p.name,
+                 "reference;date;salarie;montant_eur;canal;empreinte"].concat(rows.map(t =>
       [t.ref, new Date(t.at).toISOString(),
        (db.employees.find(e => e.id === t.employeeId) || {}).name || "",
        (t.amount / 100).toFixed(2).replace(".", ","), t.channel, t.hash].join(";"))).join("\n");
@@ -467,6 +543,8 @@ function Transactions({ p }) {
         </div>
       </div>
 
+      <SimBar />
+
       <div className="grid g-3" style={{ marginBottom: 16 }}>
         <StatTile label="Encaissé sur la période" value={eur(total)} />
         <StatTile label="Transactions" value={rows.length} />
@@ -486,11 +564,14 @@ function Transactions({ p }) {
                   <td className="mono">{t.ref}</td>
                   <td className="num">{dateFR(new Date(t.at).getTime(), true)}</td>
                   <td>{t.employee ? t.employee.name : "—"}</td>
-                  <td>{t.channel === "offline"
-                    ? <Pill kind="mute">Hors ligne</Pill> : <Pill kind="info">QR</Pill>}</td>
-                  <td className="r num"><b>{eur(t.amount)}</b></td>
+                  <td>{t.kind === "reversal"
+                    ? <Pill kind="crit">Annulation</Pill> : <Pill kind="info">QR</Pill>}</td>
+                  <td className="r num">
+                    <b>{t.kind === "reversal" ? "−" : ""}{eur(t.amount)}</b>
+                  </td>
                   <td className="mono" style={{ fontSize: 11.5, color: "var(--ink-4)" }}>{t.integrity.hash}</td>
-                  <td><Pill kind="good">Validée</Pill></td>
+                  <td>{t.reversedBy
+                    ? <Pill kind="mute">Annulée</Pill> : <Pill kind="good">Validée</Pill>}</td>
                 </tr>
               )) : (
                 <tr><td colSpan="7"><Empty icon="list">Aucune transaction sur la période</Empty></td></tr>
@@ -506,6 +587,7 @@ function Transactions({ p }) {
 
 /* ---- Catalogue ------------------------------------------------------------ */
 function Catalogue() {
+  usePageTitle("Catalogue");
   const api = useApi();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -552,6 +634,7 @@ function Catalogue() {
 
 /* ---- Compte --------------------------------------------------------------- */
 function Compte({ p }) {
+  usePageTitle("Mon compte");
   const api = useApi();
   const db = useDB();
   const [full, setFull] = useState(null);
@@ -589,6 +672,22 @@ function Compte({ p }) {
               <Pill kind={STATUS[p.status].pill.replace("pill--", "")}>{STATUS[p.status].label}</Pill>
             </span>
           </div>
+          {p.status === "active" ? (
+            <div className="card__bd" style={{ paddingBottom: 0 }}>
+              <div className="officialcard">
+                <OfficialBadge />
+                <p>
+                  Ce sceau atteste que votre établissement a été validé par le Ministère du Job et
+                  Bonheur. Il est affiché sur votre fiche au catalogue et peut être apposé en vitrine.
+                </p>
+                {p.featured ? (
+                  <p className="quote">
+                    « {p.ministerNote} » — Jean-Eudes Berlier, Ministre
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           <div className="card__bd" style={{ paddingTop: 4 }}>
             {line("Identifiant", <span className="mono">{p.id}</span>)}
             {line("Catégorie", catLabel(p.category))}

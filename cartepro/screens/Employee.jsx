@@ -6,9 +6,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../lib/icons.jsx";
 import { draw as drawQR } from "../lib/qr.js";
 import { eur, dateFR, heureFR, jourRelatif, ilYA, pad, initiales, MOIS } from "../lib/format.js";
-import { catIco, catLabel, CATEGORIES, CLAIM_STATUS, CLAIM_CATEGORIES } from "../lib/data.js";
+import { catIco, catLabel, CLAIM_STATUS, CLAIM_CATEGORIES, TOKEN_TTL } from "../lib/data.js";
 import { useApi, useToast, useDB, useSession, useNav, useBus, useModal } from "../lib/app.jsx";
-import { Pager, Note, Empty, CopyButton, Pill } from "../components/ui.jsx";
+import { Pager, Note, Empty, CopyButton, Pill, Sim, SimBar, usePageTitle } from "../components/ui.jsx";
+
+export function OfficialBadge({ small }) {
+  return (
+    <span className={"official" + (small ? " official--sm" : "")}>
+      <span className="official__seal" aria-hidden="true">★</span>
+      Partenaire Officiel du Ministère
+    </span>
+  );
+}
 
 const SECTIONS = [
   ["accueil",     "home",   "Accueil",      "/salarie"],
@@ -97,10 +106,11 @@ function NotConnected({ push }) {
 function Accueil({ me }) {
   const db = useDB();
   const { push } = useNav();
+  usePageTitle("Mon budget");
   const mine = db.txns.filter(t => t.employeeId === me.id);
   const last = mine.slice(-4).reverse();
   const lastTop = db.topups.filter(t => t.employeeId === me.id).sort((a, b) => b.at - a.at)[0];
-  const moisCourant = mine.filter(t => new Date(t.at).getMonth() === new Date().getMonth())
+  const depense30 = mine.filter(t => t.at >= Date.now() - 30 * 864e5)
     .reduce((s, t) => s + t.amount, 0);
   const claim = db.claims.find(c => c.employeeId === me.id && (c.status === "open" || c.status === "in_progress"));
 
@@ -118,8 +128,13 @@ function Accueil({ me }) {
           <div className="paycard__chip" aria-hidden="true" />
         </div>
         <div className="paycard__bal">
-          <div className="lb">Solde disponible</div>
+          <div className="lb">À dépenser <Sim onDark /></div>
           <div className="v num">{eur(me.balance)}</div>
+          <div className="paycard__pitch">
+            {me.balance > 0
+              ? "à dépenser chez vos partenaires préférés !"
+              : "rechargement à venir — votre employeur crédite chaque mois."}
+          </div>
         </div>
         <div className="paycard__foot">
           <span className="mono num">{me.id.replace("SAL-", "4021 ")} 88</span>
@@ -140,8 +155,8 @@ function Accueil({ me }) {
 
       <div className="grid g-2" style={{ marginTop: 16 }}>
         <div className="card stat">
-          <div className="stat__lb">Dépensé ce mois</div>
-          <div className="stat__v num" style={{ fontSize: 22 }}>{eur(moisCourant)}</div>
+          <div className="stat__lb">Dépensé sur 30 jours</div>
+          <div className="stat__v num" style={{ fontSize: 22 }}>{eur(depense30)}</div>
         </div>
         <div className="card stat">
           <div className="stat__lb">Dernier crédit reçu</div>
@@ -170,6 +185,8 @@ function Accueil({ me }) {
         </div>
       ) : null}
 
+      <ChoixDuMinistre />
+
       <h3 style={{ fontSize: 13, margin: "22px 0 4px" }}>Dernières opérations</h3>
       {last.length ? last.map(t => <TxnRow key={t.ref} t={t} />)
                    : <Empty icon="clock">Aucune opération pour l&apos;instant</Empty>}
@@ -178,6 +195,40 @@ function Accueil({ me }) {
         Tout l&apos;historique
       </button>
     </>
+  );
+}
+
+/* « Le Choix du Ministre » : les partenaires que le ministre met lui-même en
+   avant depuis son espace. Le bloc disparaît quand il n'a rien sélectionné. */
+function ChoixDuMinistre() {
+  const db = useDB();
+  const { push } = useNav();
+  const mis = db.partners.filter(p => p.featured && p.status === "active");
+  if (!mis.length) return null;
+  return (
+    <section className="pick" aria-label="Le Choix du Ministre">
+      <div className="pick__hd">
+        <span className="pick__seal"><Icon name="spark" /></span>
+        <div>
+          <h3>Le Choix du Ministre</h3>
+          <p>Sélection personnelle de Jean-Eudes Berlier</p>
+        </div>
+      </div>
+      <div className="pick__list">
+        {mis.map(p => (
+          <button className="pick__item" type="button" key={p.id}
+                  onClick={() => push("/salarie/partenaires")}>
+            <span className="pitem__ico"><Icon name={catIco(p.category)} /></span>
+            <span className="pick__m">
+              <span className="pick__t">{p.name}</span>
+              <span className="pick__s">{catLabel(p.category)} · {p.city}</span>
+              {p.ministerNote ? <span className="pick__q">« {p.ministerNote} »</span> : null}
+            </span>
+            <Icon name="right" />
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -199,6 +250,7 @@ function TxnRow({ t, onClick }) {
 
 /* ---- Payer ---------------------------------------------------------------- */
 function Payer({ me }) {
+  usePageTitle("Payer");
   const api = useApi();
   const toast = useToast();
   const db = useDB();
@@ -235,7 +287,7 @@ function Payer({ me }) {
     try {
       const t = await api.post("/payment-tokens", { employeeId: me.id });
       setTok(t); setPaid(null);
-      toast("info", "Jeton émis", "Valable 5 minutes, un seul encaissement.");
+      toast("info", "Code émis", "Valable 5 minutes, un seul encaissement (simulation).");
     } catch (e) { /* message déjà affiché */ }
   };
 
@@ -272,16 +324,13 @@ function Payer({ me }) {
   return (
     <>
       <div className="pagehead"><div><h1>Payer</h1>
-        <p>Présentez ce code au partenaire. Il saisit le montant, vous êtes débité à la validation.</p></div></div>
+        <p>Présentez ce code au partenaire. Il saisit le montant, vous êtes débité à la validation.
+          Le code vaut cinq minutes ; passé ce délai, un bouton le régénère en un geste.</p></div></div>
 
-      {db.degraded ? (
-        <div style={{ marginBottom: 14 }}>
-          <Note kind="warn" icon="offline">
-            <b>Mode dégradé.</b> Le jeton est produit par l&apos;application à partir de la réserve
-            pré-provisionnée. Il reste présentable ; le partenaire l&apos;encaissera puis synchronisera.
-          </Note>
-        </div>
-      ) : null}
+      <SimBar>
+        <b>Aucun paiement réel.</b> Ce code ne déclenche aucun mouvement d&apos;argent : il
+        identifie un budget fictif dans une simulation fonctionnelle.
+      </SimBar>
 
       <div className="card"><div className="card__bd">
         <div className="qrstage">
@@ -308,7 +357,7 @@ function Payer({ me }) {
                 <circle cx="18" cy="18" r="15" fill="none" stroke="var(--surface-3)" strokeWidth="3" />
                 <circle cx="18" cy="18" r="15" fill="none" stroke="var(--brand)" strokeWidth="3"
                         strokeLinecap="round" transform="rotate(-90 18 18)"
-                        strokeDasharray="94.2" strokeDashoffset={94.2 * (1 - left / 300000)} />
+                        strokeDasharray="94.2" strokeDashoffset={94.2 * (1 - left / TOKEN_TTL)} />
               </svg>
               <div style={{ textAlign: "left" }}>
                 <div className="qrtimer__t">{mm}:{pad(ss)}</div>
@@ -351,6 +400,7 @@ const Ligne = ({ k, v }) => (
 
 /* ---- Historique ----------------------------------------------------------- */
 function Historique({ me }) {
+  usePageTitle("Historique");
   const api = useApi();
   const db = useDB();
   const modal = useModal();
@@ -414,6 +464,8 @@ function Historique({ me }) {
       <div className="pagehead"><div><h1>Historique</h1>
         <p>Toutes vos opérations, du plus récent au plus ancien.</p></div></div>
 
+      <SimBar />
+
       <div className="chips" style={{ marginBottom: 12 }}>
         <button className="pgbtn" type="button" aria-current={!month ? "true" : undefined}
                 onClick={() => { setMonth(""); setPage(1); }}>Tout</button>
@@ -452,6 +504,7 @@ function Historique({ me }) {
 
 /* ---- Partenaires ---------------------------------------------------------- */
 function Partenaires() {
+  usePageTitle("Partenaires");
   const api = useApi();
   const modal = useModal();
   const [query, setQuery] = useState("");
@@ -459,6 +512,13 @@ function Partenaires() {
   const [page, setPage] = useState(1);
   const [res, setRes] = useState(null);
   const [all, setAll] = useState([]);
+  const [cats, setCats] = useState([]);
+
+  useEffect(() => {
+    let alive = true;
+    api.get("/categories").then(r => { if (alive) setCats(r.items); }).catch(() => {});
+    return () => { alive = false; };
+  }, [api]);
 
   useEffect(() => {
     let alive = true;
@@ -482,9 +542,18 @@ function Partenaires() {
           <div>
             <div style={{ fontWeight: 600 }}>{p.categoryLabel}</div>
             <div style={{ color: "var(--ink-3)", fontSize: 13 }}>{p.address}, {p.city}</div>
-            <div style={{ marginTop: 8 }}><Pill kind="good">Actif</Pill></div>
+            <div style={{ color: "var(--ink-4)", fontSize: 12.5 }}>{p.channel}</div>
+            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <OfficialBadge />
+              {p.featured ? <Pill kind="warn">Choix du Ministre</Pill> : null}
+            </div>
           </div>
         </div>
+        {p.ministerNote ? (
+          <p className="quote" style={{ marginTop: 14 }}>
+            « {p.ministerNote} » — Jean-Eudes Berlier
+          </p>
+        ) : null}
         <hr className="sep" />
         <Note>Présentez votre QR code CartePro en caisse. Le partenaire saisit le montant,
           vous voyez le débit immédiatement.</Note>
@@ -506,10 +575,13 @@ function Partenaires() {
       <div className="chips" style={{ marginBottom: 12 }}>
         <button className="pgbtn" type="button" aria-current={!category ? "true" : undefined}
                 onClick={() => { setCategory(""); setPage(1); }}>Toutes</button>
-        {CATEGORIES.map(c => (
+        {cats.map(c => (
           <button key={c.id} className="pgbtn" type="button"
                   aria-current={category === c.id ? "true" : undefined}
-                  onClick={() => { setCategory(c.id); setPage(1); }}>{c.label}</button>
+                  onClick={() => { setCategory(c.id); setPage(1); }}>
+            {c.label}
+            {c.partners === 0 ? <span style={{ color: "var(--ink-4)" }}> · 0</span> : null}
+          </button>
         ))}
       </div>
 
@@ -520,12 +592,21 @@ function Partenaires() {
           <button key={p.id} className="pitem" type="button" onClick={() => fiche(p.id)}>
             <span className="pitem__ico"><Icon name={catIco(p.category)} /></span>
             <span className="pitem__m">
-              <span className="pitem__t" style={{ display: "block" }}>{p.name}</span>
-              <span className="pitem__s">{p.categoryLabel} · {p.city}</span>
+              <span className="pitem__t" style={{ display: "block" }}>
+                {p.name}
+                {p.featured ? <span className="pick__star" title="Choix du Ministre">★</span> : null}
+              </span>
+              <span className="pitem__s">{p.categoryLabel} · {p.city} · {p.channel}</span>
             </span>
             <span className="pitem__d">{(0.3 + p.x + p.y).toFixed(1)} km</span>
           </button>
-        )) : <Empty icon="pin">Aucun partenaire ne correspond</Empty>}
+        )) : (
+          <Empty icon="pin">
+            {category
+              ? "Aucun partenaire actif dans « " + catLabel(category) + " » pour l'instant."
+              : "Aucun partenaire ne correspond à cette recherche."}
+          </Empty>
+        )}
       </div>
 
       <div className="pager" style={{ marginTop: 14 }}>
@@ -569,6 +650,7 @@ function Plan({ items, onPick }) {
 
 /* ---- Réclamations : le fil avec l'administration -------------------------- */
 function Demandes({ me }) {
+  usePageTitle("Mes demandes");
   const api = useApi();
   const toast = useToast();
   const db = useDB();
