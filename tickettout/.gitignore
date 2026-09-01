@@ -1,0 +1,5 @@
+node_modules/
+.next/
+out/
+preview/dist/
+*.log

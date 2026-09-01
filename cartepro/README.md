@@ -107,3 +107,15 @@ somme d'argent.
   le garantir. En production, SHA-256 et journal append-only.
 - Fond cartographique réel pour « Partenaires » (ici, un plan schématique).
 - Reversement aux partenaires, exports comptables, RGPD.
+
+---
+
+## Version conservée
+
+Ce projet correspond au cahier des charges **v1.0** (nom de travail *CartePro*).
+Il est conservé tel quel et reste utilisable.
+
+La version **v1.1**, annotée par le ministre — renommage en *Ticket Tout*,
+partenaires réels, Choix du Ministre, sceau officiel, jeton de 30 minutes,
+annulation par écriture inverse, sans mode dégradé ni interopérabilité SIRH —
+vit dans `../tickettout`, sans rien partager avec celui-ci.

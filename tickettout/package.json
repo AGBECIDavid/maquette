@@ -1,0 +1,21 @@
+{
+  "name": "tickettout",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Démonstrateur du dispositif Ticket Tout — Ministère du Job et Bonheur (JEB/DNI/2026-002)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "preview:build": "node scripts/build-preview.mjs"
+  },
+  "dependencies": {
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
