@@ -33,6 +33,30 @@ async function lire<T>(reponse: Response): Promise<T> {
   throw new ErreurEncaissement(code, message);
 }
 
+/**
+ * Convertit un horodatage venu du réseau en millisecondes.
+ *
+ * Une API sérieuse sert des dates en ISO 8601 — c'est la norme, et c'est ce
+ * que servira le back. Mais l'application compare des nombres. La conversion
+ * doit donc se faire ici, à la frontière, et nulle part ailleurs : c'est le
+ * seul endroit du code qui a le droit de savoir à quoi ressemble le dehors.
+ *
+ * Et elle doit lever si elle échoue. Sans ça, une chaîne traverse le `as T`
+ * de `lire`, `expiresAt - Date.now()` vaut NaN, `restant === 0` est faux pour
+ * toujours, et le garde-fou des cinq minutes ne se déclenche jamais.
+ */
+function horodatage(valeur: unknown, champ: string): number {
+  const millisecondes =
+    typeof valeur === "number" ? valeur : Date.parse(String(valeur));
+  if (!Number.isFinite(millisecondes)) {
+    throw new ErreurEncaissement(
+      "inconnu",
+      `Réponse du serveur illisible : ${champ} n'est pas une date.`,
+    );
+  }
+  return millisecondes;
+}
+
 /** Résout un jeton présenté par un salarié. Lève si expiré, déjà utilisé ou inconnu. */
 export async function resoudreJeton(token: string): Promise<JetonResolu> {
   let reponse: Response;
@@ -43,7 +67,17 @@ export async function resoudreJeton(token: string): Promise<JetonResolu> {
   } catch {
     throw new ErreurEncaissement("reseau", "Le service est injoignable.");
   }
-  return lire<JetonResolu>(reponse);
+  const brut = await lire<{
+    token: string;
+    employee: { id: string; name: string };
+    expiresAt: unknown;
+  }>(reponse);
+
+  return {
+    token: brut.token,
+    employee: brut.employee,
+    expiresAt: horodatage(brut.expiresAt, "expiresAt"),
+  };
 }
 
 export type DemandeEncaissement = {
@@ -74,7 +108,7 @@ export async function encaisser(demande: DemandeEncaissement): Promise<Encaissem
   const brut = await lire<{
     ref: string;
     amount: number;
-    createdAt: number;
+    createdAt: unknown;
     employee: { id: string; name: string };
     __replayed?: boolean;
   }>(reponse);
@@ -82,7 +116,7 @@ export async function encaisser(demande: DemandeEncaissement): Promise<Encaissem
   return {
     ref: brut.ref,
     amount: brut.amount,
-    createdAt: brut.createdAt,
+    createdAt: horodatage(brut.createdAt, "createdAt"),
     employee: brut.employee,
     rejoue: brut.__replayed === true,
   };
