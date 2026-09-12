@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { newId, useCurriculum } from '../../store/CurriculumContext';
+import { newId, nextOrder, useCurriculum } from '../../store/CurriculumContext';
 import type { Priority, Project, ProjectStatus } from '../../domain/types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/Primitives';
@@ -31,7 +31,7 @@ export function ProjectForm({
       moduleId: moduleId ?? data.modules[0]?.id ?? '',
       name: '',
       description: '',
-      order: data.projects.length + 1,
+      order: 0,
       creditsOverride: null,
       startDate: null,
       deadline: null,
@@ -75,7 +75,14 @@ export function ProjectForm({
             variant="primary"
             disabled={!canSave}
             onClick={() => {
-              upsertProject({ ...draft, name: draft.name.trim() });
+              upsertProject({
+                ...draft,
+                name: draft.name.trim(),
+                order:
+                  initial === undefined
+                    ? nextOrder(data.projects.filter((p) => p.moduleId === draft.moduleId))
+                    : draft.order,
+              });
               onClose();
             }}
           >

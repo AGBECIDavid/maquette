@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCurriculum } from '../../store/CurriculumContext';
+import { MoveButtons } from '../components/MoveButtons';
 import { filterRoadblocks } from '../../domain/search';
 import { formatDate } from '../../domain/dates';
 import { Button, EmptyState, PageHeader } from '../components/Primitives';
@@ -11,7 +12,7 @@ import { RoadblockForm } from '../forms/RoadblockForm';
 import { formatCredits } from '../labels';
 
 export function RoadblocksPage() {
-  const { view, data } = useCurriculum();
+  const { view, data, moveRoadblock } = useCurriculum();
   const [query, setQuery] = useState('');
   const [yearId, setYearId] = useState<string>('all');
   const [creating, setCreating] = useState(false);
@@ -20,6 +21,7 @@ export function RoadblocksPage() {
     () => filterRoadblocks(view.roadblocks, query, yearId),
     [view.roadblocks, query, yearId],
   );
+  const filtered = roadblocks.length !== view.roadblocks.length;
 
   return (
     <>
@@ -53,12 +55,12 @@ export function RoadblocksPage() {
         <EmptyState title="Aucun Roadblock ne correspond." />
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
-          {roadblocks.map((roadblock) => (
-            <Link
+          {roadblocks.map((roadblock, index) => (
+            <div
               key={roadblock.id}
-              to={`/roadblocks/${roadblock.id}`}
-              className="rounded-xl border border-ink-800 bg-ink-900 p-5 transition-colors hover:border-ink-700"
+              className="rounded-xl border border-ink-800 bg-ink-900 transition-colors hover:border-ink-700"
             >
+              <Link to={`/roadblocks/${roadblock.id}`} className="block p-5 pb-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="truncate text-base font-medium text-ink-100">{roadblock.name}</h3>
@@ -97,7 +99,25 @@ export function RoadblocksPage() {
                   <dd className="text-sm tabular-nums text-ink-100">{formatDate(roadblock.endDate)}</dd>
                 </div>
               </dl>
-            </Link>
+              </Link>
+
+              {/* Le réordonnancement suit l'ordre réel du cursus, pas celui de
+                  la saisie. Désactivé pendant un filtre : déplacer d'un cran
+                  dans une liste filtrée sauterait les éléments masqués. */}
+              <div className="flex items-center justify-between border-t border-ink-800 px-4 py-2">
+                <span className="text-xs text-ink-400">Rang {roadblock.order}</span>
+                {filtered ? (
+                  <span className="text-xs text-ink-600">Réordonner : retire les filtres</span>
+                ) : (
+                  <MoveButtons
+                    label={roadblock.name}
+                    canUp={index > 0}
+                    canDown={index < roadblocks.length - 1}
+                    onMove={(direction) => moveRoadblock(roadblock.id, direction)}
+                  />
+                )}
+              </div>
+            </div>
           ))}
         </div>
       )}

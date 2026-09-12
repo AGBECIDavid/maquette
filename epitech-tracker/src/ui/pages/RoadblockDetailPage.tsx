@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../store/CurriculumContext';
+import { MoveButtons } from '../components/MoveButtons';
 import { formatDate } from '../../domain/dates';
 import { Button, Card, EmptyState, PageHeader, SectionTitle } from '../components/Primitives';
 import { ProgressBar } from '../components/ProgressBar';
@@ -12,7 +13,7 @@ import { formatCredits, formatPercent, PROGRESS_STATUS_ICON } from '../labels';
 export function RoadblockDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { view, data, removeRoadblock } = useCurriculum();
+  const { view, data, removeRoadblock, moveModule } = useCurriculum();
   const [editing, setEditing] = useState(false);
   const [addingModule, setAddingModule] = useState(false);
 
@@ -135,11 +136,14 @@ export function RoadblockDetailPage() {
           <EmptyState title="Aucun module dans ce Roadblock." />
         ) : (
           <ul className="flex flex-col gap-2">
-            {roadblock.modules.map((module) => (
-              <li key={module.id}>
+            {roadblock.modules.map((module, index) => (
+              <li
+                key={module.id}
+                className="flex items-center gap-2 rounded-xl border border-ink-800 bg-ink-900 pr-3 transition-colors hover:border-ink-700"
+              >
                 <Link
                   to={`/modules/${module.id}`}
-                  className="flex flex-wrap items-center gap-3 rounded-xl border border-ink-800 bg-ink-900 px-4 py-3 transition-colors hover:border-ink-700"
+                  className="flex flex-1 flex-wrap items-center gap-3 px-4 py-3"
                 >
                   <span aria-hidden className="text-base">{PROGRESS_STATUS_ICON[module.status]}</span>
                   <span className="min-w-0 flex-1">
@@ -157,6 +161,12 @@ export function RoadblockDetailPage() {
                     />
                   </span>
                 </Link>
+                <MoveButtons
+                  label={module.name}
+                  canUp={index > 0}
+                  canDown={index < roadblock.modules.length - 1}
+                  onMove={(direction) => moveModule(module.id, direction)}
+                />
               </li>
             ))}
           </ul>

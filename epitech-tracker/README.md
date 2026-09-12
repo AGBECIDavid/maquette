@@ -61,6 +61,7 @@ src/
     alerts.ts        alertes déduites de l'état
     priorities.ts    « à faire en priorité »
     calendar.ts      événements datés et grille mensuelle
+    ordering.ts      rangs d'une fratrie : déplacer, renuméroter
     stats.ts         séries prêtes à dessiner pour les graphiques
     search.ts        recherche globale et filtres
     dates.ts         arithmétique sur dates civiles ISO
@@ -121,6 +122,21 @@ un bandeau **« Données d'exemple »**. Les noms de modules sont plausibles, ma
 Pour les remplacer : *Paramètres* → « Repartir de zéro », ou importer un JSON
 exporté depuis cette même application. `settings.source` passe alors à `user`
 et le bandeau disparaît.
+
+## Ordre et années
+
+Le rang d'un élément est porté par son champ `order`, jamais déduit de sa
+position dans le tableau. Un déplacement renumérote toute la fratrie de 1 à N,
+ce qui répare au passage les rangs dupliqués ou troués qu'un import ou une
+suppression peut laisser.
+
+Un module ne se réordonne que parmi les modules de son Roadblock, un projet
+parmi ceux de son module. Le réordonnancement est désactivé tant qu'un filtre
+est actif : déplacer d'un cran dans une liste filtrée sauterait par-dessus les
+éléments masqués, ce qui donnerait un résultat différent de celui qu'on voit.
+
+Les années se gèrent dans *Paramètres*. Supprimer une année emporte tout ce
+qu'elle contient, et la confirmation annonce le décompte avant d'agir.
 
 ## Persistance
 

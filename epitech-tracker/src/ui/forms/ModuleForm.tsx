@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { newId, useCurriculum } from '../../store/CurriculumContext';
+import { newId, nextOrder, useCurriculum } from '../../store/CurriculumContext';
 import type { Module, ProgressStatus } from '../../domain/types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/Primitives';
@@ -30,7 +30,7 @@ export function ModuleForm({
       roadblockId: roadblockId ?? data.roadblocks[0]?.id ?? '',
       name: '',
       description: '',
-      order: data.modules.length + 1,
+      order: 0,
       credits: 6,
       startDate: null,
       endDate: null,
@@ -56,7 +56,16 @@ export function ModuleForm({
             variant="primary"
             disabled={!canSave}
             onClick={() => {
-              upsertModule({ ...draft, name: draft.name.trim() });
+              upsertModule({
+                ...draft,
+                name: draft.name.trim(),
+                // Le rang se calcule au sein du Roadblock retenu, qui a pu
+                // changer dans le formulaire depuis l'ouverture.
+                order:
+                  initial === undefined
+                    ? nextOrder(data.modules.filter((m) => m.roadblockId === draft.roadblockId))
+                    : draft.order,
+              });
               onClose();
             }}
           >

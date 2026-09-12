@@ -3,6 +3,7 @@ import { useCurriculum } from '../../store/CurriculumContext';
 import { findOrphans } from '../../data/schema';
 import { Button, Card, PageHeader, SectionTitle } from '../components/Primitives';
 import { Field, FieldGrid, NumberInput } from '../components/Form';
+import { YearsEditor } from '../components/YearsEditor';
 
 export function SettingsPage() {
   const { data, updateSettings, exportJson, importJson, loadMock, reset } = useCurriculum();
@@ -24,6 +25,13 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title="Paramètres" subtitle="Réglages d’alerte et gestion des données." />
+
+      <section className="mb-8">
+        <SectionTitle>Années académiques</SectionTitle>
+        <Card>
+          <YearsEditor />
+        </Card>
+      </section>
 
       <section className="mb-8">
         <SectionTitle>Alertes</SectionTitle>

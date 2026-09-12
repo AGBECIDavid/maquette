@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../store/CurriculumContext';
+import { MoveButtons } from '../components/MoveButtons';
 import { formatDate } from '../../domain/dates';
 import { Button, Card, EmptyState, PageHeader, SectionTitle } from '../components/Primitives';
 import { ProgressBar } from '../components/ProgressBar';
@@ -12,7 +13,7 @@ import { formatCredits, formatDaysLeft, formatPercent, PROJECT_STATUS_ICON } fro
 export function ModuleDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { view, data, removeModule } = useCurriculum();
+  const { view, data, removeModule, moveProject } = useCurriculum();
   const [editing, setEditing] = useState(false);
   const [addingProject, setAddingProject] = useState(false);
 
@@ -103,11 +104,14 @@ export function ModuleDetailPage() {
           />
         ) : (
           <ul className="flex flex-col gap-2">
-            {module.projects.map((project) => (
-              <li key={project.id}>
+            {module.projects.map((project, index) => (
+              <li
+                key={project.id}
+                className="flex items-center gap-2 rounded-xl border border-ink-800 bg-ink-900 pr-3 transition-colors hover:border-ink-700"
+              >
                 <Link
                   to={`/projects/${project.id}`}
-                  className="flex flex-wrap items-center gap-3 rounded-xl border border-ink-800 bg-ink-900 px-4 py-3 transition-colors hover:border-ink-700"
+                  className="flex flex-1 flex-wrap items-center gap-3 px-4 py-3"
                 >
                   <span aria-hidden className="text-base">{PROJECT_STATUS_ICON[project.status]}</span>
                   <span className="min-w-0 flex-1">
@@ -123,6 +127,12 @@ export function ModuleDetailPage() {
                     {formatDaysLeft(project.daysLeft)}
                   </span>
                 </Link>
+                <MoveButtons
+                  label={project.name}
+                  canUp={index > 0}
+                  canDown={index < module.projects.length - 1}
+                  onMove={(direction) => moveProject(project.id, direction)}
+                />
               </li>
             ))}
           </ul>

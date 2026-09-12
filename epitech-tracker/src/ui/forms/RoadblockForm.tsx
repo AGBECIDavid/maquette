@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { newId, useCurriculum } from '../../store/CurriculumContext';
+import { newId, nextOrder, useCurriculum } from '../../store/CurriculumContext';
 import type { ProgressStatus, Roadblock } from '../../domain/types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/Primitives';
@@ -28,7 +28,7 @@ export function RoadblockForm({
       yearId: data.years[0]?.id ?? '',
       name: '',
       description: '',
-      order: data.roadblocks.length + 1,
+      order: nextOrder(data.roadblocks),
       requiredCredits: 24,
       startDate: null,
       endDate: null,

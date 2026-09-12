@@ -23,6 +23,7 @@ import { createLocalStorageRepository } from '../data/localStorageRepository';
 import { mockCurriculum } from '../data/mock';
 import { emptyCurriculum, parseCurriculum } from '../data/schema';
 import { buildAlerts, type Alert } from '../domain/alerts';
+import { moveItem, nextOrder, type Direction } from '../domain/ordering';
 import { today as currentDay } from '../domain/dates';
 import { buildView, dashboardStats, type CurriculumView, type DashboardStats } from '../domain/selectors';
 import type {
@@ -49,9 +50,17 @@ interface CurriculumStore {
   upsertModule: (module: Module) => void;
   upsertProject: (project: Project) => void;
 
+  removeYear: (id: Id) => void;
   removeRoadblock: (id: Id) => void;
   removeModule: (id: Id) => void;
   removeProject: (id: Id) => void;
+
+  moveRoadblock: (id: Id, direction: Direction) => void;
+  moveModule: (id: Id, direction: Direction) => void;
+  moveProject: (id: Id, direction: Direction) => void;
+
+  /** Ce que la suppression d'une année emporterait avec elle. */
+  yearImpact: (id: Id) => { roadblocks: number; modules: number; projects: number };
 
   updateSettings: (settings: Partial<Settings>) => void;
   replaceAll: (data: Curriculum) => void;
@@ -62,6 +71,24 @@ interface CurriculumStore {
 }
 
 const Context = createContext<CurriculumStore | null>(null);
+
+/**
+ * Déplace un élément à l'intérieur de sa fratrie seule : un module ne se
+ * réordonne que parmi les modules de son Roadblock, jamais parmi tous.
+ */
+function moveWithinGroup<T extends { id: Id; order: number }>(
+  all: T[],
+  id: Id,
+  direction: Direction,
+  groupKey: (item: T) => string,
+): T[] {
+  const target = all.find((item) => item.id === id);
+  if (target === undefined) return all;
+  const key = groupKey(target);
+  const siblings = all.filter((item) => groupKey(item) === key);
+  const others = all.filter((item) => groupKey(item) !== key);
+  return [...others, ...moveItem(siblings, id, direction)];
+}
 
 function upsert<T extends { id: Id }>(items: T[], item: T): T[] {
   const index = items.findIndex((existing) => existing.id === item.id);
@@ -108,6 +135,26 @@ export function CurriculumProvider({ children }: { children: ReactNode }) {
     upsertModule: useCallback((m) => patch('modules', (items) => upsert(items, m)), [patch]),
     upsertProject: useCallback((p) => patch('projects', (items) => upsert(items, p)), [patch]),
 
+    // Supprimer une année emporte tout ce qu'elle contient : un Roadblock
+    // sans année n'apparaîtrait plus nulle part tout en pesant encore.
+    removeYear: useCallback((id) => {
+      setData((current) => {
+        const roadblockIds = new Set(
+          current.roadblocks.filter((r) => r.yearId === id).map((r) => r.id),
+        );
+        const moduleIds = new Set(
+          current.modules.filter((m) => roadblockIds.has(m.roadblockId)).map((m) => m.id),
+        );
+        return {
+          ...current,
+          years: current.years.filter((y) => y.id !== id),
+          roadblocks: current.roadblocks.filter((r) => !roadblockIds.has(r.id)),
+          modules: current.modules.filter((m) => !moduleIds.has(m.id)),
+          projects: current.projects.filter((p) => !moduleIds.has(p.moduleId)),
+        };
+      });
+    }, []),
+
     // Suppression en cascade : un module orphelin n'apparaîtrait nulle part
     // tout en continuant à peser dans le document.
     removeRoadblock: useCallback((id) => {
@@ -138,6 +185,41 @@ export function CurriculumProvider({ children }: { children: ReactNode }) {
         projects: current.projects.filter((p) => p.id !== id),
       }));
     }, []),
+
+    moveRoadblock: useCallback(
+      (id, direction) =>
+        patch('roadblocks', (items) => moveWithinGroup(items, id, direction, () => 'all')),
+      [patch],
+    ),
+
+    moveModule: useCallback(
+      (id, direction) =>
+        patch('modules', (items) => moveWithinGroup(items, id, direction, (m) => m.roadblockId)),
+      [patch],
+    ),
+
+    moveProject: useCallback(
+      (id, direction) =>
+        patch('projects', (items) => moveWithinGroup(items, id, direction, (p) => p.moduleId)),
+      [patch],
+    ),
+
+    yearImpact: useCallback(
+      (id) => {
+        const roadblockIds = new Set(
+          data.roadblocks.filter((r) => r.yearId === id).map((r) => r.id),
+        );
+        const moduleIds = new Set(
+          data.modules.filter((m) => roadblockIds.has(m.roadblockId)).map((m) => m.id),
+        );
+        return {
+          roadblocks: roadblockIds.size,
+          modules: moduleIds.size,
+          projects: data.projects.filter((p) => moduleIds.has(p.moduleId)).length,
+        };
+      },
+      [data],
+    ),
 
     updateSettings: useCallback((settings) => {
       setData((current) => ({ ...current, settings: { ...current.settings, ...settings } }));
@@ -192,3 +274,5 @@ export function useCurriculum(): CurriculumStore {
 export function newId(): Id {
   return crypto.randomUUID();
 }
+
+export { nextOrder };
