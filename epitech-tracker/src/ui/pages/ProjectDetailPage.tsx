@@ -28,10 +28,10 @@ function Row({ label, value }: { label: string; value: string }) {
 export function ProjectDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { view, data, removeProject, upsertProject, today } = useCurriculum();
+  const { fullView, data, removeProject, upsertProject, today } = useCurriculum();
   const [editing, setEditing] = useState(false);
 
-  const project = view.projects.find((p) => p.id === id);
+  const project = fullView.projects.find((p) => p.id === id);
   if (project === undefined) return <EmptyState title="Projet introuvable." />;
   const raw = data.projects.find((p) => p.id === project.id);
   const next = NEXT_STATUS[project.status];

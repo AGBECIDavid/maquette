@@ -11,6 +11,7 @@ import { CreditsBars } from '../components/charts/CreditsBars';
 import { StatusShare } from '../components/charts/StatusShare';
 import { CreditsOverTime } from '../components/charts/CreditsOverTime';
 import { ProjectionPanel } from '../components/ProjectionPanel';
+import { CursusPath } from '../components/CursusPath';
 import { buildProjection } from '../../domain/projection';
 
 export function StatsPage() {
@@ -25,8 +26,12 @@ export function StatsPage() {
   if (view.roadblocks.length === 0) {
     return (
       <>
-        <PageHeader title="Statistiques" />
-        <EmptyState title="Rien à représenter pour l’instant." hint="Crée un Roadblock et ses modules." />
+        <PageHeader title="Statistiques" subtitle="Année courante." />
+        <EmptyState
+          title="Rien à représenter pour cette année."
+          hint="Crée un Roadblock et ses modules — ou consulte une autre année avec le sélecteur en haut."
+        />
+        <CursusPath />
       </>
     );
   }
@@ -49,6 +54,8 @@ export function StatsPage() {
       <div className="mt-8">
         <ProjectionPanel projection={projection} />
       </div>
+
+      <CursusPath />
     </>
   );
 }

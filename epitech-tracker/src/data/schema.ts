@@ -7,15 +7,31 @@
  * remonte une erreur.
  */
 
-import type { Curriculum, Settings } from '../domain/types';
+import type { AcademicYear, Curriculum, Settings, TekLevel } from '../domain/types';
 
-export const SCHEMA_VERSION = 1;
+/**
+ * 1 → 2 : les années portent un niveau TEK, et les réglages désignent
+ * explicitement l'année courante.
+ */
+export const SCHEMA_VERSION = 2;
 
 export const DEFAULT_SETTINGS: Settings = {
+  currentYearId: null,
   deadlineSoonDays: 7,
   roadblockAlmostDoneRatio: 0.8,
   source: 'user',
 };
+
+/** Un cursus neuf : vide, avec une année ouverte au niveau annoncé. */
+export function newCurriculum(level: TekLevel | null, id: string): Curriculum {
+  const fresh = emptyCurriculum();
+  const start = new Date().getFullYear();
+  fresh.years = [
+    { id, label: `${start}-${start + 1}`, level, order: 1, startDate: null, endDate: null },
+  ];
+  fresh.settings.currentYearId = id;
+  return fresh;
+}
 
 export function emptyCurriculum(): Curriculum {
   return {
@@ -29,6 +45,11 @@ export function emptyCurriculum(): Curriculum {
 }
 
 export class SchemaError extends Error {}
+
+/** L'année de rang le plus élevé : la plus récente du cursus. */
+function lastYear(years: readonly AcademicYear[]): AcademicYear | undefined {
+  return [...years].sort((a, b) => a.order - b.order).pop();
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -61,13 +82,30 @@ export function parseCurriculum(raw: unknown): Curriculum {
 
   const settings = isObject(raw['settings']) ? raw['settings'] : {};
 
+  // Migration 1 → 2 : une année d'avant la v2 n'a pas de niveau, et aucune
+  // année n'était désignée comme courante. On ne devine pas le niveau — il
+  // reste inconnu tant que l'utilisateur ne l'a pas dit — mais on désigne la
+  // dernière année comme courante, faute de quoi l'application n'aurait
+  // aucune année à afficher.
+  const years = (requireArray(raw, 'years') as AcademicYear[]).map((year) => ({
+    ...year,
+    level: year.level ?? null,
+  }));
+
+  const declaredCurrent = settings['currentYearId'];
+  const currentYearId =
+    typeof declaredCurrent === 'string' && years.some((y) => y.id === declaredCurrent)
+      ? declaredCurrent
+      : (lastYear(years)?.id ?? null);
+
   return {
     schemaVersion: SCHEMA_VERSION,
-    years: requireArray(raw, 'years') as Curriculum['years'],
+    years,
     roadblocks: requireArray(raw, 'roadblocks') as Curriculum['roadblocks'],
     modules: requireArray(raw, 'modules') as Curriculum['modules'],
     projects: requireArray(raw, 'projects') as Curriculum['projects'],
     settings: {
+      currentYearId,
       deadlineSoonDays:
         typeof settings['deadlineSoonDays'] === 'number'
           ? settings['deadlineSoonDays']

@@ -319,6 +319,7 @@ export function mockCurriculum(reference: string = today()): Curriculum {
   const year: AcademicYear = {
     id: 'year-1',
     label: '2026-2027 (exemple)',
+    level: 'TEK1',
     order: 1,
     startDate: addDays(reference, -380),
     endDate: addDays(reference, 280),
@@ -385,6 +386,6 @@ export function mockCurriculum(reference: string = today()): Curriculum {
     roadblocks,
     modules,
     projects,
-    settings: { ...DEFAULT_SETTINGS, source: 'mock' },
+    settings: { ...DEFAULT_SETTINGS, currentYearId: year.id, source: 'mock' },
   };
 }

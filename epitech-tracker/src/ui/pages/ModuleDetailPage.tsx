@@ -13,11 +13,11 @@ import { formatCredits, formatDaysLeft, formatPercent, PROJECT_STATUS_ICON } fro
 export function ModuleDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { view, data, removeModule, moveProject } = useCurriculum();
+  const { fullView, data, removeModule, moveProject } = useCurriculum();
   const [editing, setEditing] = useState(false);
   const [addingProject, setAddingProject] = useState(false);
 
-  const module = view.modules.find((m) => m.id === id);
+  const module = fullView.modules.find((m) => m.id === id);
   if (module === undefined) return <EmptyState title="Module introuvable." />;
   const raw = data.modules.find((m) => m.id === module.id);
 

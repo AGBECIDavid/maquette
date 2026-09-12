@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildView, dashboardStats } from './selectors';
-import { makeCurriculum, makeModule, makeProject, makeRoadblock } from './testFixtures';
+import { buildView, dashboardStats, scopeToYear } from './selectors';
+import { makeCurriculum, makeModule, makeProject, makeRoadblock, makeYear } from './testFixtures';
 import { mockCurriculum } from '../data/mock';
 
 const TODAY = '2026-09-12';
@@ -132,5 +132,48 @@ describe('jeu de données d’exemple', () => {
   it('n’a aucun projet orphelin', () => {
     expect(view.projects).toHaveLength(data.projects.length);
     expect(view.modules).toHaveLength(data.modules.length);
+  });
+});
+
+describe('restriction à une année', () => {
+  const data = makeCurriculum({
+    years: [
+      makeYear({ id: 'y1', label: '2026-2027', level: 'TEK1', order: 1 }),
+      makeYear({ id: 'y2', label: '2027-2028', level: 'TEK2', order: 2 }),
+    ],
+    roadblocks: [
+      makeRoadblock({ id: 'rb1', yearId: 'y1', requiredCredits: 10, order: 1 }),
+      makeRoadblock({ id: 'rb2', yearId: 'y2', requiredCredits: 20, order: 2 }),
+    ],
+    modules: [
+      makeModule({ id: 'm1', roadblockId: 'rb1', credits: 10 }),
+      makeModule({ id: 'm2', roadblockId: 'rb2', credits: 20 }),
+    ],
+    projects: [
+      makeProject({ id: 'p1', moduleId: 'm1', status: 'validated' }),
+      makeProject({ id: 'p2', moduleId: 'm2', order: 2 }),
+    ],
+  });
+  const full = buildView(data, TODAY);
+
+  it('ne garde que ce qui appartient à l’année', () => {
+    const scoped = scopeToYear(full, 'y1');
+    expect(scoped.roadblocks.map((r) => r.id)).toEqual(['rb1']);
+    expect(scoped.modules.map((m) => m.id)).toEqual(['m1']);
+    expect(scoped.projects.map((p) => p.id)).toEqual(['p1']);
+  });
+
+  it('ne cumule pas les années dans les compteurs', () => {
+    expect(dashboardStats(scopeToYear(full, 'y1')).credits.total).toBe(10);
+    expect(dashboardStats(scopeToYear(full, 'y2')).credits.total).toBe(20);
+    expect(dashboardStats(full).credits.total).toBe(30);
+  });
+
+  it('rend la vue entière quand aucune année n’est désignée', () => {
+    expect(scopeToYear(full, null).roadblocks).toHaveLength(2);
+  });
+
+  it('rend une vue vide pour une année inconnue, sans lever', () => {
+    expect(scopeToYear(full, 'disparue').roadblocks).toHaveLength(0);
   });
 });

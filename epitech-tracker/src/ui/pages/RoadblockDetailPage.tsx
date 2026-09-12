@@ -15,11 +15,11 @@ import { formatCredits, formatPercent, PROGRESS_STATUS_ICON } from '../labels';
 export function RoadblockDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { view, data, removeRoadblock, moveModule } = useCurriculum();
+  const { view, fullView, data, removeRoadblock, moveModule } = useCurriculum();
   const [editing, setEditing] = useState(false);
   const [addingModule, setAddingModule] = useState(false);
 
-  const roadblock = view.roadblocks.find((r) => r.id === id);
+  const roadblock = fullView.roadblocks.find((r) => r.id === id);
   if (roadblock === undefined) {
     return <EmptyState title="Roadblock introuvable." />;
   }

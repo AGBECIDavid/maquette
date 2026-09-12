@@ -1,7 +1,8 @@
 import { newId, nextOrder, useCurriculum } from '../../store/CurriculumContext';
 import { byOrder } from '../../domain/ordering';
 import { Button } from './Primitives';
-import { DateInput, TextInput } from './Form';
+import { DateInput, Select, TextInput } from './Form';
+import { TEK_LEVELS } from '../../domain/types';
 
 /**
  * Gestion des années académiques.
@@ -19,6 +20,7 @@ export function YearsEditor() {
     upsertYear({
       id: newId(),
       label: `${start}-${start + 1}`,
+      level: null,
       order: nextOrder(data.years),
       startDate: null,
       endDate: null,
@@ -38,13 +40,26 @@ export function YearsEditor() {
             return (
               <li
                 key={year.id}
-                className="grid gap-3 rounded-lg border border-ink-800 p-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end"
+                className="grid gap-3 rounded-lg border border-ink-800 p-3 sm:grid-cols-[1fr_auto_auto_auto_auto] sm:items-end"
               >
                 <label className="block">
                   <span className="mb-1 block text-xs text-ink-400">Libellé</span>
                   <TextInput
                     value={year.label}
                     onChange={(label) => upsertYear({ ...year, label })}
+                  />
+                </label>
+                <label className="block sm:w-32">
+                  <span className="mb-1 block text-xs text-ink-400">Niveau</span>
+                  <Select
+                    value={year.level ?? 'unknown'}
+                    onChange={(value) =>
+                      upsertYear({ ...year, level: value === 'unknown' ? null : value })
+                    }
+                    options={[
+                      ...TEK_LEVELS.map((value) => ({ value, label: value })),
+                      { value: 'unknown' as const, label: 'Non précisé' },
+                    ]}
                   />
                 </label>
                 <label className="block sm:w-40">

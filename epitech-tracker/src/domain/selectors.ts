@@ -203,6 +203,26 @@ function buildRoadblock(
   };
 }
 
+/**
+ * Restreint la vue à une année.
+ *
+ * Le dashboard répond à « où j'en suis », et « où j'en suis » veut dire
+ * « cette année » : cumuler trois années de cursus dans un seul pourcentage
+ * empêcherait de voir qu'on est en retard maintenant. La vue complète reste
+ * disponible pour le parcours et la recherche.
+ */
+export function scopeToYear(view: CurriculumView, yearId: Id | null): CurriculumView {
+  if (yearId === null) return view;
+  const roadblocks = view.roadblocks.filter((r) => r.yearId === yearId);
+  const kept = new Set(roadblocks.map((r) => r.id));
+  return {
+    roadblocks,
+    modules: view.modules.filter((m) => kept.has(m.roadblockId)),
+    projects: view.projects.filter((p) => kept.has(p.roadblockId)),
+    today: view.today,
+  };
+}
+
 export function dashboardStats(view: CurriculumView): DashboardStats {
   const totalCredits = view.roadblocks.reduce(
     (sum, r) => sum + r.requiredCredits,

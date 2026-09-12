@@ -62,6 +62,7 @@ src/
     priorities.ts    « à faire en priorité »
     calendar.ts      événements datés et grille mensuelle
     ordering.ts      rangs d'une fratrie : déplacer, renuméroter
+    promotion.ts     passage TEK1 → TEK2, redoublement — jamais automatique
     stats.ts         séries prêtes à dessiner pour les graphiques
     projection.ts    « à ce rythme, validé le … » — extrapolation, pas prédiction
     search.ts        recherche globale et filtres
@@ -142,6 +143,53 @@ est actif : déplacer d'un cran dans une liste filtrée sauterait par-dessus les
 
 Les années se gèrent dans *Paramètres*. Supprimer une année emporte tout ce
 qu'elle contient, et la confirmation annonce le décompte avant d'agir.
+
+## Niveaux TEK et passage d'année
+
+**Le niveau est porté par l'année, jamais par le profil.** La raison est le
+redoublement : un étudiant qui refait TEK1 a deux années au même niveau, et
+c'est exactement ce que le modèle doit pouvoir dire.
+
+```
+AcademicYear  2026-2027  · TEK1  ✅ validée
+AcademicYear  2027-2028  · TEK1  ❌ non validée   ← redoublement
+AcademicYear  2028-2029  · TEK2  🔄 année courante
+```
+
+Si le niveau était sur le profil, l'historique deviendrait faux le jour du
+passage : les Roadblocks faits en TEK1 s'afficheraient comme du TEK2. Le
+niveau demandé à l'inscription sert donc à **ouvrir la première année**, et
+n'est pas stocké sur le profil — une seule source de vérité, pas deux qui
+divergeront.
+
+**Le passage n'est jamais automatique.** Un étudiant peut redoubler, partir en
+césure, faire un stage long ou s'arrêter. Déduire « on est en septembre, donc
+tu es en TEK2 » ferait prendre à l'application une décision qui ne lui
+appartient pas — et la première fois qu'elle se trompe, l'étudiant cesse de
+croire tous les autres chiffres. Quand la date de fin de l'année courante est
+passée, le dashboard **propose** : passer au niveau suivant, redoubler, ou ne
+rien faire.
+
+Passer au niveau suivant ouvre une **année vierge** et la rend courante.
+L'année quittée n'est ni modifiée ni supprimée.
+
+## L'année courante et le cumul
+
+`settings.currentYearId` désigne explicitement l'année affichée — déduite
+d'une date, elle se tromperait sur une année qui déborde ou une césure.
+
+Tout ce qui répond à « où j'en suis » est restreint à cette année
+(`scopeToYear`) : dashboard, listes, calendrier, statistiques, alertes,
+projection. Cumuler trois années dans un seul pourcentage empêcherait de voir
+qu'on est en retard *maintenant*.
+
+Deux exceptions délibérées, sur la vue complète :
+
+- **la recherche**, pour retrouver un module de TEK1 depuis TEK2 ;
+- **les pages de détail**, pour qu'un lien vers un ancien projet ne réponde
+  pas « introuvable » ;
+- **le Parcours** (page Statistiques), seul endroit où le cumul du cursus a
+  du sens.
 
 ## Profils — ce que ce n'est pas
 

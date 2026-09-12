@@ -10,7 +10,7 @@ import type {
 } from './types';
 
 export function makeYear(over: Partial<AcademicYear> = {}): AcademicYear {
-  return { id: 'y1', label: '2026-2027', order: 1, startDate: null, endDate: null, ...over };
+  return { id: 'y1', label: '2026-2027', level: 'TEK1', order: 1, startDate: null, endDate: null, ...over };
 }
 
 export function makeRoadblock(over: Partial<Roadblock> = {}): Roadblock {
@@ -72,7 +72,7 @@ export function makeCurriculum(over: Partial<Curriculum> = {}): Curriculum {
     roadblocks: [makeRoadblock()],
     modules: [makeModule()],
     projects: [makeProject()],
-    settings: { ...DEFAULT_SETTINGS },
+    settings: { ...DEFAULT_SETTINGS, currentYearId: 'y1' },
     ...over,
   };
 }

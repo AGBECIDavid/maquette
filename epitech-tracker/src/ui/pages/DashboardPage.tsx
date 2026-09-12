@@ -7,9 +7,10 @@ import { Card, EmptyState, PageHeader, SectionTitle } from '../components/Primit
 import { StatusBadge } from '../components/Badge';
 import { formatCredits, formatDaysLeft, formatPercent, PRIORITY_DOT } from '../labels';
 import { AlertList } from '../components/AlertList';
+import { PromotionPanel } from '../components/PromotionPanel';
 
 export function DashboardPage() {
-  const { view, stats, alerts } = useCurriculum();
+  const { view, stats, alerts, currentYear } = useCurriculum();
   const urgent = urgentProjects(view, 5);
 
   if (view.roadblocks.length === 0) {
@@ -28,8 +29,14 @@ export function DashboardPage() {
     <>
       <PageHeader
         title="Dashboard"
-        subtitle="Où j’en suis, ce qu’il me reste, ce qui est urgent."
+        subtitle={
+          currentYear === null
+            ? 'Où j’en suis, ce qu’il me reste, ce qui est urgent.'
+            : `${currentYear.level === null ? '' : `${currentYear.level} · `}${currentYear.label} — où j’en suis, ce qu’il me reste, ce qui est urgent.`
+        }
       />
+
+      <PromotionPanel compact />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile

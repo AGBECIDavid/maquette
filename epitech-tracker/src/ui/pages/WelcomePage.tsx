@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useSession } from '../../store/SessionContext';
 import { Logo, TAGLINE } from '../components/Logo';
 import { Button } from '../components/Primitives';
-import { Field, TextInput } from '../components/Form';
+import { Field, Select, TextInput } from '../components/Form';
+import { TEK_LEVELS, type TekLevel } from '../../domain/types';
 
 /**
  * Accueil : choisir un profil ou en créer un.
@@ -17,6 +18,7 @@ export function WelcomePage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [withSample, setWithSample] = useState(true);
+  const [level, setLevel] = useState<TekLevel | 'unknown'>('TEK1');
 
   const cleaned = name.trim();
   const taken = cleaned !== '' && nameTaken(cleaned);
@@ -79,7 +81,14 @@ export function WelcomePage() {
             className="flex flex-col gap-4 rounded-xl border border-ink-800 bg-ink-900 p-6"
             onSubmit={(event) => {
               event.preventDefault();
-              if (canCreate) createProfile({ name, email, withSample });
+              if (canCreate) {
+                createProfile({
+                  name,
+                  email,
+                  withSample,
+                  level: level === 'unknown' ? null : level,
+                });
+              }
             }}
           >
             <h1 className="text-base font-semibold text-ink-100">Créer un profil</h1>
@@ -91,6 +100,20 @@ export function WelcomePage() {
 
             <Field label="Email (facultatif)" hint="Sert d’aide-mémoire, jamais de moyen de connexion">
               <TextInput value={email} onChange={setEmail} placeholder="david@exemple.fr" />
+            </Field>
+
+            <Field
+              label="Niveau actuel"
+              hint="Il ouvre ta première année. Au passage au niveau suivant, cette année sera conservée."
+            >
+              <Select
+                value={level}
+                onChange={setLevel}
+                options={[
+                  ...TEK_LEVELS.map((value) => ({ value, label: value })),
+                  { value: 'unknown' as const, label: 'Je préfère ne pas préciser' },
+                ]}
+              />
             </Field>
 
             <label className="flex items-start gap-3 text-sm text-ink-300">

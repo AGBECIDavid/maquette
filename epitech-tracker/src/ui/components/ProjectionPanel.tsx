@@ -69,6 +69,9 @@ export function ProjectionPanel({ projection }: { projection: Projection }) {
       <SectionTitle>Projection</SectionTitle>
       <Card>
         <p className="mb-4 rounded-lg border border-ink-800 bg-ink-850 px-4 py-3 text-xs text-ink-300">
+          <span className="mb-1 block text-ink-400">
+            Ces dates portent sur l’année affichée, pas sur tout le cursus.
+          </span>
           <strong className="text-ink-100">Ce sont des extrapolations, pas des prédictions.</strong>{' '}
           Elles prolongent ton rythme passé et ne tiennent compte ni des vacances, ni des
           soutenances, ni de la difficulté des modules à venir. Les Roadblocks se suivent : la
@@ -79,7 +82,9 @@ export function ProjectionPanel({ projection }: { projection: Projection }) {
           <p className="text-sm text-ok">Tous les seuils sont atteints.</p>
         ) : cursus.status === 'projected' ? (
           <div className="mb-5">
-            <p className="text-xs text-ink-400 uppercase">Fin du cursus au rythme actuel</p>
+            <p className="text-xs text-ink-400 uppercase">
+              Fin de l’année courante au rythme actuel
+            </p>
             <p className="mt-1 text-3xl font-semibold tabular-nums text-ink-100">
               {formatDate(cursus.date)}
             </p>
@@ -90,7 +95,7 @@ export function ProjectionPanel({ projection }: { projection: Projection }) {
           </div>
         ) : (
           <p className="mb-5 text-sm text-ink-400">
-            Pas de date de fin de cursus : il faut au moins un projet validé et daté pour mesurer un
+            Pas de date de fin d’année : il faut au moins un projet validé et daté pour mesurer un
             rythme.
           </p>
         )}

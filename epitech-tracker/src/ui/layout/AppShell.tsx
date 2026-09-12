@@ -29,12 +29,15 @@ const RESULT_LABEL = {
 } as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { view, stats, data } = useCurriculum();
+  const { fullView, stats, data, currentYear, setCurrentYear } = useCurriculum();
   const { activeProfile, signOut } = useSession();
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
 
-  const results = useMemo(() => searchAll(view, query).slice(0, 8), [view, query]);
+  // La recherche porte sur tout le cursus : chercher un module de TEK1
+  // depuis TEK2 doit le trouver, pas répondre « aucun résultat ».
+  const results = useMemo(() => searchAll(fullView, query).slice(0, 8), [fullView, query]);
+  const years = useMemo(() => [...data.years].sort((a, b) => a.order - b.order), [data.years]);
 
   return (
     <div className="flex min-h-full">
@@ -121,8 +124,25 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             </div>
 
+            {currentYear !== null && (
+              <label className="ml-auto flex shrink-0 items-center gap-2">
+                <span className="sr-only">Année affichée</span>
+                <select
+                  value={currentYear.id}
+                  onChange={(event) => setCurrentYear(event.target.value)}
+                  className="rounded-lg border border-ink-800 bg-ink-900 px-3 py-2 text-sm text-ink-100 outline-none focus:border-accent"
+                >
+                  {years.map((year) => (
+                    <option key={year.id} value={year.id} className="bg-ink-850">
+                      {year.level === null ? year.label : `${year.level} · ${year.label}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             {data.settings.source === 'mock' && (
-              <span className="ml-auto shrink-0 rounded-full border border-busy/40 bg-busy/10 px-3 py-1 text-xs font-medium text-busy">
+              <span className="shrink-0 rounded-full border border-busy/40 bg-busy/10 px-3 py-1 text-xs font-medium text-busy">
                 Données d’exemple
               </span>
             )}

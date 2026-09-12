@@ -47,6 +47,7 @@ export function RoadblockForm({
       const year = {
         id: newId(),
         label: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+        level: null,
         order: 1,
         startDate: null,
         endDate: null,

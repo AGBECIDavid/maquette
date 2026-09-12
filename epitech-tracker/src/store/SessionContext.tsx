@@ -27,12 +27,19 @@ import {
   LEGACY_STORAGE_KEY,
 } from '../data/localStorageRepository';
 import { mockCurriculum } from '../data/mock';
+import { newCurriculum } from '../data/schema';
+import type { TekLevel } from '../domain/types';
 import { today } from '../domain/dates';
 
 interface SessionStore {
   profiles: Profile[];
   activeProfile: Profile | null;
-  createProfile: (input: { name: string; email: string; withSample: boolean }) => void;
+  createProfile: (input: {
+    name: string;
+    email: string;
+    withSample: boolean;
+    level: TekLevel | null;
+  }) => void;
   selectProfile: (id: string) => void;
   renameProfile: (id: string, name: string) => void;
   deleteProfile: (id: string) => void;
@@ -104,15 +111,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     activeProfile,
 
     createProfile: useCallback(
-      ({ name, email, withSample }) => {
+      ({ name, email, withSample, level }) => {
         const id = crypto.randomUUID();
         const now = today();
 
-        // Le jeu d'exemple est écrit dans le tiroir du profil au moment de sa
-        // création : l'application n'a ensuite qu'à lire ce qui s'y trouve,
-        // sans règle cachée sur « le premier lancement ».
+        // Le cursus de départ est écrit dans le tiroir du profil au moment de
+        // sa création : l'application n'a ensuite qu'à lire ce qui s'y trouve,
+        // sans règle cachée sur « le premier lancement ». Le niveau annoncé à
+        // l'inscription sert à ouvrir la première année — il n'est pas stocké
+        // sur le profil, pour n'avoir qu'une seule source de vérité.
+        const repository = createLocalStorageRepository(dataKeyFor(id));
         if (withSample) {
-          createLocalStorageRepository(dataKeyFor(id)).save(mockCurriculum());
+          const sample = mockCurriculum();
+          const firstYear = sample.years[0];
+          repository.save(
+            firstYear === undefined
+              ? sample
+              : { ...sample, years: [{ ...firstYear, level }, ...sample.years.slice(1)] },
+          );
+        } else {
+          repository.save(newCurriculum(level, crypto.randomUUID()));
         }
 
         commit({

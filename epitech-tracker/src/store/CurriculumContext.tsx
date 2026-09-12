@@ -22,11 +22,18 @@ import {
 import { createLocalStorageRepository } from '../data/localStorageRepository';
 import { dataKeyFor } from '../data/profiles';
 import { mockCurriculum } from '../data/mock';
-import { emptyCurriculum, parseCurriculum } from '../data/schema';
+import { newCurriculum, parseCurriculum } from '../data/schema';
 import { buildAlerts, type Alert } from '../domain/alerts';
 import { moveItem, nextOrder, type Direction } from '../domain/ordering';
 import { today as currentDay } from '../domain/dates';
-import { buildView, dashboardStats, type CurriculumView, type DashboardStats } from '../domain/selectors';
+import {
+  buildView,
+  dashboardStats,
+  scopeToYear,
+  type CurriculumView,
+  type DashboardStats,
+} from '../domain/selectors';
+import { buildNextYear, buildRepeatYear, isYearOver, nextLevel } from '../domain/promotion';
 import type {
   AcademicYear,
   Curriculum,
@@ -41,10 +48,22 @@ type Entity = 'years' | 'roadblocks' | 'modules' | 'projects';
 
 interface CurriculumStore {
   data: Curriculum;
+  /** Vue restreinte à l'année courante — ce que le dashboard et les listes montrent. */
   view: CurriculumView;
+  /** Vue de tout le cursus — parcours, recherche, et pages de détail. */
+  fullView: CurriculumView;
   stats: DashboardStats;
   alerts: Alert[];
   today: string;
+
+  currentYear: AcademicYear | null;
+  /** L'année courante est-elle terminée ? Sert à proposer un passage. */
+  currentYearOver: boolean;
+  setCurrentYear: (id: Id) => void;
+  /** Ouvre une nouvelle année au niveau suivant. L'ancienne est conservée. */
+  promote: () => void;
+  /** Ouvre une nouvelle année au même niveau : un redoublement. */
+  repeatYear: () => void;
 
   upsertYear: (year: AcademicYear) => void;
   upsertRoadblock: (roadblock: Roadblock) => void;
@@ -91,16 +110,6 @@ function moveWithinGroup<T extends { id: Id; order: number }>(
   return [...others, ...moveItem(siblings, id, direction)];
 }
 
-/** Un cursus neuf : vide, mais avec une année prête à recevoir un Roadblock. */
-function freshCurriculum(): Curriculum {
-  const fresh = emptyCurriculum();
-  const start = new Date().getFullYear();
-  fresh.years = [
-    { id: crypto.randomUUID(), label: `${start}-${start + 1}`, order: 1, startDate: null, endDate: null },
-  ];
-  return fresh;
-}
-
 function upsert<T extends { id: Id }>(items: T[], item: T): T[] {
   const index = items.findIndex((existing) => existing.id === item.id);
   if (index === -1) return [...items, item];
@@ -128,14 +137,25 @@ export function CurriculumProvider({
 
   // Un profil sans données commence vide, avec une année ouverte : le jeu
   // d'exemple ne s'invite que si l'utilisateur l'a demandé à la création.
-  const [data, setData] = useState<Curriculum>(() => repository.load() ?? freshCurriculum());
+  const [data, setData] = useState<Curriculum>(() => repository.load() ?? newCurriculum(null, crypto.randomUUID()));
 
   useEffect(() => {
     repository.save(data);
   }, [data, repository]);
 
   const today = useMemo(() => currentDay(), []);
-  const view = useMemo(() => buildView(data, today), [data, today]);
+  const fullView = useMemo(() => buildView(data, today), [data, today]);
+
+  const currentYear = useMemo(
+    () => data.years.find((y) => y.id === data.settings.currentYearId) ?? null,
+    [data.years, data.settings.currentYearId],
+  );
+
+  // Tout ce qui répond à « où j'en suis » est restreint à l'année courante.
+  const view = useMemo(
+    () => scopeToYear(fullView, currentYear?.id ?? null),
+    [fullView, currentYear],
+  );
   const stats = useMemo(() => dashboardStats(view), [view]);
   const alerts = useMemo(() => buildAlerts(view, data.settings), [view, data.settings]);
 
@@ -146,14 +166,67 @@ export function CurriculumProvider({
     [],
   );
 
+  /** Ouvre l'année suivante et l'active. L'année quittée n'est pas touchée. */
+  const openNextYear = useCallback(
+    (mode: 'promote' | 'repeat') => {
+      setData((current) => {
+        const from = current.years.find((y) => y.id === current.settings.currentYearId);
+        if (from === undefined) return current;
+
+        const input = {
+          years: current.years,
+          from,
+          id: crypto.randomUUID(),
+          fallbackYear: new Date().getFullYear(),
+        };
+        const year =
+          mode === 'repeat'
+            ? buildRepeatYear(input)
+            : buildNextYear({ ...input, level: nextLevel(from.level) });
+
+        return {
+          ...current,
+          years: [...current.years, year],
+          settings: { ...current.settings, currentYearId: year.id },
+        };
+      });
+    },
+    [],
+  );
+
   const store: CurriculumStore = {
     data,
     view,
+    fullView,
     stats,
     alerts,
     today,
 
-    upsertYear: useCallback((year) => patch('years', (items) => upsert(items, year)), [patch]),
+    currentYear,
+    currentYearOver: isYearOver(currentYear, today),
+    setCurrentYear: useCallback(
+      (id) =>
+        setData((current) => ({
+          ...current,
+          settings: { ...current.settings, currentYearId: id },
+        })),
+      [],
+    ),
+    promote: useCallback(() => openNextYear('promote'), [openNextYear]),
+    repeatYear: useCallback(() => openNextYear('repeat'), [openNextYear]),
+
+    upsertYear: useCallback(
+      (year) =>
+        setData((current) => ({
+          ...current,
+          years: upsert(current.years, year),
+          settings: {
+            ...current.settings,
+            currentYearId: current.settings.currentYearId ?? year.id,
+          },
+        })),
+      [],
+    ),
     upsertRoadblock: useCallback((rb) => patch('roadblocks', (items) => upsert(items, rb)), [patch]),
     upsertModule: useCallback((m) => patch('modules', (items) => upsert(items, m)), [patch]),
     upsertProject: useCallback((p) => patch('projects', (items) => upsert(items, p)), [patch]),
@@ -162,6 +235,7 @@ export function CurriculumProvider({
     // sans année n'apparaîtrait plus nulle part tout en pesant encore.
     removeYear: useCallback((id) => {
       setData((current) => {
+        const remaining = current.years.filter((y) => y.id !== id);
         const roadblockIds = new Set(
           current.roadblocks.filter((r) => r.yearId === id).map((r) => r.id),
         );
@@ -170,10 +244,19 @@ export function CurriculumProvider({
         );
         return {
           ...current,
-          years: current.years.filter((y) => y.id !== id),
+          years: remaining,
           roadblocks: current.roadblocks.filter((r) => !roadblockIds.has(r.id)),
           modules: current.modules.filter((m) => !moduleIds.has(m.id)),
           projects: current.projects.filter((p) => !moduleIds.has(p.moduleId)),
+          settings: {
+            ...current.settings,
+            // Supprimer l'année courante ne doit pas laisser l'application
+            // sans année à afficher : on retombe sur la dernière restante.
+            currentYearId:
+              current.settings.currentYearId === id
+                ? (remaining[remaining.length - 1]?.id ?? null)
+                : current.settings.currentYearId,
+          },
         };
       });
     }, []),
@@ -252,7 +335,7 @@ export function CurriculumProvider({
 
     loadMock: useCallback(() => setData(mockCurriculum()), []),
 
-    reset: useCallback(() => setData(freshCurriculum()), []),
+    reset: useCallback(() => setData(newCurriculum(null, crypto.randomUUID())), []),
 
     importJson: useCallback((raw) => {
       try {

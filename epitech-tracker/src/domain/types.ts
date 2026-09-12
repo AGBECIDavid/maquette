@@ -33,9 +33,23 @@ export type ProgressStatus =
 
 export type Priority = 'critical' | 'high' | 'normal' | 'low';
 
+/**
+ * Niveau du cursus Epitech.
+ *
+ * Il est porté par l'ANNÉE, jamais par le profil : un redoublement, c'est
+ * deux années portant le même niveau. Mettre le niveau sur le profil rendrait
+ * l'historique faux rétroactivement — les Roadblocks faits en TEK1
+ * s'afficheraient comme du TEK2 le jour du passage.
+ */
+export type TekLevel = 'TEK1' | 'TEK2' | 'TEK3' | 'TEK4' | 'TEK5';
+
+export const TEK_LEVELS: readonly TekLevel[] = ['TEK1', 'TEK2', 'TEK3', 'TEK4', 'TEK5'];
+
 export interface AcademicYear {
   id: Id;
   label: string; // "2026-2027"
+  /** Niveau suivi cette année-là. `null` si l'étudiant ne l'a pas précisé. */
+  level: TekLevel | null;
   order: number;
   startDate: IsoDate | null;
   endDate: IsoDate | null;
@@ -93,6 +107,14 @@ export interface Project {
 }
 
 export interface Settings {
+  /**
+   * Année que l'application considère comme « en cours ».
+   *
+   * Explicite plutôt que déduite d'une date : une année peut déborder, un
+   * étudiant peut partir en césure, et deviner ferait prendre à l'application
+   * une décision qui ne lui appartient pas.
+   */
+  currentYearId: Id | null;
   /** En deçà de ce nombre de jours, une deadline est « proche ». */
   deadlineSoonDays: number;
   /** À partir de cette part des crédits requis, un Roadblock est « bientôt validé ». */

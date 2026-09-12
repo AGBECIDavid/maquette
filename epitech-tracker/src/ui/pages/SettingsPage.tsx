@@ -8,6 +8,7 @@ import { today } from '../../domain/dates';
 import { Button, Card, PageHeader, SectionTitle } from '../components/Primitives';
 import { Field, FieldGrid, NumberInput } from '../components/Form';
 import { YearsEditor } from '../components/YearsEditor';
+import { PromotionPanel } from '../components/PromotionPanel';
 
 export function SettingsPage() {
   const { data, updateSettings, exportJson, importJson, loadMock, reset } = useCurriculum();
@@ -62,6 +63,11 @@ export function SettingsPage() {
         <Card>
           <YearsEditor />
         </Card>
+      </section>
+
+      <section className="mb-8">
+        <SectionTitle>Niveau et passage</SectionTitle>
+        <PromotionPanel />
       </section>
 
       <section className="mb-8">
