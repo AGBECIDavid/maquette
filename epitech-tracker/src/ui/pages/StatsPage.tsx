@@ -10,6 +10,8 @@ import { EmptyState, PageHeader } from '../components/Primitives';
 import { CreditsBars } from '../components/charts/CreditsBars';
 import { StatusShare } from '../components/charts/StatusShare';
 import { CreditsOverTime } from '../components/charts/CreditsOverTime';
+import { ProjectionPanel } from '../components/ProjectionPanel';
+import { buildProjection } from '../../domain/projection';
 
 export function StatsPage() {
   const { view } = useCurriculum();
@@ -18,6 +20,7 @@ export function StatsPage() {
   const statuses = useMemo(() => projectStatusDistribution(view), [view]);
   const timeline = useMemo(() => validatedOverTime(view), [view]);
   const undated = useMemo(() => undatedValidatedCredits(view), [view]);
+  const projection = useMemo(() => buildProjection(view), [view]);
 
   if (view.roadblocks.length === 0) {
     return (
@@ -41,6 +44,10 @@ export function StatsPage() {
         <div className="xl:col-span-2">
           <CreditsOverTime points={timeline} undated={undated} />
         </div>
+      </div>
+
+      <div className="mt-8">
+        <ProjectionPanel projection={projection} />
       </div>
     </>
   );

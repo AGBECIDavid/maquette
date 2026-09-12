@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../store/CurriculumContext';
 import { MoveButtons } from '../components/MoveButtons';
+import { ProjectionLine } from '../components/ProjectionPanel';
+import { buildProjection } from '../../domain/projection';
 import { formatDate } from '../../domain/dates';
 import { Button, Card, EmptyState, PageHeader, SectionTitle } from '../components/Primitives';
 import { ProgressBar } from '../components/ProgressBar';
@@ -23,6 +25,7 @@ export function RoadblockDetailPage() {
   }
   const raw = data.roadblocks.find((r) => r.id === roadblock.id);
 
+  const projection = buildProjection(view).roadblocks.find((p) => p.id === roadblock.id);
   const missingModules = roadblock.modules.filter((m) => m.status !== 'validated');
   const blocked = roadblock.remainingCredits > roadblock.reachableCredits;
 
@@ -102,6 +105,13 @@ export function RoadblockDetailPage() {
               ? ` Seuls ${formatCredits(roadblock.reachableCredits)} crédit(s) restent atteignables dans ce Roadblock : le seuil ne peut plus être atteint en l’état.`
               : ' Les modules ci-dessous portent les crédits manquants.'}
           </p>
+          {projection !== undefined && projection.status !== 'validated' && (
+            <p className="mt-3 flex flex-wrap items-baseline gap-2 text-sm">
+              <span className="text-ink-400">Au rythme actuel :</span>
+              <ProjectionLine item={projection} />
+            </p>
+          )}
+
           {missingModules.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-2">
               {missingModules.map((module) => (

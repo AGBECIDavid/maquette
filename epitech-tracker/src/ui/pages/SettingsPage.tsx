@@ -148,6 +148,10 @@ export function SettingsPage() {
             Ces règles sont regroupées dans <code>src/domain/rules.ts</code> : si une règle Epitech
             diffère, c’est le seul fichier à modifier.
           </p>
+          <p className="mt-3 text-xs text-ink-600">
+            Outil de suivi personnel, sans lien officiel avec Epitech. Les chiffres affichés sont
+            ceux que tu saisis : ils ne remplacent pas ton intranet.
+          </p>
         </Card>
       </section>
     </>

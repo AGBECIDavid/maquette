@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useCurriculum } from '../../store/CurriculumContext';
 import { searchAll } from '../../domain/search';
 import { formatPercent } from '../labels';
+import { Logo, TAGLINE } from '../components/Logo';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: '◎', end: true },
@@ -37,8 +38,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-full">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-ink-800 bg-ink-900 p-4 md:flex">
         <div className="mb-6 px-2">
-          <p className="text-sm font-semibold text-ink-100">Academic Tracker</p>
-          <p className="text-xs text-ink-400">Suivi de cursus Epitech</p>
+          <Logo />
+          <p className="mt-2 text-[11px] tracking-wide text-ink-400">{TAGLINE}</p>
         </div>
 
         <nav className="flex flex-col gap-1">

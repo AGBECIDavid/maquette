@@ -63,6 +63,7 @@ src/
     calendar.ts      événements datés et grille mensuelle
     ordering.ts      rangs d'une fratrie : déplacer, renuméroter
     stats.ts         séries prêtes à dessiner pour les graphiques
+    projection.ts    « à ce rythme, validé le … » — extrapolation, pas prédiction
     search.ts        recherche globale et filtres
     dates.ts         arithmétique sur dates civiles ISO
   data/
@@ -175,8 +176,43 @@ est entièrement validé, il vaut ses crédits exacts. Sans cela, des parts éga
 non entières feraient dériver la courbe du compteur du dashboard (74,01 au lieu
 de 74) — un écart qu'on ne remarque qu'en regardant les deux pages côte à côte.
 
+## Projection
+
+`projection.ts` répond à « à ce rythme, quand ce Roadblock sera-t-il validé ? ».
+C'est une **extrapolation du passé**, et l'interface le dit avant de donner la
+moindre date.
+
+Le rythme est mesuré sur les 90 derniers jours. Sans activité récente, on
+retombe sur le rythme depuis la première validation — moins actuel, mais mesuré
+plutôt qu'inventé. Le rythme retenu est toujours annoncé : deux rythmes donnent
+deux dates, et on doit savoir laquelle on regarde.
+
+Trois refus délibérés, parce qu'une fausse date est pire que pas de date :
+
+- **Aucun crédit validé et daté** → pas de rythme, donc pas de date.
+- **Seuil hors de portée** (les crédits restants du Roadblock ne couvrent pas
+  ce qui manque) → on le dit, on ne date pas l'impossible.
+- **Un seuil hors de portée n'entre pas dans le cumul** des Roadblocks
+  suivants : il ne sera jamais franchi, l'y ajouter repousserait indéfiniment
+  tout le reste.
+
+Les Roadblocks sont **séquentiels et partagent un seul rythme** : les crédits
+restants se cumulent dans l'ordre du cursus. Sans ce cumul, un Roadblock entier
+de 24 crédits apparaissait sept jours après le précédent — chacun étant daté
+comme si tout le temps disponible lui était consacré — et la dernière date
+contredisait celle du cursus.
+
+## Identité
+
+La marque est redessinée en SVG dans `src/ui/components/Logo.tsx` : nette à
+toutes les tailles, quelques centaines d'octets, lisible sur fond sombre comme
+sur fond clair. Un PNG sur fond blanc ferait une tache sur l'interface.
+
+Le tracé a été vérifié à 96, 48, 24 et 16 px avant d'être retenu : un logo qui
+ne survit pas à la taille d'un favicon n'est pas un logo d'application.
+
 ## Ce qui n'est pas encore fait
 
 - Historique de progression dans le temps (instantanés successifs)
-- Projection : « à ce rythme, Roadblock 4 validé le … »
 - Import depuis l'intranet Epitech
+- Retours des bêta-testeurs
