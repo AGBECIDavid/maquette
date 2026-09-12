@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+
+/*
+ * Palette : un fond sombre, une accentuation, quatre couleurs de statut.
+ * Rien de plus — l'information importante doit sauter aux yeux, ce qui
+ * suppose que le reste soit calme.
+ */
+@theme {
+  --color-ink-950: #0b0f17;
+  --color-ink-900: #111827;
+  --color-ink-850: #151d2b;
+  --color-ink-800: #1c2636;
+  --color-ink-700: #2a3648;
+  --color-ink-600: #3b4a62;
+  --color-ink-400: #7d8ba3;
+  --color-ink-300: #a6b1c4;
+  --color-ink-100: #e6eaf2;
+
+  --color-accent: #6366f1;
+  --color-accent-soft: #818cf8;
+
+  --color-ok: #34d399;
+  --color-busy: #fbbf24;
+  --color-wait: #64748b;
+  --color-bad: #fb7185;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-ink-950);
+  color: var(--color-ink-100);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Barres de défilement discrètes, pour ne pas hacher les colonnes. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-700) transparent;
+}

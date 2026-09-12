@@ -1,7 +1,12 @@
-> **Vous cherchez le projet ?** Il est dans [`agoojiye-hmi/`](agoojiye-hmi/) —
-> voir son [README](agoojiye-hmi/README.md) pour construire et lancer
-> l'interface. Le texte ci-dessous est la note de passation d'origine de
-> Claude Design, conservée pour mémoire.
+> **Ce dépôt contient deux projets indépendants :**
+>
+> - [`agoojiye-hmi/`](agoojiye-hmi/) — l'interface embarquée de la navette
+>   électrique (Qt 6 / QML), voir son [README](agoojiye-hmi/README.md).
+> - [`epitech-tracker/`](epitech-tracker/) — le suivi de cursus Epitech
+>   (React / TypeScript), voir son [README](epitech-tracker/README.md).
+>
+> Le texte ci-dessous est la note de passation d'origine de Claude Design
+> pour les maquettes véhicule, conservée pour mémoire.
 
 ---
 
