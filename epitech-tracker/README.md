@@ -226,6 +226,32 @@ keyframes sont dans `index.css`, avec `transform-box: fill-box` : sans lui, un
 `transform` sur un élément SVG prend pour origine le coin du canevas et non
 celui de la forme.
 
+## Mettre en ligne
+
+Le build est un site statique à chemins relatifs (`base: './'`), et la
+navigation passe par le *hash* : **aucune règle de réécriture d'URL n'est
+nécessaire côté serveur**. N'importe quel hébergement statique convient, y
+compris un sous-dossier.
+
+### GitHub Pages (mis en place)
+
+`.github/workflows/deploy-tracker.yml` construit et publie à chaque poussée
+touchant `epitech-tracker/`. **Le déploiement est conditionné aux tests et à la
+vérification des types** : un test rouge arrête la livraison plutôt que de
+mettre en ligne un build cassé.
+
+Une seule action manuelle, à faire une fois :
+
+> Dépôt GitHub → **Settings** → **Pages** → *Build and deployment* →
+> **Source : GitHub Actions**
+
+L'adresse est ensuite `https://agbecidavid.github.io/maquette/`.
+
+### Ailleurs
+
+`npm run build` produit `dist/`. Ce dossier se dépose tel quel sur Netlify,
+Vercel, Cloudflare Pages ou un simple serveur de fichiers.
+
 ## Bêta
 
 La version s'affiche dans *Paramètres* (`src/version.ts`, à garder en phase

@@ -3,6 +3,7 @@ import { useCurriculum } from '../../store/CurriculumContext';
 import { findOrphans } from '../../data/schema';
 import { buildDiagnostics } from '../../data/diagnostics';
 import { APP_STAGE, APP_VERSION } from '../../version';
+import { feedbackLink } from '../../config';
 import { useSession } from '../../store/SessionContext';
 import { today } from '../../domain/dates';
 import { Button, Card, PageHeader, SectionTitle } from '../components/Primitives';
@@ -179,6 +180,19 @@ export function SettingsPage() {
             Version installée : <strong className="text-ink-100">{APP_VERSION}</strong> ({APP_STAGE}).
             Cite-la dans tout signalement — un bug rapporté sans version se cherche dans le mauvais
             code.
+          </p>
+          <p className="mt-3">
+            <a
+              href={feedbackLink(APP_VERSION, APP_STAGE)}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-block rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-soft"
+            >
+              Signaler un problème
+            </a>
+            <span className="mt-2 block text-xs text-ink-400">
+              Ouvre un signalement déjà rempli avec ta version, ton navigateur et ton écran.
+            </span>
           </p>
           <p className="mt-3 text-sm text-ink-300">
             Le bouton <em>Exporter un diagnostic</em> ci-dessus produit un fichier contenant la

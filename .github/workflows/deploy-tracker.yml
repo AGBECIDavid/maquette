@@ -1,0 +1,65 @@
+# Met en ligne l'Epitech Tracker sur GitHub Pages.
+#
+# Le déploiement est conditionné aux tests : on ne publie pas aux
+# bêta-testeurs un build dont la suite échoue. Un test rouge arrête la
+# livraison, il ne la ralentit pas.
+
+name: Déployer l'Epitech Tracker
+
+on:
+  push:
+    branches: [main, claude/gracious-pascal-ymxfne]
+    paths:
+      - 'epitech-tracker/**'
+      - '.github/workflows/deploy-tracker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Une seule mise en ligne à la fois ; une nouvelle annule celle en cours.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: epitech-tracker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: epitech-tracker/package-lock.json
+
+      - run: npm ci
+
+      - name: Tests
+        run: npm test
+
+      - name: Vérification des types
+        run: npm run typecheck
+
+      - name: Construction
+        run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: epitech-tracker/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
