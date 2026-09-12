@@ -247,15 +247,22 @@ Une seule action manuelle, à faire une fois :
 
 L'adresse est ensuite `https://agbecidavid.github.io/maquette/`.
 
-### Vercel
+### Vercel — l'hébergement de la bêta
 
-`vercel.json` est prêt. Sur vercel.com : *Add New… → Project*, importer
-`AGBECIDavid/maquette`, et **régler `Root Directory` sur `epitech-tracker`** —
-c'est le seul champ à toucher, le reste est déclaré dans `vercel.json`.
+**https://epitech-tracker.vercel.app** — déployé depuis `main`, redéployé à
+chaque poussée. Les autres branches reçoivent une URL de prévisualisation, ce
+qui permet de faire essayer un correctif à une personne avant de l'envoyer à
+tout le monde.
 
-Aucune règle de réécriture n'est nécessaire : la navigation passe par le
-*hash*, donc toutes les routes sont servies par `index.html` sans
-configuration.
+Configuration : `Root Directory` réglé sur `epitech-tracker`, tout le reste
+vient de `vercel.json`. Aucune règle de réécriture n'est nécessaire — la
+navigation passe par le *hash*, donc toutes les routes sont servies par
+`index.html`.
+
+**Vercel n'exécute pas la suite de tests** : son `buildCommand` est
+`npm run build`, qui inclut `tsc --noEmit`. Une erreur de type bloque donc la
+mise en ligne, mais un test rouge passerait. Pour la même barrière qu'en CI :
+`"buildCommand": "npm test && npm run build"`.
 
 ### Ailleurs
 
