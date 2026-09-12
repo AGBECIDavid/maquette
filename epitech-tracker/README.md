@@ -67,11 +67,15 @@ src/
     search.ts        recherche globale et filtres
     dates.ts         arithmétique sur dates civiles ISO
   data/
+    profiles.ts      profils locaux — PAS une authentification
+    diagnostics.ts   rapport pour les retours de bêta
     schema.ts        schéma versionné, lecture/validation d'un document
     repository.ts    contrat de persistance
     localStorageRepository.ts
     mock.ts          ← JEU D'EXEMPLE, aucune valeur officielle
-  store/             état React, dérivations, import/export
+  store/
+    SessionContext   quel profil est actif, et donc quel tiroir on ouvre
+    CurriculumContext état des données du profil actif
   ui/                pages, composants, formulaires, libellés
     components/charts/ graphiques dessinés à la main, sans librairie
 ```
@@ -138,6 +142,52 @@ est actif : déplacer d'un cran dans une liste filtrée sauterait par-dessus les
 
 Les années se gèrent dans *Paramètres*. Supprimer une année emporte tout ce
 qu'elle contient, et la confirmation annonce le décompte avant d'agir.
+
+## Profils — ce que ce n'est pas
+
+L'écran d'accueil demande un nom et propose de « créer un profil ». **Ce n'est
+pas une authentification.** Il n'y a ni mot de passe, ni serveur, ni
+vérification : un profil est un tiroir dans le `localStorage`, pour que deux
+personnes sur la même machine ne mélangent pas leurs cursus.
+
+L'application le dit à l'utilisateur, en toutes lettres, sur l'écran d'accueil.
+Un mot de passe stocké dans un navigateur ne protège rien, et laisser croire
+l'inverse à un bêta-testeur serait pire que de ne rien offrir.
+
+Chaque profil a sa propre clé de stockage (`dataKeyFor`), et le fournisseur de
+données est monté avec `key={profileId}` : changer de profil remonte tout
+l'arbre plutôt que de laisser un état résiduel afficher, le temps d'un rendu,
+le cursus de quelqu'un d'autre.
+
+La vraie authentification viendra avec la mise en production. Elle remplacera
+`SessionContext` et `ProfileStore` sans toucher aux écrans — c'est le même
+découpage que `Repository`.
+
+## Écran d'ouverture
+
+L'animation de la marque suit trois règles, parce qu'une animation qu'on ne
+peut pas éviter devient vite une corvée :
+
+1. Elle se passe au clic, à la touche, ou par le bouton « Passer ».
+2. Elle ne se joue qu'une fois par session, pas à chaque navigation.
+3. `prefers-reduced-motion` la réduit à un affichage bref et fixe — le
+   mouvement n'est pas une décoration négociable pour qui y est sensible.
+
+Les pièces du logo entrent dans l'ordre où on les dessinerait à la main. Les
+keyframes sont dans `index.css`, avec `transform-box: fill-box` : sans lui, un
+`transform` sur un élément SVG prend pour origine le coin du canevas et non
+celui de la forme.
+
+## Bêta
+
+La version s'affiche dans *Paramètres* (`src/version.ts`, à garder en phase
+avec `package.json`). Un bug rapporté sans version se cherche dans le mauvais
+code.
+
+*Exporter un diagnostic* produit un fichier contenant la version, le
+navigateur, les compteurs, les incohérences détectées **et l'intégralité du
+cursus**, notes personnelles comprises. L'interface l'annonce avant de générer
+le fichier : c'est au testeur de décider ce qui sort de sa machine.
 
 ## Persistance
 

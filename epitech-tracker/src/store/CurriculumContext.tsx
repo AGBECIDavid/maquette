@@ -20,6 +20,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createLocalStorageRepository } from '../data/localStorageRepository';
+import { dataKeyFor } from '../data/profiles';
 import { mockCurriculum } from '../data/mock';
 import { emptyCurriculum, parseCurriculum } from '../data/schema';
 import { buildAlerts, type Alert } from '../domain/alerts';
@@ -90,6 +91,16 @@ function moveWithinGroup<T extends { id: Id; order: number }>(
   return [...others, ...moveItem(siblings, id, direction)];
 }
 
+/** Un cursus neuf : vide, mais avec une année prête à recevoir un Roadblock. */
+function freshCurriculum(): Curriculum {
+  const fresh = emptyCurriculum();
+  const start = new Date().getFullYear();
+  fresh.years = [
+    { id: crypto.randomUUID(), label: `${start}-${start + 1}`, order: 1, startDate: null, endDate: null },
+  ];
+  return fresh;
+}
+
 function upsert<T extends { id: Id }>(items: T[], item: T): T[] {
   const index = items.findIndex((existing) => existing.id === item.id);
   if (index === -1) return [...items, item];
@@ -98,14 +109,26 @@ function upsert<T extends { id: Id }>(items: T[], item: T): T[] {
   return next;
 }
 
-export function CurriculumProvider({ children }: { children: ReactNode }) {
-  const repository = useRef(createLocalStorageRepository()).current;
+/**
+ * Les données sont celles d'un profil, et d'un seul.
+ *
+ * Le parent monte ce fournisseur avec `key={profileId}` : changer de profil
+ * le remonte entièrement, plutôt que de faire cohabiter l'ancien état avec le
+ * nouveau tiroir — un état résiduel afficherait le cursus de quelqu'un
+ * d'autre le temps d'un rendu.
+ */
+export function CurriculumProvider({
+  profileId,
+  children,
+}: {
+  profileId: string;
+  children: ReactNode;
+}) {
+  const repository = useRef(createLocalStorageRepository(dataKeyFor(profileId))).current;
 
-  // Premier démarrage : rien en mémoire → on charge le jeu d'exemple, pour
-  // que l'application montre quelque chose plutôt qu'un écran vide.
-  const [data, setData] = useState<Curriculum>(
-    () => repository.load() ?? mockCurriculum(),
-  );
+  // Un profil sans données commence vide, avec une année ouverte : le jeu
+  // d'exemple ne s'invite que si l'utilisateur l'a demandé à la création.
+  const [data, setData] = useState<Curriculum>(() => repository.load() ?? freshCurriculum());
 
   useEffect(() => {
     repository.save(data);
@@ -229,19 +252,7 @@ export function CurriculumProvider({ children }: { children: ReactNode }) {
 
     loadMock: useCallback(() => setData(mockCurriculum()), []),
 
-    reset: useCallback(() => {
-      const fresh = emptyCurriculum();
-      fresh.years = [
-        {
-          id: crypto.randomUUID(),
-          label: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
-          order: 1,
-          startDate: null,
-          endDate: null,
-        },
-      ];
-      setData(fresh);
-    }, []),
+    reset: useCallback(() => setData(freshCurriculum()), []),
 
     importJson: useCallback((raw) => {
       try {

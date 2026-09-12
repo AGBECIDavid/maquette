@@ -1,30 +1,61 @@
 import { useRef, useState } from 'react';
 import { useCurriculum } from '../../store/CurriculumContext';
 import { findOrphans } from '../../data/schema';
+import { buildDiagnostics } from '../../data/diagnostics';
+import { APP_STAGE, APP_VERSION } from '../../version';
+import { useSession } from '../../store/SessionContext';
+import { today } from '../../domain/dates';
 import { Button, Card, PageHeader, SectionTitle } from '../components/Primitives';
 import { Field, FieldGrid, NumberInput } from '../components/Form';
 import { YearsEditor } from '../components/YearsEditor';
 
 export function SettingsPage() {
   const { data, updateSettings, exportJson, importJson, loadMock, reset } = useCurriculum();
+  const { activeProfile } = useSession();
   const fileInput = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
 
   const orphans = findOrphans(data);
 
-  const download = () => {
-    const blob = new Blob([exportJson()], { type: 'application/json' });
+  const saveFile = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `cursus-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
   };
 
+  const download = () =>
+    saveFile(exportJson(), `cursus-${new Date().toISOString().slice(0, 10)}.json`);
+
+  const downloadDiagnostics = () => {
+    const report = buildDiagnostics({
+      curriculum: data,
+      profileName: activeProfile?.name ?? '—',
+      version: APP_VERSION,
+      stage: APP_STAGE,
+      today: today(),
+      generatedAt: new Date().toISOString(),
+      environment: {
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        screen: `${window.screen.width}x${window.screen.height}`,
+      },
+    });
+    saveFile(
+      JSON.stringify(report, null, 2),
+      `diagnostic-${APP_VERSION}-${new Date().toISOString().slice(0, 10)}.json`,
+    );
+  };
+
   return (
     <>
-      <PageHeader title="Paramètres" subtitle="Réglages d’alerte et gestion des données." />
+      <PageHeader
+        title="Paramètres"
+        subtitle={`Réglages d’alerte et gestion des données · version ${APP_VERSION} (${APP_STAGE})`}
+      />
 
       <section className="mb-8">
         <SectionTitle>Années académiques</SectionTitle>
@@ -93,6 +124,7 @@ export function SettingsPage() {
 
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" onClick={download}>Exporter en JSON</Button>
+            <Button onClick={downloadDiagnostics}>Exporter un diagnostic</Button>
             <Button onClick={() => fileInput.current?.click()}>Importer un JSON</Button>
             <Button onClick={loadMock}>Recharger le jeu d’exemple</Button>
             <Button
@@ -131,6 +163,24 @@ export function SettingsPage() {
               {message.text}
             </p>
           )}
+        </Card>
+      </section>
+
+      <section className="mb-8">
+        <SectionTitle>Signaler un problème</SectionTitle>
+        <Card>
+          <p className="text-sm text-ink-300">
+            Version installée : <strong className="text-ink-100">{APP_VERSION}</strong> ({APP_STAGE}).
+            Cite-la dans tout signalement — un bug rapporté sans version se cherche dans le mauvais
+            code.
+          </p>
+          <p className="mt-3 text-sm text-ink-300">
+            Le bouton <em>Exporter un diagnostic</em> ci-dessus produit un fichier contenant la
+            version, ton navigateur, les compteurs, les incohérences détectées —{' '}
+            <strong className="text-ink-100">et l’intégralité de ton cursus</strong>, notes et
+            commentaires personnels compris. Relis-le avant de l’envoyer : c’est toi qui décides ce
+            qui sort de ta machine.
+          </p>
         </Card>
       </section>
 

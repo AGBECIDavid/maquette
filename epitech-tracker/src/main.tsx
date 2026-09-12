@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import { App } from './App';
-import { CurriculumProvider } from './store/CurriculumContext';
+import { SessionProvider } from './store/SessionContext';
 import './index.css';
 
 const root = document.getElementById('root');
@@ -13,9 +13,9 @@ createRoot(root).render(
     {/* HashRouter : l'app se sert depuis n'importe quel dossier, sans
         configuration serveur pour les routes profondes. */}
     <HashRouter>
-      <CurriculumProvider>
+      <SessionProvider>
         <App />
-      </CurriculumProvider>
+      </SessionProvider>
     </HashRouter>
   </StrictMode>,
 );

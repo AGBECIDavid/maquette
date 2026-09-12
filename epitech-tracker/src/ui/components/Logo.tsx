@@ -11,7 +11,16 @@ import { useId } from 'react';
  * même page partageraient sinon le même `id`, et la seconde irait chercher le
  * dégradé de la première.
  */
-export function LogoMark({ size = 32, className = '' }: { size?: number; className?: string }) {
+export function LogoMark({
+  size = 32,
+  className = '',
+  animated = false,
+}: {
+  size?: number;
+  className?: string;
+  /** Anime l'apparition des cinq pièces. Voir les keyframes dans index.css. */
+  animated?: boolean;
+}) {
   const id = useId();
   const blue = `${id}-blue`;
   const steel = `${id}-steel`;
@@ -21,7 +30,7 @@ export function LogoMark({ size = 32, className = '' }: { size?: number; classNa
       width={size}
       height={size}
       viewBox="0 0 64 64"
-      className={className}
+      className={`${animated ? 'logo-animate' : ''} ${className}`}
       role="img"
       aria-label="Epitech Tracker"
     >
@@ -37,15 +46,15 @@ export function LogoMark({ size = 32, className = '' }: { size?: number; classNa
       </defs>
 
       {/* La barre du T, cisaillée comme dans la marque d'origine. */}
-      <path d="M12 5 H58 L49 19 H3 Z" fill={`url(#${blue})`} />
+      <path className="logo-bar" d="M12 5 H58 L49 19 H3 Z" fill={`url(#${blue})`} />
       {/* Le fût, arrondi au pied. */}
-      <path d="M19 19 H31 V51 a4 4 0 0 1 -4 4 H19 Z" fill={`url(#${steel})`} />
+      <path className="logo-stem" d="M19 19 H31 V51 a4 4 0 0 1 -4 4 H19 Z" fill={`url(#${steel})`} />
       {/* La diagonale de progression. */}
-      <path d="M44 19 H54 L33 55 H23 Z" fill={`url(#${blue})`} />
+      <path className="logo-diagonal" d="M44 19 H54 L33 55 H23 Z" fill={`url(#${blue})`} />
       {/* Trois barres ascendantes : le suivi. */}
-      <rect x="38" y="40" width="7" height="15" rx="2" fill="#3b82f6" />
-      <rect x="48" y="32" width="7" height="23" rx="2" fill="#3b82f6" />
-      <rect x="58" y="24" width="6" height="31" rx="2" fill="#3b82f6" />
+      <rect className="logo-bar1" x="38" y="40" width="7" height="15" rx="2" fill="#3b82f6" />
+      <rect className="logo-bar2" x="48" y="32" width="7" height="23" rx="2" fill="#3b82f6" />
+      <rect className="logo-bar3" x="58" y="24" width="6" height="31" rx="2" fill="#3b82f6" />
     </svg>
   );
 }

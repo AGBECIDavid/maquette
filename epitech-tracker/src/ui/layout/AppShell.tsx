@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useCurriculum } from '../../store/CurriculumContext';
+import { useSession } from '../../store/SessionContext';
 import { searchAll } from '../../domain/search';
 import { formatPercent } from '../labels';
 import { Logo, TAGLINE } from '../components/Logo';
@@ -29,6 +30,7 @@ const RESULT_LABEL = {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { view, stats, data } = useCurriculum();
+  const { activeProfile, signOut } = useSession();
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
 
@@ -62,11 +64,26 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-auto rounded-lg border border-ink-800 p-3">
-          <p className="text-xs text-ink-400">Progression globale</p>
-          <p className="text-xl font-semibold tabular-nums text-ink-100">
-            {formatPercent(stats.progress)}
-          </p>
+        <div className="mt-auto flex flex-col gap-2">
+          <div className="rounded-lg border border-ink-800 p-3">
+            <p className="text-xs text-ink-400">Progression globale</p>
+            <p className="text-xl font-semibold tabular-nums text-ink-100">
+              {formatPercent(stats.progress)}
+            </p>
+          </div>
+
+          {activeProfile !== null && (
+            <div className="rounded-lg border border-ink-800 p-3">
+              <p className="truncate text-sm text-ink-100">{activeProfile.name}</p>
+              <button
+                type="button"
+                onClick={signOut}
+                className="mt-1 text-xs text-ink-400 hover:text-accent-soft"
+              >
+                Changer de profil
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
