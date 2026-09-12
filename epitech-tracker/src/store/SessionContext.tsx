@@ -45,6 +45,11 @@ const Context = createContext<SessionStore | null>(null);
 /**
  * Reprise des données d'avant les profils : elles sont rattachées à un
  * premier profil plutôt que laissées orphelines dans le stockage.
+ *
+ * Le profil créé n'est **pas** activé. Activer d'office ferait sauter l'écran
+ * d'accueil pour tous ceux qui utilisaient déjà l'application — ils
+ * atterriraient sur leur tableau de bord sans avoir vu qu'il existe des
+ * profils, ni comment en créer un second.
  */
 function adoptLegacyData(): Session | null {
   try {
@@ -60,7 +65,7 @@ function adoptLegacyData(): Session | null {
       profiles: [
         { id, name: 'Mon cursus', email: null, createdAt: now, lastSeenAt: now },
       ],
-      activeProfileId: id,
+      activeProfileId: null,
     };
   } catch {
     return null;
