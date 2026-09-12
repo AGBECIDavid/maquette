@@ -3,15 +3,17 @@
 # Le déploiement est conditionné aux tests : on ne publie pas aux
 # bêta-testeurs un build dont la suite échoue. Un test rouge arrête la
 # livraison, il ne la ralentit pas.
+#
+# DÉCLENCHEMENT MANUEL (Actions → ce workflow → « Run workflow »).
+# L'hébergement de la bêta se fait sur Vercel, qui déploie tout seul à chaque
+# poussée. Laisser ce workflow automatique enverrait un mail d'échec à chaque
+# commit tant que Pages n'est pas activé, pour un site que personne n'utilise.
+# Il reste ici comme solution de repli, prêt à servir : activer Pages
+# (Settings → Pages → Source : GitHub Actions) et le lancer.
 
-name: Déployer l'Epitech Tracker
+name: Déployer l'Epitech Tracker (GitHub Pages)
 
 on:
-  push:
-    branches: [main, claude/gracious-pascal-ymxfne]
-    paths:
-      - 'epitech-tracker/**'
-      - '.github/workflows/deploy-tracker.yml'
   workflow_dispatch:
 
 permissions:
