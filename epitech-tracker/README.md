@@ -247,10 +247,27 @@ Une seule action manuelle, à faire une fois :
 
 L'adresse est ensuite `https://agbecidavid.github.io/maquette/`.
 
+### Vercel
+
+`vercel.json` est prêt. Sur vercel.com : *Add New… → Project*, importer
+`AGBECIDavid/maquette`, et **régler `Root Directory` sur `epitech-tracker`** —
+c'est le seul champ à toucher, le reste est déclaré dans `vercel.json`.
+
+Aucune règle de réécriture n'est nécessaire : la navigation passe par le
+*hash*, donc toutes les routes sont servies par `index.html` sans
+configuration.
+
 ### Ailleurs
 
 `npm run build` produit `dist/`. Ce dossier se dépose tel quel sur Netlify,
-Vercel, Cloudflare Pages ou un simple serveur de fichiers.
+Cloudflare Pages ou un simple serveur de fichiers.
+
+### Si la mise en ligne échoue
+
+`Failed to create deployment (status: 404)` sur le job `deploy` veut dire que
+Pages n'est pas activé sur le dépôt — le build, lui, a réussi. Réglage :
+*Settings → Pages → Source : GitHub Actions*, puis **Re-run failed jobs** sur
+le run en échec. Inutile de repousser : l'artefact est déjà construit.
 
 ## Bêta
 
