@@ -60,6 +60,8 @@ src/
     selectors.ts     agrégations : arbre calculé, compteurs du dashboard
     alerts.ts        alertes déduites de l'état
     priorities.ts    « à faire en priorité »
+    calendar.ts      événements datés et grille mensuelle
+    stats.ts         séries prêtes à dessiner pour les graphiques
     search.ts        recherche globale et filtres
     dates.ts         arithmétique sur dates civiles ISO
   data/
@@ -69,6 +71,7 @@ src/
     mock.ts          ← JEU D'EXEMPLE, aucune valeur officielle
   store/             état React, dérivations, import/export
   ui/                pages, composants, formulaires, libellés
+    components/charts/ graphiques dessinés à la main, sans librairie
 ```
 
 ## Règles de calcul appliquées
@@ -129,9 +132,35 @@ Chaque document porte un `schemaVersion`. Un document venu d'une version plus
 récente, ou amputé, est **refusé** avec un message : il n'écrase jamais les
 données en place.
 
+## Graphiques
+
+Aucune librairie de graphiques : trois visuels dessinés à la main en CSS et en
+SVG, pour la même raison que `agoojiye-hmi` dessine ses jauges en Canvas —
+une dépendance de moins à suivre, et un contrôle total du rendu.
+
+Les règles appliquées :
+
+- **Une seule teinte par série.** Les barres « crédits par Roadblock » sont
+  toutes de la même couleur : la longueur porte déjà la grandeur, colorer
+  chaque barre brûlerait le seul canal libre pour une information déjà lisible.
+- **Les couleurs de statut sont celles des badges.** Un projet vert dans une
+  liste est vert dans le graphique. Elles ne sont jamais seules : chaque
+  segment porte son libellé, son icône et son compte.
+- **Palette vérifiée, pas estimée.** Séparation daltonienne ΔE 22,4 (deutan) et
+  13,2 (tritan), contraste ≥ 3:1 sur le fond sombre.
+- **Un seul axe, jamais deux échelles.** La piste derrière chaque barre est le
+  seuil requis : acquis et restant se lisent sans second axe.
+- **Ce que la courbe ne montre pas, elle le dit.** Un projet validé sans date
+  de fin ne peut pas être placé dans le temps : il est exclu de la courbe et
+  son total est annoncé sous le titre, plutôt que d'inventer une date.
+
+Le cumul de la courbe suit exactement la règle des crédits : dès qu'un module
+est entièrement validé, il vaut ses crédits exacts. Sans cela, des parts égales
+non entières feraient dériver la courbe du compteur du dashboard (74,01 au lieu
+de 74) — un écart qu'on ne remarque qu'en regardant les deux pages côte à côte.
+
 ## Ce qui n'est pas encore fait
 
-- Vue calendrier (début/fin de modules, deadlines)
-- Page statistiques et graphiques
-- Historique de progression dans le temps
+- Historique de progression dans le temps (instantanés successifs)
+- Projection : « à ce rythme, Roadblock 4 validé le … »
 - Import depuis l'intranet Epitech

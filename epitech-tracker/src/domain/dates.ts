@@ -61,6 +61,40 @@ export function today(): IsoDate {
   return local.toISOString().slice(0, 10);
 }
 
+/** Mois ISO d'une date : "2026-09-12" → "2026-09". */
+export function monthOf(date: IsoDate): string {
+  return date.slice(0, 7);
+}
+
+/** Premier jour d'un mois ISO : "2026-09" → "2026-09-01". */
+export function startOfMonth(month: string): IsoDate {
+  return `${month}-01`;
+}
+
+/** Décale un mois ISO : ("2026-09", -1) → "2026-08". */
+export function shiftMonth(month: string, delta: number): string {
+  const year = Number(month.slice(0, 4));
+  const index = Number(month.slice(5, 7)) - 1 + delta;
+  const shifted = new Date(Date.UTC(year, index, 1));
+  return shifted.toISOString().slice(0, 7);
+}
+
+/** Jour de la semaine, lundi = 0 — la semaine française commence au lundi. */
+export function weekdayIndex(date: IsoDate): number {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return (day + 6) % 7;
+}
+
+/** "2026-09" → "septembre 2026". */
+export function formatMonth(month: string): string {
+  const label = new Date(`${month}-01T00:00:00Z`).toLocaleDateString('fr-FR', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 /** "2026-09-12" → "12/09/2026". Renvoie "—" pour une date inconnue. */
 export function formatDate(date: IsoDate | null): string {
   if (date === null) return '—';

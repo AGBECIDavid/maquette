@@ -9,6 +9,8 @@ const NAV = [
   { to: '/roadblocks', label: 'Roadblocks', icon: '▤', end: false },
   { to: '/modules', label: 'Modules', icon: '▥', end: false },
   { to: '/projects', label: 'Projets', icon: '▦', end: false },
+  { to: '/calendrier', label: 'Calendrier', icon: '▨', end: false },
+  { to: '/statistiques', label: 'Statistiques', icon: '▩', end: false },
   { to: '/parametres', label: 'Paramètres', icon: '⚙', end: false },
 ];
 
