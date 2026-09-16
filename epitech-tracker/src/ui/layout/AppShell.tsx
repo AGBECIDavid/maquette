@@ -6,6 +6,7 @@ import { searchAll } from '../../domain/search';
 import { formatPercent } from '../labels';
 import { Logo, TAGLINE } from '../components/Logo';
 import { NAV_ICONS } from '../components/NavIcons';
+import { MobileNav } from './MobileNav';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: NAV_ICONS.dashboard, end: true },
@@ -93,8 +94,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 border-b border-ink-800 bg-ink-950/90 backdrop-blur">
-          <div className="flex items-center gap-4 px-4 py-3 sm:px-8">
-            <div className="relative w-full max-w-md">
+          <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:gap-4 sm:px-8">
+            <div className="relative order-2 w-full min-w-0 sm:order-1 sm:max-w-md sm:flex-1">
               <input
                 type="search"
                 value={query}
@@ -126,12 +127,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
 
             {currentYear !== null && (
-              <label className="ml-auto flex shrink-0 items-center gap-2">
+              <label className="order-1 flex min-w-0 flex-1 items-center gap-2 sm:order-2 sm:ml-auto sm:flex-none">
                 <span className="sr-only">Année affichée</span>
                 <select
                   value={currentYear.id}
                   onChange={(event) => setCurrentYear(event.target.value)}
-                  className="rounded-lg border border-ink-800 bg-ink-900 px-3 py-2 text-sm text-ink-100 outline-none focus:border-accent"
+                  className="w-full min-w-0 truncate rounded-lg border border-ink-800 bg-ink-900 px-3 py-2 text-sm text-ink-100 outline-none focus:border-accent sm:w-auto"
                 >
                   {years.map((year) => (
                     <option key={year.id} value={year.id} className="bg-ink-850">
@@ -143,31 +144,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
 
             {data.settings.source === 'mock' && (
-              <span className="shrink-0 rounded-full border border-busy/40 bg-busy/10 px-3 py-1 text-xs font-medium text-busy">
-                Données d’exemple
+              <span className="order-1 shrink-0 rounded-full border border-busy/40 bg-busy/10 px-2.5 py-1 text-xs font-medium text-busy sm:order-3">
+                Exemple
               </span>
             )}
           </div>
 
-          <nav className="flex gap-1 overflow-x-auto border-t border-ink-800 px-2 py-2 md:hidden">
-            {NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `rounded-lg px-3 py-1.5 text-sm whitespace-nowrap ${
-                    isActive ? 'bg-accent/15 text-accent-soft' : 'text-ink-300'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-8">{children}</main>
+        <main className="flex-1 px-4 pt-6 pb-28 sm:px-8 sm:pb-10">{children}</main>
+
+        <MobileNav />
       </div>
     </div>
   );

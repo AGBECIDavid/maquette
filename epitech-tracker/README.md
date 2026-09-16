@@ -211,6 +211,44 @@ La vraie authentification viendra avec la mise en production. Elle remplacera
 `SessionContext` et `ProfileStore` sans toucher aux écrans — c'est le même
 découpage que `Repository`.
 
+## Parcours d'arrivée
+
+Trois écrans avant l'application, comme le schéma de flux :
+
+```
+animation  →  accueil  →  inscription  ou  reprise  →  application
+                 │
+                 └── ce que fait l'outil, puis deux boutons.
+                     Aucun formulaire tant qu'on n'a pas choisi.
+```
+
+Quitter son profil ramène à l'écran de **reprise**, pas au dernier écran
+visité : on ne quitte pas un profil pour retrouver le formulaire d'inscription
+qu'on vient de remplir.
+
+**Écart assumé avec la maquette de flux** : elle montre un mot de passe, une
+confirmation et « S'inscrire avec GitHub ». Sans serveur, ces champs ne
+protégeraient rien. La mise en page et le découpage sont repris, le mot de
+passe non, et l'écran explique pourquoi. Le jour où un backend existe, la
+maquette se suit à la lettre.
+
+## Mobile
+
+La barre latérale disparaît sous 768 px au profit d'une **barre d'onglets en
+bas** : quatre destinations et un bouton « Plus ». Un bandeau d'onglets en haut
+obligeait à faire défiler horizontalement pour atteindre la moitié des
+destinations — invisibles, donc jamais ouvertes — et se visait mal au pouce.
+
+Deux défauts trouvés en mesurant à 390 px, pas en regardant :
+
+- **76 px de débordement horizontal sur toutes les pages**, dus à l'en-tête
+  qui ne passait pas à la ligne ;
+- **11 px de plus sur la page Roadblocks**, parce qu'un enfant de grille sans
+  `min-w-0` refuse de descendre sous la largeur de son contenu.
+
+Le relevé mobile vérifie les deux à chaque page, plus la hauteur des cibles
+tactiles — aucune sous 36 px.
+
 ## Écran d'ouverture
 
 L'animation de la marque suit trois règles, parce qu'une animation qu'on ne

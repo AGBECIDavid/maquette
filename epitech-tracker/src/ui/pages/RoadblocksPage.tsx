@@ -58,7 +58,7 @@ export function RoadblocksPage() {
           {roadblocks.map((roadblock, index) => (
             <div
               key={roadblock.id}
-              className="rounded-xl border border-ink-800 bg-ink-900 transition-colors hover:border-ink-700"
+              className="min-w-0 rounded-xl border border-ink-800 bg-ink-900 transition-colors hover:border-ink-700"
             >
               <Link to={`/roadblocks/${roadblock.id}`} className="block p-5 pb-4">
               <div className="flex items-start justify-between gap-3">
@@ -81,11 +81,11 @@ export function RoadblocksPage() {
                 />
               </div>
 
-              <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
+              <dl className="mt-4 grid grid-cols-3 gap-2 text-center sm:gap-3">
                 <div>
                   <dt className="text-xs text-ink-400">Crédits</dt>
-                  <dd className="text-sm tabular-nums text-ink-100">
-                    {formatCredits(roadblock.obtainedCredits)} / {formatCredits(roadblock.requiredCredits)}
+                  <dd className="text-sm tabular-nums whitespace-nowrap text-ink-100">
+                    {formatCredits(roadblock.obtainedCredits)}/{formatCredits(roadblock.requiredCredits)}
                   </dd>
                 </div>
                 <div>

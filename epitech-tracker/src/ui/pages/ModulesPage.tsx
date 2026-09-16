@@ -63,7 +63,7 @@ export function ModulesPage() {
             <Link
               key={module.id}
               to={`/modules/${module.id}`}
-              className="rounded-xl border border-ink-800 bg-ink-900 p-5 transition-colors hover:border-ink-700"
+              className="min-w-0 rounded-xl border border-ink-800 bg-ink-900 p-5 transition-colors hover:border-ink-700"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

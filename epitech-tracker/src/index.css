@@ -212,3 +212,22 @@ body {
     transform: none;
   }
 }
+
+/*
+ * Trame de fond des écrans d'arrivée : une grille très sourde, qui donne une
+ * assise à la page sans entrer en concurrence avec le texte posé dessus.
+ */
+.landing-grid {
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--color-accent) 7%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--color-accent) 7%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 44px 44px;
+  background-position: center;
+}

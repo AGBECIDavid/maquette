@@ -1,10 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useSession } from './store/SessionContext';
 import { CurriculumProvider } from './store/CurriculumContext';
 import { AppShell } from './ui/layout/AppShell';
 import { SplashScreen, SPLASH_SESSION_KEY } from './ui/pages/SplashScreen';
-import { WelcomePage } from './ui/pages/WelcomePage';
+import { LandingPage } from './ui/pages/LandingPage';
+import { SignUpPage } from './ui/pages/SignUpPage';
+import { SignInPage } from './ui/pages/SignInPage';
 import { DashboardPage } from './ui/pages/DashboardPage';
 import { RoadblocksPage } from './ui/pages/RoadblocksPage';
 import { RoadblockDetailPage } from './ui/pages/RoadblockDetailPage';
@@ -25,9 +27,28 @@ function splashAlreadySeen(): boolean {
   }
 }
 
+/** Les trois temps de l'arrivée, avant l'application elle-même. */
+type Entry = 'landing' | 'signup' | 'signin';
+
 export function App() {
-  const { activeProfile } = useSession();
+  const { activeProfile, profiles } = useSession();
   const [splashDone, setSplashDone] = useState(splashAlreadySeen);
+  const [entry, setEntry] = useState<Entry>('landing');
+
+  /*
+   * À la déconnexion, on repart de l'écran utile plutôt que du dernier
+   * visité : quelqu'un qui quitte son profil veut en reprendre un autre, pas
+   * retrouver le formulaire d'inscription qu'il a rempli tout à l'heure.
+   *
+   * Dépendre du seul `activeProfile` est volontaire : naviguer entre accueil,
+   * inscription et connexion ne doit pas réinitialiser ce choix.
+   */
+  useEffect(() => {
+    if (activeProfile === null) {
+      setEntry(profiles.length > 0 ? 'signin' : 'landing');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProfile]);
 
   const finishSplash = useCallback(() => {
     try {
@@ -39,7 +60,23 @@ export function App() {
   }, []);
 
   if (!splashDone) return <SplashScreen onDone={finishSplash} />;
-  if (activeProfile === null) return <WelcomePage />;
+
+  if (activeProfile === null) {
+    switch (entry) {
+      case 'signup':
+        return <SignUpPage onBack={() => setEntry('landing')} onSignIn={() => setEntry('signin')} />;
+      case 'signin':
+        return <SignInPage onBack={() => setEntry('landing')} onSignUp={() => setEntry('signup')} />;
+      case 'landing':
+        return (
+          <LandingPage
+            hasProfiles={profiles.length > 0}
+            onSignUp={() => setEntry('signup')}
+            onSignIn={() => setEntry('signin')}
+          />
+        );
+    }
+  }
 
   return (
     // `key` sur le profil : changer de profil remonte tout l'arbre de données
