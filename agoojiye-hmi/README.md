@@ -4,6 +4,10 @@ Interface embarquée de la navette électrique AGOOJIYE. Qt 6 / QML, sans
 dépendance à un GPU : tout est dessiné en Canvas 2D et en dégradés, pour que le
 rendu soit identique sur une cible embarquée en rendu logiciel.
 
+Ce fichier suffit pour démarrer. Pour le reste :
+[DOCUMENTATION.md](DOCUMENTATION.md) (technologies, architecture, exécution,
+cible matérielle) et [BACKEND.md](BACKEND.md) (brancher le vrai véhicule).
+
 ## Démarrer
 
 ```bash
