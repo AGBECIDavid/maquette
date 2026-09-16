@@ -5,15 +5,16 @@ import { useSession } from '../../store/SessionContext';
 import { searchAll } from '../../domain/search';
 import { formatPercent } from '../labels';
 import { Logo, TAGLINE } from '../components/Logo';
+import { NAV_ICONS } from '../components/NavIcons';
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: '◎', end: true },
-  { to: '/roadblocks', label: 'Roadblocks', icon: '▤', end: false },
-  { to: '/modules', label: 'Modules', icon: '▥', end: false },
-  { to: '/projects', label: 'Projets', icon: '▦', end: false },
-  { to: '/calendrier', label: 'Calendrier', icon: '▨', end: false },
-  { to: '/statistiques', label: 'Statistiques', icon: '▩', end: false },
-  { to: '/parametres', label: 'Paramètres', icon: '⚙', end: false },
+  { to: '/', label: 'Dashboard', icon: NAV_ICONS.dashboard, end: true },
+  { to: '/roadblocks', label: 'Roadblocks', icon: NAV_ICONS.roadblocks, end: false },
+  { to: '/modules', label: 'Modules', icon: NAV_ICONS.modules, end: false },
+  { to: '/projects', label: 'Projets', icon: NAV_ICONS.projects, end: false },
+  { to: '/calendrier', label: 'Calendrier', icon: NAV_ICONS.calendar, end: false },
+  { to: '/statistiques', label: 'Statistiques', icon: NAV_ICONS.stats, end: false },
+  { to: '/parametres', label: 'Paramètres', icon: NAV_ICONS.settings, end: false },
 ];
 
 const RESULT_PATH = {
@@ -43,8 +44,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-full">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-ink-800 bg-ink-900 p-4 md:flex">
         <div className="mb-6 px-2">
-          <Logo />
-          <p className="mt-2 text-[11px] tracking-wide text-ink-400">{TAGLINE}</p>
+          <Logo size={34} />
+          <p className="mt-2 text-[11px] text-ink-400">{TAGLINE}</p>
         </div>
 
         <nav className="flex flex-col gap-1">
@@ -61,7 +62,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }`
               }
             >
-              <span aria-hidden className="w-4 text-center">{item.icon}</span>
+              {item.icon}
               {item.label}
             </NavLink>
           ))}

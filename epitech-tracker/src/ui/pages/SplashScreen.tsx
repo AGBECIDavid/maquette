@@ -60,14 +60,12 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
     <div
       className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-ink-950 ${leaving ? 'splash-leaving' : ''}`}
     >
-      <LogoMark size={132} animated />
+      <LogoMark size={148} animated />
 
-      <p className="splash-word mt-6 text-center text-xl font-semibold tracking-[0.22em] text-ink-100">
-        EPITECH <span className="text-accent-soft">TRACKER</span>
+      <p className="splash-word mt-6 text-center text-3xl font-bold tracking-tight text-ink-100">
+        Epitech <span className="text-accent">Tracker</span>
       </p>
-      <p className="splash-tagline mt-2 text-xs tracking-[0.2em] text-ink-400">
-        {TAGLINE.toUpperCase()}
-      </p>
+      <p className="splash-tagline mt-3 text-sm text-ink-400">{TAGLINE}</p>
 
       <button
         type="button"

@@ -350,14 +350,47 @@ de 24 crédits apparaissait sept jours après le précédent — chacun étant d
 comme si tout le temps disponible lui était consacré — et la dernière date
 contredisait celle du cursus.
 
-## Identité
+## Charte
+
+```
+#0B1220  fond sombre        #1B3A6B  bleu principal
+#F8FAFC  texte              #3B82F6  bleu secondaire
+```
+
+L'échelle `ink` de `index.css` interpole entre le fond et le bleu principal :
+surfaces et bordures restent dans la famille de la marque plutôt qu'un gris
+neutre rapporté.
+
+**Les valeurs de texte sont mesurées, pas estimées.** Sur les cartes
+(`#101A2C`) : ink-100 16,6:1 · ink-300 9,9:1 · ink-400 6,6:1 · ink-600 3,2:1.
+La teinte discrète issue directement de la charte tombait à 2,1:1 — illisible —
+et a été éclaircie jusqu'à repasser le seuil.
+
+`--color-brand` (#1B3A6B) est réservé aux aplats : sur le fond sombre il
+plafonne à 1,7:1 et ne doit jamais porter de texte.
+
+La palette de statut a été revalidée contre le nouveau fond :
+séparation daltonienne ΔE 19,4 (deutan), **7,7 en tritan** — dans la bande
+6-8, qui n'est admise qu'avec un encodage secondaire. D'où la règle, non
+négociable ici : chaque segment porte son libellé, son icône et son compte,
+la couleur ne dit jamais rien toute seule.
 
 La marque est redessinée en SVG dans `src/ui/components/Logo.tsx` : nette à
 toutes les tailles, quelques centaines d'octets, lisible sur fond sombre comme
-sur fond clair. Un PNG sur fond blanc ferait une tache sur l'interface.
+sur fond clair. Un PNG sur fond blanc ferait une tache sur l'interface. Le
+tracé — chapeau compris — a été comparé à 104, 48, 24 et 16 px avant d'être
+retenu : un logo qui ne survit pas à la taille d'un favicon n'est pas un logo
+d'application.
 
-Le tracé a été vérifié à 96, 48, 24 et 16 px avant d'être retenu : un logo qui
-ne survit pas à la taille d'un favicon n'est pas un logo d'application.
+Les sept icônes de navigation sont dessinées dans `NavIcons.tsx` plutôt
+qu'importées : sept icônes ne justifient pas une dépendance, et `currentColor`
+les fait suivre l'état actif du lien sans règle supplémentaire.
+
+**Écart assumé avec la maquette d'identité** : l'écran de connexion y montre
+un champ mot de passe et un bouton « Connexion avec GitHub ». L'application
+n'a pas de serveur, donc pas d'authentification : le style visuel est repris,
+le formulaire reste un choix de profil local, et l'écran le dit. Le jour où un
+backend existera, la maquette pourra être suivie à la lettre.
 
 ## Ce qui n'est pas encore fait
 

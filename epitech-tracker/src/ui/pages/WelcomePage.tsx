@@ -28,8 +28,8 @@ export function WelcomePage() {
     <div className="flex min-h-full items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
-          <Logo />
-          <p className="mt-3 text-xs tracking-[0.18em] text-ink-400">{TAGLINE.toUpperCase()}</p>
+          <Logo size={52} />
+          <p className="mt-3 text-sm text-ink-400">{TAGLINE}</p>
         </div>
 
         {profiles.length > 0 && !creating && (
