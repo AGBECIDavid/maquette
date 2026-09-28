@@ -93,7 +93,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-ink-800 bg-ink-950/90 backdrop-blur">
+        <header className="sticky top-0 z-30 border-b border-ink-800 bg-ink-950/90 pt-[var(--inset-top)] backdrop-blur">
           <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:gap-4 sm:px-8">
             <div className="relative order-2 w-full min-w-0 sm:order-1 sm:max-w-md sm:flex-1">
               <input
@@ -152,7 +152,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         </header>
 
-        <main className="flex-1 px-4 pt-6 pb-28 sm:px-8 sm:pb-10">{children}</main>
+        <main className="flex-1 px-4 pt-6 pb-[calc(7rem+var(--inset-bottom))] sm:px-8 sm:pb-10">{children}</main>
 
         <MobileNav />
       </div>

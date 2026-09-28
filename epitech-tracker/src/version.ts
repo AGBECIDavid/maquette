@@ -6,5 +6,5 @@
  * `package.json` en même temps — un bug rapporté sans version est un bug
  * qu'on cherche dans le mauvais code.
  */
-export const APP_VERSION = '0.4.0';
+export const APP_VERSION = '0.5.0';
 export const APP_STAGE = 'bêta';

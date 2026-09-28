@@ -8,6 +8,7 @@ import { ProjectForm } from '../forms/ProjectForm';
 import { formatCredits, formatDaysLeft } from '../labels';
 import type { ProjectStatus } from '../../domain/types';
 import { PROJECT_STATUS_LABEL } from '../labels';
+import { ExternalLink } from '../components/ExternalLink';
 
 const NEXT_STATUS: Record<ProjectStatus, ProjectStatus | null> = {
   todo: 'in_progress',
@@ -117,14 +118,12 @@ export function ProjectDetailPage() {
       )}
 
       {project.repoUrl !== null && (
-        <a
+        <ExternalLink
           href={project.repoUrl}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="mt-4 inline-block text-sm text-accent-soft hover:underline"
+          className="mt-4 inline-block break-all text-sm text-accent-soft hover:underline"
         >
           {project.repoUrl}
-        </a>
+        </ExternalLink>
       )}
 
       {project.notes !== '' && (

@@ -43,6 +43,24 @@ body,
   height: 100%;
 }
 
+/*
+ * Marges de l'encoche et de la barre de gestes.
+ *
+ * `viewport-fit=cover` fait passer l'application sous les barres système —
+ * c'est ce qui donne un vrai plein écran, mais il faut alors reculer le
+ * contenu de ce qu'elles occupent. Deux sources, et on prend la plus grande :
+ *
+ *   - `env(safe-area-inset-*)` : Safari, Chrome récent, WebView ≥ 140 ;
+ *   - `--safe-area-inset-*` : injectée par Capacitor sur les WebView plus
+ *     anciennes, où `env()` vaut zéro alors que la barre est bien là.
+ *
+ * Sur un écran d'ordinateur, les deux valent zéro : rien ne bouge.
+ */
+:root {
+  --inset-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --inset-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+}
+
 body {
   background-color: var(--color-ink-950);
   /* Halo de marque, très diffus : il donne de la profondeur au fond sans
@@ -218,6 +236,8 @@ body {
  * assise à la page sans entrer en concurrence avec le texte posé dessus.
  */
 .landing-grid {
+  padding-top: calc(2rem + var(--inset-top));
+  padding-bottom: calc(2rem + var(--inset-bottom));
   background-image:
     linear-gradient(
       color-mix(in oklab, var(--color-accent) 7%, transparent) 1px,

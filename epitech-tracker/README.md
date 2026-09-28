@@ -264,6 +264,20 @@ keyframes sont dans `index.css`, avec `transform-box: fill-box` : sans lui, un
 `transform` sur un élément SVG prend pour origine le coin du canevas et non
 celui de la forme.
 
+## Application installable
+
+**Sur le web (PWA)** : `public/manifest.webmanifest` et `public/sw.js` rendent
+le site installable — y compris sur iPhone, où un APK n'existe pas — et
+utilisable **hors ligne**. Le service worker suit deux règles pour qu'une mise
+à jour ne reste jamais bloquée : la page d'entrée passe par le réseau d'abord
+(un nouveau déploiement est pris au lancement suivant), les fichiers `assets/`
+par le cache d'abord (leur nom change à chaque build, un fichier en cache ne
+peut pas être périmé). Testé : l'application redémarre réseau coupé.
+
+**Sur Android (APK)** : Capacitor embarque le même `dist/` dans une
+application native. Construction, signature et publication :
+[ANDROID.md](ANDROID.md).
+
 ## Mettre en ligne
 
 Le build est un site statique à chemins relatifs (`base: './'`), et la

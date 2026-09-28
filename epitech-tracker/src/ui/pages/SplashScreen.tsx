@@ -70,7 +70,7 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
       <button
         type="button"
         onClick={onDone}
-        className="splash-hint absolute bottom-10 rounded-lg px-4 py-2 text-xs text-ink-400 hover:text-ink-100"
+        className="splash-hint absolute bottom-[calc(2.5rem+var(--inset-bottom))] rounded-lg px-4 py-2 text-xs text-ink-400 hover:text-ink-100"
       >
         Passer
       </button>

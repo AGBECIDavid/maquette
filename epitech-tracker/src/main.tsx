@@ -3,7 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import { App } from './App';
 import { SessionProvider } from './store/SessionContext';
+import { installBackButton, registerServiceWorker } from './platform';
 import './index.css';
+
+registerServiceWorker();
+void installBackButton();
 
 const root = document.getElementById('root');
 if (root === null) throw new Error('Élément #root introuvable');

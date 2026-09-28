@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Icône adaptative. Aucun retrait (inset) : les deux calques sont déjà
+  dessinés pour le canevas complet de 108 dp, logo tenu dans la zone sûre
+  des 66 % centraux. Le retrait de 16,7 % que @capacitor/assets ajoute par
+  défaut s'additionnait à celui-là et réduisait le logo à moins de la
+  moitié de l'icône. À surveiller si l'outil est relancé.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

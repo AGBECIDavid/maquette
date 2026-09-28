@@ -5,6 +5,36 @@
 Merci de tester **Epitech Tracker**. Voici ce qu'il faut savoir avant de
 commencer, et comment faire remonter ce qui ne va pas.
 
+## Installer l'application
+
+### Android — l'APK
+
+1. Ouvre la page **Releases** du projet :
+   https://github.com/AGBECIDavid/maquette/releases
+2. Télécharge le fichier `epitech-tracker-X.Y.Z.apk` de la dernière version.
+3. Ouvre-le. Si le téléphone demande d'**autoriser l'installation depuis
+   cette source**, accepte — c'est normal pour une application qui ne vient
+   pas du Play Store.
+4. Pour une mise à jour : même chose, par-dessus l'ancienne version. **Ne
+   désinstalle pas avant**, tu perdrais ton cursus.
+
+N'installe jamais un fichier marqué `-TEST` : il est signé par une clé
+jetable, et la version suivante refuserait de s'installer par-dessus.
+
+### iPhone — depuis Safari
+
+Il n'existe pas d'APK pour iOS. L'application s'installe depuis le site :
+
+1. Ouvre **https://epitech-tracker.vercel.app** dans **Safari** (pas Chrome).
+2. Bouton **Partager** → **Sur l'écran d'accueil**.
+
+Elle s'ouvre ensuite en plein écran, comme une application, et fonctionne
+hors ligne.
+
+### Android sans APK
+
+Même principe dans Chrome : menu ⋮ → **Installer l'application**.
+
 ## Où sont tes données — à lire en premier
 
 **Tout reste dans ton navigateur.** Il n'y a pas de serveur : ce que tu saisis
@@ -17,9 +47,14 @@ Trois conséquences concrètes :
   Le « profil » que tu crées est un tiroir local, pas un compte en ligne. Sur
   une machine partagée, quelqu'un d'autre peut ouvrir ton profil.
 - **Vider les données de ton navigateur efface ton cursus.** Idem en navigation
-  privée : tout disparaît à la fermeture.
-- **Pense à exporter** régulièrement : *Paramètres → Exporter en JSON*. C'est
-  aujourd'hui la seule sauvegarde possible.
+  privée : tout disparaît à la fermeture. Et pour l'APK : **désinstaller
+  l'application efface ton cursus**.
+- **L'application et le site ne partagent pas leurs données.** Ce sont deux
+  stockages séparés. Pour passer de l'un à l'autre : *Exporter* d'un côté,
+  *Importer* de l'autre.
+- **Pense à exporter** régulièrement : *Paramètres → Exporter*. Dans l'APK, le
+  bouton ouvre le partage Android — envoie le fichier sur ton Drive ou par
+  mail. C'est aujourd'hui la seule sauvegarde possible.
 
 Chaque testeur crée donc son propre profil, sur son propre navigateur. Vos
 données ne se croisent jamais.

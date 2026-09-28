@@ -68,7 +68,7 @@ export function MobileNav() {
 
         {/* La marge basse suit l'encoche : sur iPhone, la barre système
             mangerait sinon le dernier tiers des onglets. */}
-        <ul className="flex pb-[env(safe-area-inset-bottom)]">
+        <ul className="flex pb-[var(--inset-bottom)]">
           {PRIMARY.map((item) => (
             <li key={item.to} className="flex flex-1">
               <NavLink

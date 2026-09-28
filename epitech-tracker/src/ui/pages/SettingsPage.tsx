@@ -4,6 +4,8 @@ import { findOrphans } from '../../data/schema';
 import { buildDiagnostics } from '../../data/diagnostics';
 import { APP_STAGE, APP_VERSION } from '../../version';
 import { feedbackLink } from '../../config';
+import { isNative, saveTextFile } from '../../platform';
+import { ExternalLink } from '../components/ExternalLink';
 import { useSession } from '../../store/SessionContext';
 import { today } from '../../domain/dates';
 import { Button, Card, PageHeader, SectionTitle } from '../components/Primitives';
@@ -19,14 +21,14 @@ export function SettingsPage() {
 
   const orphans = findOrphans(data);
 
+  // Un export qui échoue ne doit jamais échouer en silence : c'est la seule
+  // sauvegarde de l'utilisateur. Annuler le partage n'est pas une erreur.
   const saveFile = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
+    saveTextFile(content, filename).catch((error: unknown) => {
+      const text = error instanceof Error ? error.message : String(error);
+      if (/cancel/i.test(text)) return;
+      setMessage({ tone: 'bad', text: `Export impossible : ${text}` });
+    });
   };
 
   const download = () =>
@@ -130,7 +132,9 @@ export function SettingsPage() {
           )}
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="primary" onClick={download}>Exporter en JSON</Button>
+            <Button variant="primary" onClick={download}>
+              {isNative() ? 'Exporter (partager)' : 'Exporter en JSON'}
+            </Button>
             <Button onClick={downloadDiagnostics}>Exporter un diagnostic</Button>
             <Button onClick={() => fileInput.current?.click()}>Importer un JSON</Button>
             <Button onClick={loadMock}>Recharger le jeu d’exemple</Button>
@@ -182,14 +186,12 @@ export function SettingsPage() {
             code.
           </p>
           <p className="mt-3">
-            <a
+            <ExternalLink
               href={feedbackLink(APP_VERSION, APP_STAGE)}
-              target="_blank"
-              rel="noreferrer noopener"
               className="inline-block rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-soft"
             >
               Signaler un problème
-            </a>
+            </ExternalLink>
             <span className="mt-2 block text-xs text-ink-400">
               Ouvre un signalement déjà rempli avec ta version, ton navigateur et ton écran.
             </span>
