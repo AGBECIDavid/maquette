@@ -4,6 +4,15 @@ Interface embarquée de la navette électrique AGOOJIYE. Qt 6 / QML, sans
 dépendance à un GPU : tout est dessiné en Canvas 2D et en dégradés, pour que le
 rendu soit identique sur une cible embarquée en rendu logiciel.
 
+Ce fichier suffit pour démarrer. Pour le reste :
+[DOCUMENTATION.md](DOCUMENTATION.md) (technologies, architecture, exécution,
+cible matérielle) et [BACKEND.md](BACKEND.md) (brancher le vrai véhicule).
+
+`AGOOJIYE-HMI-Documentation.pdf` est la même documentation mise en page, pour
+la lire hors ligne ou l'imprimer. Elle est **figée à la révision indiquée sur
+sa couverture** : le fichier Markdown reste la source, le PDF ne se met pas à
+jour tout seul.
+
 ## Démarrer
 
 ```bash
