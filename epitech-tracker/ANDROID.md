@@ -42,6 +42,17 @@ GitHub → **Settings → Secrets and variables → Actions → New repository s
 | `ANDROID_KEY_ALIAS` | `epitech-tracker` |
 | `ANDROID_KEY_PASSWORD` | le mot de passe de la clé (souvent le même) |
 
+### Empreinte de la clé en service
+
+```
+SHA-256  4B:F2:D0:97:BD:D4:21:3F:6C:E7:E2:00:B2:14:A1:2D:BE:C6:D8:37:48:4B:3C:BF:AF:41:9B:40:80:2E:6C:BB
+```
+
+Vérifiée sur l'APK publié de la 0.5.0. Toute version future doit porter
+**exactement** cette empreinte, sinon elle ne s'installera pas par-dessus la
+précédente. Pour vérifier un APK : `apksigner verify --print-certs fichier.apk`
+(outils de build Android).
+
 ### 3. Sauvegarder la clé ailleurs que sur ta machine
 
 **Perdre la clé, c'est ne plus jamais pouvoir mettre à jour l'application**
