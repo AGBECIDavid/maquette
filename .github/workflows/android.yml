@@ -1,8 +1,12 @@
 # Construit l'APK Android d'Epitech Tracker.
 #
 #   - À chaque poussée sur main : un APK en artefact, pour tester soi-même.
-#   - Sur un tag v* (ex. v0.5.0) : une Release GitHub avec l'APK attaché —
-#     c'est ce lien-là qu'on donne aux bêta-testeurs.
+#   - Pour PUBLIER une version (Release GitHub avec l'APK attaché — c'est ce
+#     lien-là qu'on donne aux testeurs), deux chemins équivalents :
+#       · Actions → « Construire l'APK Android » → Run workflow → cocher
+#         « Publier » → Run. Aucun terminal nécessaire ; le tag v<version> est
+#         créé par le workflow à partir de package.json.
+#       · ou pousser un tag v* (ex. v0.5.0).
 #
 # La construction est conditionnée aux tests, comme pour le site.
 #
@@ -22,10 +26,18 @@ on:
     branches: [main]
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      publier:
+        description: Publier cette version (Release GitHub + APK) pour les testeurs
+        type: boolean
+        default: false
 
+# Un build ordinaire peut être remplacé par un plus récent ; une publication,
+# jamais. Sans cette distinction, une poussée sur main arrivant juste après un
+# clic sur « Publier » annulerait la publication en cours.
 concurrency:
-  group: android-${{ github.ref }}
-  cancel-in-progress: true
+  group: android-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/') }}
 
 jobs:
   apk:
@@ -37,7 +49,7 @@ jobs:
         working-directory: epitech-tracker
     env:
       HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publier) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +89,19 @@ jobs:
       - name: Version
         id: version
         run: echo "name=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # Republier une version déjà publiée remplacerait l'APK d'une Release
+      # existante par un autre build portant le même numéro : deux testeurs
+      # « en 0.5.0 » n'auraient plus la même application. On exige une
+      # nouvelle version.
+      - name: Refuser de republier une version existante
+        if: env.IS_RELEASE == 'true' && github.event_name == 'workflow_dispatch'
+        run: |
+          TAG="v${{ steps.version.outputs.name }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "::error::La version $TAG est déjà publiée. Monte la version dans package.json et src/version.ts."
+            exit 1
+          fi
 
       - name: Clé de signature
         if: env.HAS_KEYSTORE == 'true'
@@ -123,6 +148,10 @@ jobs:
         if: env.IS_RELEASE == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          # Sur un tag poussé, c'est ce tag ; sur « Publier », le tag est créé
+          # ici, sur le commit exact qui vient d'être construit et testé.
+          tag_name: v${{ steps.version.outputs.name }}
+          target_commitish: ${{ github.sha }}
           files: epitech-tracker-*.apk
           name: Epitech Tracker ${{ steps.version.outputs.name }}
           body: |

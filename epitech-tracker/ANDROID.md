@@ -55,14 +55,19 @@ téléphones accepteront comme légitime (`android/.gitignore` refuse déjà les
 
 1. Monter la version dans `package.json` **et** `src/version.ts`.
 2. Pousser sur `main`, vérifier que le run est vert.
-3. Créer le tag :
+3. GitHub → **Actions** → *Construire l'APK Android* → **Run workflow** →
+   cocher **Publier** → **Run workflow**.
 
-   ```bash
-   git tag v0.5.0 && git push origin v0.5.0
-   ```
-
+   Le workflow crée lui-même le tag `v<version>`, sur le commit exact qu'il
+   vient de construire et de tester. (Pousser un tag `v*` à la main produit
+   le même résultat.)
 4. La Release apparaît dans l'onglet **Releases** du dépôt, APK attaché.
    C'est ce lien qu'on envoie aux testeurs.
+
+Une version déjà publiée ne peut pas l'être une seconde fois : remplacer
+l'APK d'une Release existante ferait coexister deux applications différentes
+sous le même numéro, et deux testeurs « en 0.5.0 » ne parleraient plus de la
+même chose. Il faut monter la version.
 
 Le `versionCode` Android est le numéro du run GitHub : il ne fait que croître,
 ce qu'Android exige pour accepter une mise à jour.
