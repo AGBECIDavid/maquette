@@ -88,12 +88,22 @@ fetch() {   # url fichier taille-indicative
     say "téléchargement de $2 ($size)"
     # Dans un .part, repris là où il s'est arrêté : un téléchargement coupé ne
     # doit jamais passer pour un modèle complet.
-    if ! curl -L --fail --retry 3 -C - --progress-bar -o "$out.part" "$url"; then
-        die "Téléchargement impossible : $url
-Vérifiez la connexion (le site huggingface.co doit être joignable), puis relancez
+    #
+    # Les gros fichiers de Hugging Face voient souvent leur flux HTTP/2 coupé
+    # en route (« stream reset », erreur 92), et `--retry` de curl ne réessaie
+    # pas cette erreur-là. D'où HTTP/1.1, et une boucle qui reprend elle-même
+    # où l'essai précédent s'est arrêté.
+    local attempt
+    for attempt in 1 2 3 4 5 6; do
+        if curl -L --fail --http1.1 --retry 3 -C - --progress-bar -o "$out.part" "$url"; then
+            mv "$out.part" "$out"
+            return
+        fi
+        [ $attempt -lt 6 ] && { say "coupure — reprise ($((attempt + 1))/6) dans 3 s"; sleep 3; }
+    done
+    die "Téléchargement impossible après 6 essais : $url
+Vérifiez la connexion (huggingface.co doit être joignable), puis relancez
 ./voice.sh install — il reprendra où il s'est arrêté."
-    fi
-    mv "$out.part" "$out"
 }
 
 install() {
