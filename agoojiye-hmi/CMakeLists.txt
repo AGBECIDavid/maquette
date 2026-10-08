@@ -19,8 +19,18 @@ if(Qt6Multimedia_FOUND)
 elseif(NOT AGOOJIYE_MIC)
     message(STATUS "Micro désactivé (AGOOJIYE_MIC=OFF) : l'assistant reste au clavier.")
 else()
-    message(STATUS "Qt Multimedia absent : pas de micro, l'assistant reste au clavier "
-                   "(paquet qt6-multimedia-dev).")
+    # Le remède dépend de la provenance de Qt : un paquet système ne sert à rien
+    # à un Qt de l'installeur officiel, et inversement. On nomme donc le Qt
+    # réellement utilisé.
+    get_filename_component(_qt_root "${Qt6_DIR}/../../.." ABSOLUTE)
+    if(_qt_root MATCHES "^/usr")
+        set(_qt_fix "sudo apt install qt6-multimedia-dev")
+    else()
+        set(_qt_fix "ajoutez le module « Qt Multimedia » à ce Qt par son "
+                    "Maintenance Tool (Add or remove components → Additional Libraries)")
+    endif()
+    message(STATUS "Qt Multimedia absent de ${_qt_root} : pas de micro, l'assistant "
+                   "reste au clavier. Pour le micro : ${_qt_fix}, puis ./run.sh --clean")
 endif()
 
 # Synthèse vocale : optionnelle, et doublée d'un repli. Sans rien du tout,
