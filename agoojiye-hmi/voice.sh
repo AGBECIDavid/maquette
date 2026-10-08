@@ -190,7 +190,7 @@ selftest() {
         local t0=$(date +%s.%N)
         local text
         text="$(curl -s -F file=@"$tmp/phrase.wav" -F language=fr -F response_format=json \
-                -F temperature=0.0 -F 'prompt=Salut Agoojiye. Ouvre la navigation. Mode sport. Quelle est mon autonomie ?' \
+                -F temperature=0.0 -F 'prompt=Salut Agoojiye. Allume le clignotant à droite. Mode sport. Quelle est mon autonomie ?' \
                 "http://127.0.0.1:$ASR_PORT/inference")"
         printf '   dit       : Salut Agoojiye, quelle est mon autonomie ?\n'
         printf '   entendu   : %s\n' "$(echo "$text" | python3 -c 'import json,sys; print(json.load(sys.stdin)["text"].strip())' 2>/dev/null || echo "$text")"

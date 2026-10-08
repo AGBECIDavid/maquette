@@ -218,6 +218,12 @@ QtObject {
 
     readonly property bool moving: speed > 0.5
 
+    // Clignotants : "off", "left", "right" ou "hazard" (feux de détresse).
+    // C'est l'état commandé, comme la position du comodo ; le clignotement
+    // lui-même est l'affaire de l'écran, qui le montre au rythme d'un
+    // relais de clignotant.
+    property string turnSignal: "off"
+
     // Ceinture : l'alerte n'a de sens qu'en roulant.
     readonly property bool seatbeltWarning: moving && !seatbeltFastened
 

@@ -74,6 +74,7 @@ class Asr(BaseHTTPRequestHandler):
 RULES = [
     ("sport", {"command": "mode-sport", "reply": "Je passe en mode sport."}),
     ("nuit", {"command": "night-on", "reply": "J'active le mode nuit."}),
+    ("clignotant", {"command": "blink-right", "reply": "Je mets le clignotant."}),
     ("trappe", {"command": "flap-open", "reply": "J'ouvre la trappe de charge."}),
     ("autonomie", {"command": "ask-range", "reply": "Je regarde."}),
     ("batterie", {"command": "ask-battery", "reply": "Je regarde."}),

@@ -171,6 +171,24 @@ QtObject {
         }
     }
 
+    // Un clignotant gauche ou droit se coupe de lui-même une fois le virage
+    // passé — le comodo revient au neutre quand le volant se redresse. Sans
+    // volant à simuler, on le coupe après 20 s. Les feux de détresse, eux,
+    // restent jusqu'à ce qu'on les éteigne.
+    property Connections _turnWatch: Connections {
+        target: VehicleData
+        function onTurnSignalChanged() {
+            if (VehicleData.turnSignal === "left" || VehicleData.turnSignal === "right")
+                sim._turnCancel.restart()
+            else
+                sim._turnCancel.stop()
+        }
+    }
+    property Timer _turnCancel: Timer {
+        interval: 20000
+        onTriggered: if (sim.running) VehicleData.turnSignal = "off"
+    }
+
     property Timer _tick: Timer {
         interval: sim.stepMs
         running: sim.running

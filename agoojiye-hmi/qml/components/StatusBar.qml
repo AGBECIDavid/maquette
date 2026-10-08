@@ -60,6 +60,48 @@ Item {
         }
     }
 
+    // ---- clignotants ---------------------------------------------------------
+    // De part et d'autre du rapport engagé, dans le bandeau permanent : un
+    // clignotant oublié doit se voir depuis n'importe quel écran. Éteints, ils
+    // restent esquissés à leur place ; allumés, ils battent au rythme d'un
+    // relais (~1,4 Hz). Un appui les commande, à défaut de comodo en démo.
+    property bool blinkOn: true
+    Timer {
+        interval: 360
+        repeat: true
+        running: VehicleData.turnSignal !== "off"
+        onRunningChanged: root.blinkOn = true
+        onTriggered: root.blinkOn = !root.blinkOn
+    }
+
+    Repeater {
+        model: [ { side: "left", icon: "ph-arrow-fat-left", dx: -1 },
+                 { side: "right", icon: "ph-arrow-fat-right", dx: 1 } ]
+        delegate: Item {
+            id: arrow
+            required property var modelData
+            readonly property bool lit: VehicleData.turnSignal === modelData.side
+                                        || VehicleData.turnSignal === "hazard"
+            width: 44; height: 44
+            anchors.verticalCenter: parent.verticalCenter
+            x: root.width / 2 + modelData.dx * (notch.width / 2 + 38) - width / 2
+            Icon {
+                anchors.centerIn: parent
+                name: arrow.modelData.icon
+                fill: arrow.lit
+                size: 30
+                color: arrow.lit ? (root.blinkOn ? Theme.green : Theme.alpha(Theme.green, 0.12))
+                                 : Theme.alpha(Theme.textMuted, 0.22)
+            }
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: VehicleData.turnSignal =
+                    VehicleData.turnSignal === arrow.modelData.side ? "off" : arrow.modelData.side
+            }
+        }
+    }
+
     // Center notch: a tab hanging from the top edge, rounded only at the
     // bottom two corners (CSS border-radius: 0 0 26px 26px; border-top: none).
     Item {

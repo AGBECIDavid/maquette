@@ -427,7 +427,7 @@ façons ; une commande absente ne l'est d'aucune.
 
 | Niveau | Exemples | Règle |
 |---|---|---|
-| Libre | écrans, média, questions, mode nuit | exécutée aussitôt |
+| Libre | écrans, média, questions, mode nuit, clignotants et feux de détresse | exécutée aussitôt |
 | Confirmation | modes de conduite, désactiver l'alerte de ligne | « oui » dans les 8 s |
 | À l'arrêt | ouvrir trappe, porte, compartiment batterie | refusée si `VehicleData.moving` |
 | Jamais | conduite, frein, chaîne HT, régulateur, freinage d'urgence | **absente de la table** |

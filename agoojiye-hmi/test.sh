@@ -197,6 +197,11 @@ expect "executed" "$(say "accueil")" "une commande simple n'est pas exécutée"
 expect "executed executed" "$(say "va a l'accueil|Y a-t-il une alerte ?")" \
     "la saisie sans accents ni ponctuation n'est pas reconnue"
 
+# Le clignotant : formule exacte, et comme on le dit.
+expect "executed executed noop executed" \
+    "$(say "clignotant à droite|allume le clignotant à gauche|allume le clignotant à gauche|éteins le clignotant")" \
+    "les clignotants ne se commandent pas à la voix"
+
 # Ce qui n'est pas dans la table ne peut pas être exécuté, quelle que soit la
 # formulation.
 expect "unknown unknown unknown" "$(say "freine|accélère|serre le frein de stationnement")" \
@@ -278,6 +283,14 @@ else
         "le dialogue avec le modèle de langage ne suit pas les règles de la table"
     echo "$OUT" | tail -1 | grep -q 'mode=SPORT|.*ouvert=$' \
         || fail "état final faux après la conversation : $(echo "$OUT" | tail -1)"
+
+    # Demandé avec ses mots, le clignotant doit s'allumer pour de vrai : c'est
+    # le premier défaut relevé en essai réel (l'assistant avait récité l'état
+    # du véhicule).
+    OUT="$(talk "Salut Agoojiye, tu peux mettre le clignotant pour tourner ?")"
+    expect "executed" "$(echo "$OUT" | replies)" "le clignotant demandé librement n'a pas été exécuté"
+    echo "$OUT" | tail -1 | grep -q 'clignotant=right' \
+        || fail "le clignotant n'est pas allumé : $(echo "$OUT" | tail -1)"
 
     # Un modèle qui ment — commande inexistante, action prétendue — n'obtient
     # ni l'action, ni que son mensonge soit prononcé.

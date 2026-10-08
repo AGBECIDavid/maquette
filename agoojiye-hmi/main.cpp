@@ -221,8 +221,9 @@ int main(int argc, char *argv[])
                 if (m.value("open").toBool() && !m.value("label").toString().startsWith("Accès"))
                     open << m.value("label").toString();
             }
-            printf("#|mode=%s|ecran=%s|volume=%.1f|musique=%d|ouvert=%s\n",
+            printf("#|mode=%s|clignotant=%s|ecran=%s|volume=%.1f|musique=%d|ouvert=%s\n",
                    qPrintable(vdata->property("driveMode").toString()),
+                   qPrintable(vdata->property("turnSignal").toString()),
                    qPrintable(vstate->property("screen").toString()),
                    vstate->property("mediaVolume").toDouble(),
                    vdata->property("mediaPlaying").toBool() ? 1 : 0,

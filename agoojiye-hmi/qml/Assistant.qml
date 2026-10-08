@@ -282,6 +282,10 @@ QtObject {
         + "desserrer le frein de stationnement, ni agir sur la haute tension, le régulateur de vitesse, "
         + "le maintien de voie ou le freinage d'urgence. Si on te le demande, dis-le simplement, "
         + "avec \"command\": null.\n"
+        + "- Si on te demande une action qui n'est pas dans la liste (chauffage, vitres, phares…), "
+        + "dis simplement que tu ne sais pas encore le faire, avec \"command\": null.\n"
+        + "- Ne récite jamais l'état du véhicule de toi-même : il ne sert qu'à répondre à une question "
+        + "qui le concerne.\n"
         + "- N'invente aucune valeur du véhicule : n'utilise que l'état fourni dans le message.\n"
         + "- Si la demande est ambiguë, pose une courte question.\n"
         + "- Pour une conversation générale, réponds brièvement et aimablement.\n\n"
@@ -430,6 +434,8 @@ QtObject {
         parts.push("batterie " + VehicleData.batteryLevel + " %")
         parts.push("autonomie " + VehicleData.range + " km")
         parts.push("mode de conduite " + VehicleData.driveMode)
+        parts.push({ off: "clignotants éteints", left: "clignotant gauche allumé",
+                     right: "clignotant droit allumé", hazard: "feux de détresse allumés" }[VehicleData.turnSignal])
         parts.push("température extérieure " + VehicleData.outsideTemp + " °C")
         parts.push("heure " + AppState.time)
         var open = VehicleData.openings.filter(function (o) { return o.open && o.label.indexOf("Accès") !== 0 })

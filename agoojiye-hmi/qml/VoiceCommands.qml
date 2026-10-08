@@ -208,6 +208,33 @@ QtObject {
           already: function () { return !AppState.adas.ldw },
           run: function () { AppState.toggleAdas("ldw"); return "Alerte de franchissement de ligne désactivée." } },
 
+        // ---- signalisation ----------------------------------------------
+        // Signaler n'est pas conduire : un clignotant ne déplace pas la
+        // navette, il prévient les autres. Il se commande donc librement — et
+        // se coupe seul après le virage (voir VehicleSimulator).
+        { id: "blink-right", group: "Signalisation",
+          phrases: ["clignotant droit", "clignotant à droite", "mets le clignotant à droite",
+                    "allume le clignotant à droite", "allume le clignotant droit", "mets le clignotant droit"],
+          already: function () { return VehicleData.turnSignal === "right" },
+          run: function () { VehicleData.turnSignal = "right"; return "Clignotant droit." } },
+        { id: "blink-left", group: "Signalisation",
+          phrases: ["clignotant gauche", "clignotant à gauche", "mets le clignotant à gauche",
+                    "allume le clignotant à gauche", "allume le clignotant gauche", "mets le clignotant gauche"],
+          already: function () { return VehicleData.turnSignal === "left" },
+          run: function () { VehicleData.turnSignal = "left"; return "Clignotant gauche." } },
+        { id: "blink-off", group: "Signalisation",
+          phrases: ["éteins le clignotant", "arrête le clignotant", "coupe le clignotant"],
+          already: function () { return VehicleData.turnSignal === "off" || VehicleData.turnSignal === "hazard" },
+          run: function () { VehicleData.turnSignal = "off"; return "Clignotant éteint." } },
+        { id: "hazard-on", group: "Signalisation",
+          phrases: ["allume les warnings", "mets les warnings", "feux de détresse", "allume les feux de détresse"],
+          already: function () { return VehicleData.turnSignal === "hazard" },
+          run: function () { VehicleData.turnSignal = "hazard"; return "Feux de détresse allumés." } },
+        { id: "hazard-off", group: "Signalisation",
+          phrases: ["éteins les warnings", "coupe les warnings", "éteins les feux de détresse"],
+          already: function () { return VehicleData.turnSignal !== "hazard" },
+          run: function () { VehicleData.turnSignal = "off"; return "Feux de détresse éteints." } },
+
         // ---- ouvrants : à l'arrêt seulement -----------------------------
         // Ouvrir est refusé en roulant ; fermer ne l'est jamais. Empêcher de
         // refermer une trappe ouverte par erreur serait absurde.
@@ -442,6 +469,10 @@ QtObject {
         case "vol-down": return "Le volume est déjà coupé."
         case "play": return "La musique joue déjà."
         case "pause": return "La musique est déjà en pause."
+        case "blink-off": return VehicleData.turnSignal === "hazard"
+                                 ? "Ce sont les feux de détresse : dites « éteins les warnings »."
+                                 : "Aucun clignotant n'est allumé."
+        case "hazard-off": return "Les feux de détresse sont déjà éteints."
         }
         return "C'est déjà le cas."
     }

@@ -35,7 +35,7 @@ constexpr double kOverFloor = 3.0;      // ~ +10 dB au-dessus du bruit de fond
 // de la transcription, et en adopte l'orthographe : c'est ce qui lui fait
 // écrire « Agoojiye » plutôt que « à Goujie ». Courte, parce qu'une amorce
 // longue finit par être recopiée telle quelle sur un silence.
-const char *kPrompt = "Salut Agoojiye. Ouvre la navigation. Mode sport. Quelle est mon autonomie ?";
+const char *kPrompt = "Salut Agoojiye. Allume le clignotant à droite. Mode sport. Quelle est mon autonomie ?";
 }
 
 VoiceListener::VoiceListener(QObject *parent)
