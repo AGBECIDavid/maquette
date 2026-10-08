@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <qqmlintegration.h>
 
 #ifdef AGOOJIYE_HAS_TTS
@@ -58,6 +59,12 @@ private:
     bool ttsReady() const;
 
     bool m_speaking = false;
+
+    // Phrases arrivées pendant qu'une autre était dite. En conversation, « Je
+    // vous écoute » suivi aussitôt de la réponse est le cas normal : jeter la
+    // seconde, c'est perdre la réponse.
+    QStringList m_queue;
+    void speakNext();
 
     // Repli : chemin de `spd-say`, vide s'il n'est pas installé.
     QString m_spdSay;

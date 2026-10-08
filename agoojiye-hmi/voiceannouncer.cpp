@@ -50,7 +50,14 @@ VoiceAnnouncer::VoiceAnnouncer(QObject *parent)
             // l'état « parle » sans bloquer l'interface : c'est le processus
             // qui attend, pas nous.
             connect(m_spd, &QProcess::started, this, [this] { setSpeaking(true); });
-            connect(m_spd, &QProcess::finished, this, [this] { setSpeaking(false); });
+            connect(m_spd, &QProcess::finished, this, [this] {
+                // La suivante enchaîne sans repasser par « muet » : l'écoute
+                // ne se rouvre pas entre deux phrases de la même réponse.
+                if (!m_queue.isEmpty())
+                    speakNext();
+                else
+                    setSpeaking(false);
+            });
         }
     }
 }
@@ -59,6 +66,9 @@ VoiceAnnouncer::~VoiceAnnouncer()
 {
     // Fermer l'application pendant une annonce ne doit pas laisser un `spd-say`
     // derrière — ni la phrase se poursuivre une fois l'écran éteint.
+    // La file d'abord : tuer le processus déclenche « fini », qui sinon
+    // lancerait la phrase suivante pendant la destruction.
+    m_queue.clear();
     if (m_spd && m_spd->state() != QProcess::NotRunning) {
         m_spd->kill();
         m_spd->waitForFinished(300);
@@ -88,8 +98,18 @@ void VoiceAnnouncer::speak(const QString &text)
         return;
     }
 #endif
-    if (m_spd && m_spd->state() == QProcess::NotRunning)
-        m_spd->start(m_spdSay, { "-w", "-l", kLanguage, "-r", kRate, text });
+    if (!m_spd)
+        return;
+    m_queue.append(text);
+    if (m_spd->state() == QProcess::NotRunning)
+        speakNext();
+}
+
+void VoiceAnnouncer::speakNext()
+{
+    if (m_queue.isEmpty())
+        return;
+    m_spd->start(m_spdSay, { "-w", "-l", kLanguage, "-r", kRate, m_queue.takeFirst() });
 }
 
 void VoiceAnnouncer::stop()
@@ -98,6 +118,7 @@ void VoiceAnnouncer::stop()
     if (m_tts)
         m_tts->stop();
 #endif
+    m_queue.clear();
     if (m_spd && m_spd->state() != QProcess::NotRunning) {
         m_spd->kill();
         // Tuer le client ne vide pas la file du démon : il faut l'annuler.

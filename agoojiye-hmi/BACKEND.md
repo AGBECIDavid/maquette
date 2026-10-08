@@ -348,40 +348,80 @@ La main se rend en deux temps — `handoff()` révèle le tableau de bord, puis
 `finished()` retire la couche de démarrage une fois son fondu terminé. Les deux
 se croisent, d'où l'enchaînement plutôt que la coupure.
 
-## L'assistant vocal — les commandes
+## L'assistant vocal — la conversation
 
-L'assistant **comprend** déjà : 32 commandes, une table, des règles de refus.
-Il lui manque seulement l'oreille. Tout est dans `qml/VoiceCommands.qml`.
+On lui parle : « Salut Agoojiye », puis une phrase libre. Quatre pièces, chacune
+remplaçable sans toucher aux autres — elles ne se connaissent pas, et c'est
+`Main.qml` qui les relie :
 
 ```
-  micro ──► moteur de reconnaissance ──► VoiceCommands.handle(texte)
-            (à brancher, ex. Vosk)              │
-                                                ├─► AppState / VehicleData
-                                                │   (les mêmes appels que le tactile)
-                                                └─► signal replied(texte)
-                                                         │
-                                       Main.qml ────────►└─► VoiceAnnouncer.speak()
+  micro ─► VoiceListener ──heard──► Assistant ──────────► VoiceCommands ─► AppState
+           (C++)                    (QML)         ▲        (QML, la table)   VehicleData
+             │                        │           │              │
+             ▼                        ▼           │              ▼
+        whisper-server           llama-server ────┘          replied
+        :8178 (whisper.cpp)      :8179 (llama.cpp)              │
+                                                                ▼
+                                       VoiceAnnouncer ◄── said ─┘
 ```
 
-**Brancher un moteur de reconnaissance**, c'est deux lignes dans `Main.qml`, là
-où la sortie est déjà reliée :
+| Pièce | Rôle | Remplacer par… |
+|---|---|---|
+| `VoiceListener` | micro → phrases découpées → texte | n'importe quel moteur émettant `heard(texte)` |
+| `Assistant` | réveil, dialogue, modèle de langage | — c'est la conversation |
+| `VoiceCommands` | **la table** : ce qui se fait, et à quelles conditions | — c'est l'autorité |
+| `VoiceAnnouncer` | voix | toute synthèse ayant `speak()` et `speaking` |
 
-```qml
-// au démarrage : le moteur n'écoute que les phrases de la table
-recognizer.setGrammar(VoiceCommands.grammar())
-// à chaque phrase reconnue
-onRecognized: (text) => VoiceCommands.handle(text)
-```
+### Le protocole des moteurs
 
-`grammar()` est **déduite de la table** : une commande qu'on ne sait pas exécuter
-ne peut pas être reconnue, et il n'existe pas deux listes susceptibles de
-diverger. Elle se termine par `[unk]` : sans cette entrée, un moteur à grammaire
-restreinte force n'importe quel bruit vers la phrase la plus proche.
+Les deux moteurs sont des serveurs HTTP locaux, lancés par `./voice.sh start`.
+L'interface vérifie leur `/health` toutes les 5 s : on peut les lancer après
+elle.
 
-Avec Vosk, vérifier au premier chargement que chaque mot de la grammaire existe
-dans le vocabulaire du modèle français : Vosk écarte en le signalant dans son
-journal un mot qu'il ne connaît pas, et la phrase concernée ne serait alors
-jamais reconnue.
+**Reconnaissance** — `POST :8178/inference`, formulaire multipart :
+
+| Champ | Valeur |
+|---|---|
+| `file` | la phrase, WAV 16 kHz mono 16 bits |
+| `language` | `fr` |
+| `prompt` | « Salut Agoojiye. Ouvre la navigation… » — amorce qui fait écrire le nom correctement |
+| `response_format` | `json` → réponse `{"text": "…"}` |
+
+Whisper invente parfois, sur du bruit, des crédits de sous-titres ou « merci
+d'avoir regardé » ; `VoiceListener::clean()` les écarte.
+
+**Compréhension** — `POST :8179/v1/chat/completions` (API compatible OpenAI) :
+
+- message système **constant** (rôle, règles, liste des commandes de la table) :
+  llama-server le garde en cache, seule la dernière phrase est calculée ;
+- dernier message : l'état du véhicule (`Assistant.stateSummary()`, données
+  invalides décrites comme telles) puis la phrase du conducteur ;
+- `response_format: json_schema` avec `command` ∈ {identifiants de la table,
+  `null`} et `reply` : la contrainte s'applique **pendant** la génération.
+
+Le modèle **propose**, la table **décide** : un identifiant passe par
+`VoiceCommands.handleId()`, donc par les mêmes refus et confirmations que le
+tactile, et c'est la réponse de la table qui est prononcée — jamais la phrase du
+modèle, écrite avant de savoir ce qui s'est passé. Un identifiant hors table est
+traité comme une phrase incomprise.
+
+Un modèle qui ne répond pas en 15 s est considéré absent : repli sur la table,
+et nouvel essai de santé toutes les 5 s.
+
+### Changer de modèle
+
+`VOICE_ASR=small ./voice.sh install` (reconnaissance) ou `VOICE_LLM=3b`
+(langage), puis `./voice.sh stop && ./voice.sh start` avec les mêmes variables.
+Tout modèle GGUF à gabarit de conversation fonctionne avec llama-server ; le
+schéma JSON garantit la forme de la réponse quel que soit le modèle.
+
+### La table
+
+`VoiceCommands.qml` reste la source unique de ce que l'assistant peut faire.
+`grammar()` en déduit la liste des formules (utile pour un moteur à grammaire
+restreinte), `describeForModel()` la décrit au modèle de langage, `ids()` borne
+son schéma. Une commande ajoutée à la table est donc aussitôt comprise des deux
+façons ; une commande absente ne l'est d'aucune.
 
 ### Les règles
 
@@ -421,23 +461,36 @@ L'action doit appeler **les fonctions que le tactile appelle déjà**. Une
 commande qui écrirait son propre chemin vers l'état dupliquerait les règles de
 sécurité, et deux exemplaires finissent par diverger.
 
-### Essayer sans micro
+### Essayer, et tester
 
-*Paramètres → Assistant vocal* : une phrase tapée ou touchée suit exactement le
-chemin d'une phrase reconnue. En recette :
+*Paramètres → Assistant vocal* : le fil de la conversation, un champ pour
+écrire à l'assistant (même chemin qu'une phrase dite, sans le mot de réveil),
+et l'état des trois maillons.
+
+En recette, trois niveaux :
 
 ```bash
+# la table seule
 HMI_VOICE="mode sport|oui" ./build/agoojiye-hmi
 # confirm|mode sport|Passer en mode sport ?
 # executed|oui|Mode sport.
 
-HMI_VOICE="ouvre le compartiment batterie|@vitesse=20|oui" ./build/agoojiye-hmi
-# confirm|ouvre le compartiment batterie|Ouvrir le compartiment batterie ?
-# refused|oui|Impossible en roulant. Arrêtez la navette d'abord.
+# la conversation, à partir de phrases déjà transcrites
+HMI_ASSISTANT="ouvre la navigation|Salut Agoojiye, ouvre la navigation" ./build/agoojiye-hmi
+# user||voix|Salut Agoojiye, ouvre la navigation      ← la première, sans le nom, est ignorée
+# assistant|executed||Navigation.
+
+# le chemin du micro, à partir d'un enregistrement
+HMI_VOICE_WAV=phrase.wav ./build/agoojiye-hmi
 ```
 
-`@vitesse=N` change la vitesse entre deux phrases (rapport et frein de
-stationnement suivent, pour garder un état physiquement possible).
+`@vitesse=N` change la vitesse entre deux phrases (rapport et frein suivent),
+`@clavier:texte` écrit au lieu de dire, `@etat` imprime l'état du véhicule.
+
+`test.sh` fait tourner tout cela contre `voice/fake_servers.py` : de faux
+moteurs qui parlent l'API des vrais, **refusent toute requête mal formée**, et
+répondent d'avance — dont un modèle qui ment (commande inventée, action
+prétendue), pour vérifier que ni l'action ni le mensonge ne passent.
 
 ## L'assistant vocal — la voix
 

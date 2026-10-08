@@ -15,16 +15,49 @@ Window {
     // une vraie source à la place du simulateur.
     readonly property bool dataSourceRunning: VehicleSimulator.running
 
-    // Branchement de l'assistant vocal sur le haut-parleur. La table de
-    // commandes ne connaît aucun périphérique : c'est ici qu'on la relie à la
-    // sortie, et c'est ici que se branchera le moteur de reconnaissance —
-    // `onRecognized: (text) => VoiceCommands.handle(text)`.
+    // ---- branchement de l'assistant vocal ---------------------------------
+    // La logique (VoiceCommands, Assistant) ne connaît aucun périphérique. C'est
+    // ici, et seulement ici, qu'elle est reliée à l'oreille et à la voix :
+    //
+    //   VoiceListener ──heard──► Assistant ──said──────► VoiceAnnouncer
+    //                                 │                        ▲
+    //                                 └──► VoiceCommands ──replied
+    //
+    // Remplacer le micro ou la synthèse ne touche donc qu'à ce bloc.
+    Connections {
+        target: VoiceListener
+        function onHeard(text) { Assistant.hear(text) }
+    }
     Connections {
         target: VoiceCommands
         function onReplied(text) {
             if (VoiceCommands.speakReplies)
                 VoiceAnnouncer.speak(text)
         }
+    }
+    Connections {
+        target: Assistant
+        function onSaid(text) {
+            if (VoiceCommands.speakReplies)
+                VoiceAnnouncer.speak(text)
+        }
+    }
+    // La conversation reste ouverte un moment après chaque réponse *dite*, pas
+    // après chaque réponse calculée : une phrase longue ne doit pas manger le
+    // temps laissé pour répondre.
+    Connections {
+        target: VoiceAnnouncer
+        function onSpeakingChanged() {
+            if (!VoiceAnnouncer.speaking)
+                Assistant.keepAwake()
+        }
+    }
+    // Sourd pendant qu'il parle : sinon l'assistant s'entendrait dans les
+    // haut-parleurs et se répondrait.
+    Binding {
+        target: VoiceListener
+        property: "muted"
+        value: VoiceAnnouncer.speaking
     }
 
     Rectangle {
@@ -109,6 +142,22 @@ Window {
                 Behavior on height { NumberAnimation { duration: 520; easing.type: Easing.OutCubic } }
                 Behavior on opacity { NumberAnimation { duration: 520; easing.type: Easing.OutCubic } }
             }
+        }
+
+        // Conversation en cours, par-dessus l'écran ouvert. Masquée sur la page
+        // de l'assistant, qui montre déjà tout le fil.
+        AssistantBubble {
+            z: 4
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: bottomNav.height + 16
+            readonly property bool onConsole: AppState.screen === "parametres"
+                                              && AppState.section("parametres") === 5
+            readonly property bool live: Assistant.awake || Assistant.thinking
+                                         || (VoiceAnnouncer.speaking && Assistant.dialog.length > 0)
+            visible: opacity > 0
+            opacity: live && !onConsole && !AppState.booting ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
         }
 
         // La séquence de démarrage n'est pas un écran mais une couche, posée

@@ -10,7 +10,19 @@
 #include <QVariantList>
 #include <cstdio>
 #include <QElapsedTimer>
+#include <QDateTime>
 #include <QJSValue>
+
+namespace {
+// A `property var` read from C++ holds either a QJSValue or an already
+// converted list, depending on how QML last assigned it.
+QVariantList jsList(const QVariant &v)
+{
+    if (v.metaType() == QMetaType::fromType<QJSValue>())
+        return v.value<QJSValue>().toVariant().toList();
+    return v.toList();
+}
+}
 
 int main(int argc, char *argv[])
 {
@@ -129,6 +141,166 @@ int main(int argc, char *argv[])
             QTimer::singleShot(0, &app, &QCoreApplication::quit);
     }
 
+    // ---- conversational assistant --------------------------------------------
+    // AGOOJIYE_LLM_URL points the assistant at another language server. (The
+    // speech server is read by VoiceListener itself, from AGOOJIYE_ASR_URL.)
+    QQmlComponent convoProbe(&engine);
+    convoProbe.setData("import QtQml\nimport AgoojiyeHMI\n"
+                       "QtObject {\n"
+                       "  property QtObject assistant: Assistant\n"
+                       "  property QtObject listener: VoiceListener\n"
+                       "  property QtObject voice: VoiceCommands\n"
+                       "  property QtObject data: VehicleData\n"
+                       "  property QtObject sim: VehicleSimulator\n"
+                       "  property QtObject appState: AppState\n"
+                       "  property QtObject announcer: VoiceAnnouncer\n"
+                       "}", QUrl());
+    QObject *convoObj = engine.rootObjects().isEmpty() ? nullptr : convoProbe.create();
+    auto single = [convoObj](const char *name) {
+        return convoObj ? convoObj->property(name).value<QObject *>() : nullptr;
+    };
+    QObject *assistant = single("assistant");
+    if (assistant && qEnvironmentVariableIsSet("AGOOJIYE_LLM_URL"))
+        assistant->setProperty("llmUrl", qEnvironmentVariable("AGOOJIYE_LLM_URL"));
+
+    // QA aid: HMI_ASSISTANT="phrase|phrase|…" plays transcripts to the
+    // assistant as if the microphone had heard them — wake-word rules
+    // included. "@clavier:texte" types instead, "@vitesse=N" moves the
+    // shuttle, "@etat" prints the vehicle state. Each step waits for the
+    // language model to answer. The conversation is printed as
+    // "role|status|via|text", then the app exits.
+    //
+    // HMI_VOICE_WAV=<file.wav> starts one step further back: the file goes
+    // through the microphone path — speech detection, cutting, upload to the
+    // speech server — and the conversation it produces is printed the same way.
+    //
+    // Replies are not spoken unless HMI_SPEAK=1.
+    const QString convo = qEnvironmentVariable("HMI_ASSISTANT");
+    const QString wavPath = qEnvironmentVariable("HMI_VOICE_WAV");
+    QObject *listener = single("listener");
+    QObject *voice = single("voice");
+    QObject *vdata = single("data");
+    QObject *vsim = single("sim");
+    QObject *vstate = single("appState");
+    if ((!convo.isEmpty() || !wavPath.isEmpty())
+            && assistant && listener && voice && vdata && vsim && vstate) {
+        vsim->setProperty("running", false);
+        vdata->setProperty("speed", 0.0);
+        voice->setProperty("speakReplies", qEnvironmentVariable("HMI_SPEAK") == "1");
+        QMetaObject::invokeMethod(vstate, "skipBoot");
+
+        auto *steps = new QStringList(convo.isEmpty() ? QStringList() : convo.split('|'));
+        auto *clock = new QElapsedTimer();
+        clock->start();
+        auto *fed = new bool(wavPath.isEmpty());
+        auto *quietSince = new qint64(-1);
+        auto *timer = new QTimer(&app);
+        timer->setInterval(50);
+
+        QObject *announcer = single("announcer");
+        const bool speak = qEnvironmentVariable("HMI_SPEAK") == "1";
+        auto busy = [=]() {
+            int queued = 0;
+            QMetaObject::invokeMethod(listener, "busy", Q_RETURN_ARG(int, queued));
+            // Avec la voix, on attend aussi qu'elle se taise : c'est ainsi que
+            // la recette observe la file d'attente de la synthèse.
+            const bool talking = speak && announcer && announcer->property("speaking").toBool();
+            return assistant->property("thinking").toBool() || queued > 0 || talking;
+        };
+        auto setSpeed = [=](double kmh) {
+            // Same rule as HMI_VOICE: speed, gear and brake stay consistent.
+            vdata->setProperty("speed", kmh);
+            vdata->setProperty("driveGear", kmh > 0.5 ? "D" : "P");
+            vdata->setProperty("parkingBrake", kmh <= 0.5);
+        };
+        auto printState = [=]() {
+            QStringList open;
+            const QVariantList openings = jsList(vdata->property("openings"));
+            for (const QVariant &o : openings) {
+                const QVariantMap m = o.toMap();
+                if (m.value("open").toBool() && !m.value("label").toString().startsWith("Accès"))
+                    open << m.value("label").toString();
+            }
+            printf("#|mode=%s|ecran=%s|volume=%.1f|musique=%d|ouvert=%s\n",
+                   qPrintable(vdata->property("driveMode").toString()),
+                   qPrintable(vstate->property("screen").toString()),
+                   vstate->property("mediaVolume").toDouble(),
+                   vdata->property("mediaPlaying").toBool() ? 1 : 0,
+                   qPrintable(open.join(',')));
+        };
+
+        QObject::connect(timer, &QTimer::timeout, &app, [=, &app]() {
+            const qint64 now = clock->elapsed();
+            if (now > 90000) {
+                printf("TIMEOUT|||conversation inachevée après 90 s\n");
+                fflush(stdout);
+                app.exit(3);
+                return;
+            }
+            // Laisser aux serveurs le temps de répondre à leur premier contrôle
+            // de santé, faute de quoi le premier tour partirait sans eux.
+            const bool warm = assistant->property("modelReady").toBool()
+                              && (wavPath.isEmpty() || listener->property("serverReady").toBool());
+            if (now < 3000 && !warm)
+                return;
+
+            if (!*fed) {
+                *fed = true;
+                bool ok = false;
+                QMetaObject::invokeMethod(listener, "feedWav", Q_RETURN_ARG(bool, ok),
+                                          Q_ARG(QString, wavPath));
+                if (!ok) {
+                    printf("ERREUR|||fichier WAV illisible : %s\n", qPrintable(wavPath));
+                    fflush(stdout);
+                    app.exit(2);
+                }
+                return;
+            }
+            if (busy()) {
+                *quietSince = -1;
+                return;
+            }
+            if (!steps->isEmpty()) {
+                const QString step = steps->takeFirst();
+                if (step.startsWith("@vitesse="))
+                    setSpeed(step.mid(9).toDouble());
+                else if (step == "@etat")
+                    printState();
+                else if (step.startsWith("@clavier:"))
+                    QMetaObject::invokeMethod(assistant, "ask", Q_ARG(QVariant, step.mid(9)),
+                                              Q_ARG(QVariant, QStringLiteral("clavier")),
+                                              Q_ARG(QVariant, QVariant()));
+                else
+                    QMetaObject::invokeMethod(assistant, "hear", Q_ARG(QVariant, step));
+                *quietSince = -1;
+                return;
+            }
+            // Fini quand plus rien ne bouge depuis un instant : une réponse du
+            // modèle peut encore déclencher une commande juste après.
+            if (*quietSince < 0) {
+                *quietSince = now;
+                return;
+            }
+            if (now - *quietSince < 400)
+                return;
+            timer->stop();
+            const QVariantList dialog = jsList(assistant->property("dialog"));
+            for (const QVariant &e : dialog) {
+                const QVariantMap m = e.toMap();
+                printf("%s|%s|%s|%s\n",
+                       qPrintable(m.value("role").toString()),
+                       qPrintable(m.value("status").toString()),
+                       qPrintable(m.value("via").toString()),
+                       qPrintable(m.value("text").toString()));
+            }
+            printState();
+            fflush(stdout);
+            if (qEnvironmentVariable("HMI_SCREENSHOT_DIR").isEmpty())
+                app.quit();
+        });
+        timer->start();
+    }
+
     // Dev-only screenshot sweep: HMI_SCREENSHOT_DIR=<dir> walks every screen
     // and grabs a PNG per screen, then exits. Not used by the shipped app.
     const QString screenshotDir = qEnvironmentVariable("HMI_SCREENSHOT_DIR");
@@ -213,17 +385,32 @@ int main(int argc, char *argv[])
             // physique d'un défaut qui n'appartient qu'à l'échantillonnage.
             printf("t,wall,phase,speed,power,regen,battery,consumption,range,gear,"
                    "parkingBrake,seatbeltWarning,tyreWarning,motorTemp,alerts,critical,"
-                   "hvFaults,hvBlocking\n");
+                   "hvFaults,hvBlocking,tick\n");
             auto *started = new QElapsedTimer();
             started->start();
             auto *elapsed = new int(0);
+            // Même origine que `lastTickMs`, qui vient de Date.now().
+            const double epoch0 = double(QDateTime::currentMSecsSinceEpoch());
             const int limit = traceSeconds.toInt() * 5;
             auto *timer = new QTimer(&app);
             timer->setInterval(200);
             QObject::connect(timer, &QTimer::timeout, &app, [=, &app]() mutable {
                 const QVariantList alerts = data->property("activeAlerts").toList();
                 const QVariantList hv = data->property("hvFaults").toList();
-                printf("%.1f,%.3f,%s,%.1f,%.1f,%.1f,%d,%.1f,%d,%s,%d,%d,%d,%d,%lld,%d,%lld,%d\n",
+                // `tick` : l'instant du calcul qui a produit ces valeurs, sur
+                // l'horloge du modèle. La vitesse lue à un relevé date de ce
+                // calcul, pas du relevé — qui peut le suivre de 100 ms ou plus.
+                // Une accélération se mesure donc entre deux `tick`, jamais
+                // entre deux `wall`.
+                //
+                // Avant le premier calcul, il n'y a pas d'instant à donner : la
+                // case reste vide. Un 0 par défaut ferait croire qu'un calcul a
+                // eu lieu au début du relevé, et la première fenêtre mesurée
+                // couvrirait plus de modèle qu'elle n'en déclare.
+                const double lastTick = simulator->property("lastTickMs").toDouble();
+                const QByteArray tick = lastTick > 0
+                    ? QByteArray::number((lastTick - epoch0) / 1000.0, 'f', 3) : QByteArray();
+                printf("%.1f,%.3f,%s,%.1f,%.1f,%.1f,%d,%.1f,%d,%s,%d,%d,%d,%d,%lld,%d,%lld,%d,%s\n",
                        *elapsed / 5.0,
                        started->elapsed() / 1000.0,
                        qPrintable(simulator->property("phase").toString()),
@@ -241,7 +428,8 @@ int main(int argc, char *argv[])
                        static_cast<long long>(alerts.size()),
                        data->property("hasCriticalAlert").toBool() ? 1 : 0,
                        static_cast<long long>(hv.size()),
-                       data->property("hvBlocking").toBool() ? 1 : 0);
+                       data->property("hvBlocking").toBool() ? 1 : 0,
+                       tick.constData());
                 fflush(stdout);
                 if (++(*elapsed) >= limit) {
                     timer->stop();

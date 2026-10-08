@@ -5,6 +5,7 @@
 #   ./run.sh                  construit puis lance
 #   ./run.sh --build          construit seulement
 #   ./run.sh --clean          repart d'un dossier de build vide
+#   ./run.sh --voix           lance aussi les moteurs vocaux (voir ./voice.sh)
 #
 # Scénarios de démonstration, à passer directement en argument :
 #
@@ -30,6 +31,7 @@ cd "$(dirname "$0")"
 
 BUILD_DIR=build
 BUILD_ONLY=0
+VOICE=0
 HV_PATTERN=""
 FAULT=""
 
@@ -37,7 +39,8 @@ for arg in "$@"; do
     case "$arg" in
         --build) BUILD_ONLY=1 ;;
         --clean) rm -rf "$BUILD_DIR" ;;
-        -h|--help) sed -n '2,27p' "$0" | sed 's/^# \?//'; exit 0 ;;
+        --voix|--voice) VOICE=1 ;;
+        -h|--help) sed -n '2,28p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *)
             # Un motif haute tension ne contient que des 0 et des 1 ; un nom de
             # panne est un mot. Les deux ne peuvent pas se confondre.
@@ -94,6 +97,12 @@ fi
 cmake --build "$BUILD_DIR" -j"$(nproc 2>/dev/null || echo 4)"
 
 [ "$BUILD_ONLY" -eq 1 ] && exit 0
+
+# Moteurs vocaux : leur absence n'empêche pas de lancer l'interface — elle
+# reste utilisable au clavier, et les retrouvera s'ils démarrent plus tard.
+if [ "$VOICE" -eq 1 ]; then
+    ./voice.sh start || echo "Moteurs vocaux non démarrés — l'interface se lance quand même." >&2
+fi
 
 # Les scénarios passent par l'environnement, que le programme lit au démarrage.
 # Les nommer en argument évite d'avoir à s'en souvenir.

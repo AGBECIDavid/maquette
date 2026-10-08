@@ -66,6 +66,11 @@ QtObject {
     // le micro. Ainsi la logique se teste sans aucun périphérique audio.
     signal replied(string text)
 
+    // Une question restée sans réponse, abandonnée par le minuteur. Distinct de
+    // `replied` : la conversation doit l'inscrire, alors qu'elle inscrit déjà
+    // elle-même les réponses qu'elle a provoquées.
+    signal expired(string text)
+
     // Lu par ce branchement. La recette coupe la voix : un test qui parle sur
     // le poste d'un développeur est un test qu'on cesse de lancer.
     property bool speakReplies: true
@@ -155,13 +160,13 @@ QtObject {
           } },
         { id: "ask-range", group: "Questions", phrases: ["quelle est mon autonomie", "autonomie"],
           run: function () {
-              if (!VehicleData.valid("batteryLevel") || !VehicleData.valid("consumption"))
+              if (!VehicleData.valid("battery") || !VehicleData.valid("consumption"))
                   return root.unavailable
               return "Autonomie estimée : " + VehicleData.range + " kilomètres."
           } },
         { id: "ask-battery", group: "Questions", phrases: ["niveau de batterie", "batterie"],
           run: function () {
-              if (!VehicleData.valid("batteryLevel"))
+              if (!VehicleData.valid("battery"))
                   return root.unavailable
               return "Batterie à " + VehicleData.batteryLevel + " pour cent."
           } },
@@ -291,7 +296,10 @@ QtObject {
         var cmd = _find(said)
         if (cmd === null)
             return { status: "unknown", reply: "Je n'ai pas compris." }
+        return _dispatchCmd(cmd)
+    }
 
+    function _dispatchCmd(cmd) {
         var why = _refusal(cmd)
         if (why !== "")
             return { status: "refused", reply: why }
@@ -306,6 +314,105 @@ QtObject {
         }
 
         return _execute(cmd)
+    }
+
+    // =========================================================================
+    //  Entrées de la conversation
+    // =========================================================================
+    //
+    //  En conversation, la phrase n'est plus une formule de la table : « tu peux
+    //  me mettre en sport ? » arrive par le modèle de langage, qui ne rend qu'un
+    //  *identifiant*. Ces entrées-là mènent aux mêmes règles que `handle()` —
+    //  refus, confirmation, revérification au moment d'agir. Le modèle choisit
+    //  quoi demander ; la table seule décide si cela se fait, et dit ce qui
+    //  s'est réellement passé.
+
+    // Exécute une commande désignée par son identifiant. Un identifiant hors
+    // table — inventé, ou une action interdite — est traité comme une phrase
+    // incomprise : il n'existe aucun chemin vers une action absente.
+    function handleId(id, heard) {
+        var cmd = _byId(id)
+        var prefix = cancelPending() ? "Demande précédente annulée. " : ""
+        var out = cmd === null ? { status: "unknown", reply: "Je n'ai pas compris." }
+                               : _dispatchCmd(cmd)
+        out.reply = prefix + out.reply
+        return _finish(heard === undefined ? "" : heard, out)
+    }
+
+    // Réponse à la question en attente, quand la conversation a déjà établi
+    // qu'il s'agit d'un oui ou d'un non (« oui vas-y », « non merci »).
+    // Null s'il n'y avait pas de question : un « oui » sans objet ne fait rien.
+    function answer(yes, heard) {
+        if (pending === null)
+            return null
+        var asked = pending
+        cancelPending()
+        return _finish(heard, yes ? _execute(asked)
+                                  : { status: "cancelled", reply: "Annulé." })
+    }
+
+    // Abandonne la question en attente. Vrai s'il y en avait une.
+    function cancelPending() {
+        if (pending === null)
+            return false
+        pending = null
+        _confirmTimer.stop()
+        return true
+    }
+
+    // La commande dont une phrase est exactement une formule, ou null.
+    function match(text) { return _find(_normalize(text)) }
+
+    // Repli sans modèle de langage : une formule de la table *contenue* dans la
+    // phrase (« euh, ouvre la navigation s'il te plaît »). Volontairement
+    // étroit — une phrase contenant une négation est écartée (« ne mets pas la
+    // musique »), et seules les commandes sans garde-fou sont admises : un
+    // ouvrant ou un changement de mode ne se déduit pas d'un fragment.
+    function matchLoose(text) {
+        var said = " " + _normalize(text) + " "
+        // « plus » n'y figure pas : c'est aussi « plus fort ».
+        if (/ (ne|n'|pas|jamais) /.test(said.replace(/n'/g, " n' ")))
+            return null
+        var best = null, bestLen = 0
+        for (var i = 0; i < commands.length; i++) {
+            var c = commands[i]
+            if (c.stoppedOnly || c.confirm)
+                continue
+            for (var j = 0; j < c.phrases.length; j++) {
+                var p = _normalize(c.phrases[j])
+                if (p.length > bestLen && said.indexOf(" " + p + " ") !== -1) {
+                    best = c; bestLen = p.length
+                }
+            }
+        }
+        return best
+    }
+
+    function normalize(s) { return _normalize(s) }
+
+    function ids() {
+        return commands.map(function (c) { return c.id })
+    }
+
+    // La table, décrite pour le modèle de langage : un identifiant par ligne,
+    // sa formule et ses garde-fous. Le modèle n'a pas à connaître les règles
+    // pour les respecter — la table les applique — mais les connaître lui évite
+    // de proposer en vain une ouverture en roulant.
+    function describeForModel() {
+        return commands.map(function (c) {
+            var notes = []
+            if (c.stoppedOnly) notes.push("à l'arrêt seulement")
+            if (c.confirm) notes.push("demande confirmation")
+            return "- " + c.id + " : « " + c.phrases.join(" », « ") + " »"
+                   + (notes.length ? " (" + notes.join(", ") + ")" : "")
+        }).join("\n")
+    }
+
+    function _byId(id) {
+        for (var i = 0; i < commands.length; i++)
+            if (commands[i].id === id)
+                return commands[i]
+        return null
     }
 
     // L'autorisation est vérifiée ici, *au moment d'agir* — pas seulement au
@@ -406,7 +513,8 @@ QtObject {
             if (root.pending === null)
                 return
             root.pending = null
-            root._finish("", { status: "cancelled", reply: "Pas de réponse. Demande annulée." })
+            var entry = root._finish("", { status: "cancelled", reply: "Pas de réponse. Demande annulée." })
+            root.expired(entry.reply)
         }
     }
 }

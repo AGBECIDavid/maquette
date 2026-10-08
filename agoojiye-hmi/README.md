@@ -28,7 +28,8 @@ nomme avec la commande qui l'installe. Sur Debian / Ubuntu / Kali :
 sudo apt install build-essential cmake \
                  qt6-base-dev qt6-declarative-dev \
                  qml6-module-qtquick qml6-module-qtquick-controls \
-                 qml6-module-qtquick-shapes qml6-module-qtquick-window
+                 qml6-module-qtquick-shapes qml6-module-qtquick-window \
+                 qt6-multimedia-dev     # micro de l'assistant — facultatif
 ```
 
 Si votre Qt vient de l'installeur officiel plutôt que du système :
@@ -47,8 +48,10 @@ Pas besoin d'écran : Qt tourne en mode *offscreen*. Le script échoue si un
 avertissement QML apparaît, si un des 39 panneaux ne s'affiche pas, si l'état
 véhicule viole une règle physique sur 30 s de simulation (frein de
 stationnement en roulant, vitesse qui se téléporte, autonomie négative), ou si
-une panne injectée ne remonte pas jusqu'au bandeau d'alerte, ou si
-l'assistant vocal exécute une commande qu'il devait refuser.
+une panne injectée ne remonte pas jusqu'au bandeau d'alerte, si
+l'assistant vocal exécute une commande qu'il devait refuser, ou si la
+conversation sort de ses règles. La recette n'ouvre jamais le micro et ne parle
+pas aux moteurs vocaux qui tourneraient sur la machine : elle a les siens, faux.
 
 Le relevé passe le simulateur en mode déterministe : sans cela les durées de
 phase sont tirées au hasard, et le test réussirait ou échouerait selon le
@@ -74,8 +77,12 @@ qml/
   AppState.qml        état d'interface — écran courant, sections, préférences
   VehicleData.qml     ← LE point de branchement du backend
   Theme.qml           couleurs, polices
+  VoiceCommands.qml   ce que l'assistant vocal a le droit de faire
+  Assistant.qml       la conversation : réveil, dialogue, modèle de langage
   components/         briques réutilisées par tous les écrans
   screens/            un fichier par écran
+voicelistener.cpp     l'oreille : micro, détection de parole
+voice.sh, voice/      moteurs vocaux locaux, et leurs faux pour la recette
 assets/               polices, rendus 3D du véhicule
 tools/render/         chaîne de rendu du modèle GLB vers les images
 ```
@@ -129,16 +136,35 @@ aucun nom à retenir, et `./run.sh --help` les liste tous.
 Un argument mal tapé est refusé avec la liste des valeurs valides, plutôt
 qu'absorbé en silence — au niveau du shell, une faute de frappe est délibérée.
 
+## Parler à la navette
+
+```bash
+./voice.sh install       # une fois : compile les moteurs, télécharge les modèles (1,2 Go)
+./run.sh --voix          # lance les moteurs, puis l'interface
+```
+
+Puis : **« Salut Agoojiye »**, et ce que vous voulez, avec vos mots —
+« il fait sombre, tu peux mettre le mode nuit ? », « quelle est mon
+autonomie ? », « tu peux passer en sport ? ». Elle répond à voix haute, fait ce
+qui est faisable, explique ce qui ne l'est pas. « Merci » clôt la conversation.
+Le bouton micro de la barre du haut remplace le nom quand il y a du bruit.
+
+Tout tourne sur la machine : reconnaissance par whisper.cpp, compréhension par
+un petit modèle de langage (llama.cpp). Le modèle ne fait rien lui-même — il
+propose une commande, la table de `VoiceCommands.qml` décide, avec les mêmes
+refus qu'au doigt.
+
+Sans les moteurs, l'assistant reste utilisable : *Paramètres → Assistant
+vocal*, au clavier. Détails : [BACKEND.md](BACKEND.md).
+
 ## Outils de recette
 
 ```bash
-HMI_TRACE=30 ./build/agoojiye-hmi       # état véhicule en CSV, 30 s
-HMI_VOICE="mode sport|oui" ./build/agoojiye-hmi   # rejoue des phrases
+HMI_TRACE=30 ./build/agoojiye-hmi                    # état véhicule en CSV, 30 s
+HMI_VOICE="mode sport|oui" ./build/agoojiye-hmi       # la table de commandes seule
+HMI_ASSISTANT="Salut Agoojiye|monte le son" ./build/agoojiye-hmi   # la conversation
+./voice.sh test                                      # les vrais moteurs, sans micro
 ```
-
-L'assistant vocal comprend déjà ses commandes ; il ne lui manque que le micro.
-Pour l'essayer : *Paramètres → Assistant vocal*. Pour brancher un moteur de
-reconnaissance : [BACKEND.md](BACKEND.md).
 
 Les variables `HMI_HV` et `HMI_FAULT` restent lisibles par le binaire ; les
 arguments de `run.sh` ne font que les poser pour toi.

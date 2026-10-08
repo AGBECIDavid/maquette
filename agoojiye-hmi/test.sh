@@ -12,10 +12,18 @@
 #     circulaire, type absent…) — c'est ce qui attrape les vraies régressions
 #     de mise en page, elles ne cassent pas la compilation ;
 #   - un panneau attendu n'a pas produit de capture, donc n'a pas pu s'afficher.
-#   - l'assistant vocal exécute ce qu'il devrait refuser, ou l'inverse.
+#   - l'assistant vocal exécute ce qu'il devrait refuser, ou l'inverse ;
+#   - la conversation — réveil, son, modèle de langage — sort des règles.
 
 set -uo pipefail
 cd "$(dirname "$0")"
+
+# La recette est sourde et isolée : elle n'écoute pas le micro de la machine,
+# et ne parle pas aux moteurs vocaux qui pourraient y tourner (./voice.sh
+# start). Ses conversations passent par ses propres faux serveurs, plus bas.
+export AGOOJIYE_NO_MIC=1
+export AGOOJIYE_ASR_URL=http://127.0.0.1:9
+export AGOOJIYE_LLM_URL=http://127.0.0.1:9
 
 KEEP_DIR=""
 if [ "${1:-}" = "--keep" ]; then
@@ -45,8 +53,9 @@ QT_QPA_PLATFORM=offscreen HMI_SCREENSHOT_DIR="$SHOTS" \
     ./build/agoojiye-hmi >"$LOG" 2>&1 || fail "l'application s'est arrêtée en erreur"
 
 # Bruit attendu, sans rapport avec l'interface : pas de dossier d'exécution
-# XDG dans un conteneur, et pas de moteur de synthèse vocale installé.
-NOISE='XDG_RUNTIME_DIR|text-to-speech plug-ins'
+# XDG dans un conteneur, pas de moteur de synthèse vocale installé, pas de
+# serveur audio (PulseAudio/PipeWire) pour Qt Multimedia.
+NOISE='XDG_RUNTIME_DIR|text-to-speech plug-ins|pa_context_connect'
 if grep -Ev "$NOISE" "$LOG" | grep -q '[^[:space:]]'; then
     echo "Avertissements pendant le parcours :" >&2
     grep -Ev "$NOISE" "$LOG" >&2
@@ -106,27 +115,28 @@ for r in rows:
         problems.append(f"t={r['t']} consommation nulle ou négative")
     if r["tyreWarning"] == "1":
         problems.append(f"t={r['t']} alerte pneus alors que les pressions sont nominales")
+    if r["tick"] == "":
+        continue            # relevé antérieur au premier calcul du modèle
+    tick = float(r["tick"])
     if prev is not None:
-        dt = float(r["wall"]) - prev[1]
-        # Deux relevés trop rapprochés : l'arrondi de la vitesse à 0,1 km/h
-        # dominerait la division et fabriquerait une accélération imaginaire.
-        if dt >= 0.05:
+        dt = tick - prev[1]
+        # Mesurée entre deux *calculs* du modèle (`tick`), pas entre deux
+        # relevés (`wall`). La vitesse lue à un relevé date du dernier calcul,
+        # qui le précède de 0 à 100 ms selon le hasard des minuteurs : diviser
+        # par l'écart entre relevés gonflait le quotient de 50 % dès qu'un
+        # relevé arrivait en avance — 2,8 m/s² mesurés pour 1,8 réels.
+        #
+        # Moins de 0,15 s : l'arrondi de la vitesse à 0,1 km/h dominerait.
+        if dt >= 0.15:
             jump = max(jump, abs(v - prev[0]) / 3.6 / dt)
-    prev = (v, float(r["wall"]))
+            prev = (v, tick)
+    else:
+        prev = (v, tick)
 
-# Accélération mesurée sur le temps réellement écoulé, comparée à la borne du
-# modèle (1,8 m/s² au freinage).
-#
-# La marge n'est pas du confort : le pas du modèle (100 ms) et celui du relevé
-# (200 ms) ne sont pas alignés. Deux pas de modèle totalisant 0,22 s peuvent
-# tomber dans une fenêtre de 0,20 s, et le quotient affiche alors 1,8 × 1,1 ≈
-# 2,0 m/s² pour une physique parfaitement respectée. C'est un repliement de
-# l'échantillonnage, pas une faute du modèle — d'où des relevés qui oscillent
-# entre 1,8 et 2,0 d'une exécution à l'autre.
-#
-# 2,5 laisse passer cet artefact et arrête une vraie téléportation : à cette
-# valeur une navette n'accélère plus, elle saute.
-if jump > 2.5:
+# Mesurée ainsi, l'accélération est celle que le modèle a appliquée, à
+# l'arrondi près (±0,03 m/s sur 0,15 s, soit ±0,2 m/s²). La borne du modèle
+# est 1,8 au freinage : 2,1 laisse passer l'arrondi et rien d'autre.
+if jump > 2.1:
     problems.append(f"accélération de {jump:.2f} m/s², au-delà du modèle")
 if len(phases) < 3:
     problems.append(f"scénario incomplet, phases vues : {sorted(phases)}")
@@ -218,7 +228,67 @@ case "$REPLY" in
     *) fail "capteur muet, mais l'assistant annonce une vitesse : « $REPLY »" ;;
 esac
 
+# ---- 9. conversation -----------------------------------------------------
+# De la parole à l'action, avec de faux moteurs qui parlent l'API des vrais
+# (voice/fake_servers.py) et refusent toute requête mal formée. Ce qui est
+# testé, c'est l'interface : réveil, découpage du son, dialogue, et surtout
+# qu'un modèle de langage ne fasse jamais plus que ce que la table permet.
+echo "· conversation"
+if ! command -v python3 >/dev/null; then
+    echo "  ignorée : python3 absent (les faux moteurs en ont besoin)"
+else
+    ASR_PORT=18178; LLM_PORT=18179
+    WAV="$(mktemp --suffix=.wav)"
+    python3 voice/fake_servers.py serve --asr-port $ASR_PORT --llm-port $LLM_PORT \
+        --transcripts "Salut Agoojiye, quelle est mon autonomie ?|et la batterie ?|merci" \
+        >"$LOG" 2>&1 &
+    FAKE_PID=$!
+    trap 'kill $FAKE_PID 2>/dev/null; rm -f "$WAV"; cleanup' EXIT
+    for _ in $(seq 50); do grep -q prêt "$LOG" 2>/dev/null && break; sleep 0.1; done
+    grep -q prêt "$LOG" || fail "les faux moteurs n'ont pas démarré"
+
+    talk() {   # [HMI_ASSISTANT] [modèle oui|non] → sortie du harnais
+        local llm=http://127.0.0.1:9
+        [ "${2:-oui}" = oui ] && llm=http://127.0.0.1:$LLM_PORT
+        QT_QPA_PLATFORM=offscreen AGOOJIYE_LLM_URL=$llm HMI_ASSISTANT="$1" \
+            ./build/agoojiye-hmi 2>/dev/null
+    }
+    replies() { grep '^assistant|' | cut -d'|' -f2 | tr '\n' ' ' | sed 's/ $//'; }
+
+    # Le chemin complet : un WAV de trois « phrases » doit être découpé en
+    # trois, transcrit, compris — et la deuxième passe sans le nom, la
+    # conversation étant ouverte.
+    python3 voice/fake_servers.py wav "$WAV" 3
+    OUT="$(QT_QPA_PLATFORM=offscreen AGOOJIYE_ASR_URL=http://127.0.0.1:$ASR_PORT \
+           AGOOJIYE_LLM_URL=http://127.0.0.1:$LLM_PORT HMI_VOICE_WAV="$WAV" \
+           ./build/agoojiye-hmi 2>/dev/null)"
+    expect "executed executed chat" "$(echo "$OUT" | replies)" \
+        "le son n'a pas été découpé, transcrit et compris en trois phrases"
+
+    # Sans le nom, rien ; après « merci », rien non plus.
+    OUT="$(talk "ouvre la navigation|Salut à Goujie, ouvre la navigation|monte le son|merci|monte le son" non)"
+    expect "executed executed chat" "$(echo "$OUT" | replies)" \
+        "l'assistant a répondu sans avoir été appelé"
+    echo "$OUT" | grep -q '^#|.*ecran=nav' || fail "« ouvre la navigation » n'a pas ouvert la navigation"
+
+    # Phrase libre → le modèle propose → la table confirme, puis refuse en
+    # roulant ce qu'elle refuserait au doigt.
+    OUT="$(talk "Salut Agoojiye|tu peux passer en sport ?|ouais|@vitesse=25|tu m'ouvres la trappe ?")"
+    expect "chat confirm executed refused" "$(echo "$OUT" | replies)" \
+        "le dialogue avec le modèle de langage ne suit pas les règles de la table"
+    echo "$OUT" | tail -1 | grep -q 'mode=SPORT|.*ouvert=$' \
+        || fail "état final faux après la conversation : $(echo "$OUT" | tail -1)"
+
+    # Un modèle qui ment — commande inexistante, action prétendue — n'obtient
+    # ni l'action, ni que son mensonge soit prononcé.
+    OUT="$(talk "@clavier:mode pirate activé")"
+    expect "unknown" "$(echo "$OUT" | replies)" "une commande hors table venue du modèle a été acceptée"
+    if echo "$OUT" | grep -q "J'ai freiné"; then
+        fail "l'assistant a répété une action inventée par le modèle"
+    fi
+fi
+
 echo
-echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif, assistant vocal sûr."
+echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif, assistant vocal sûr, conversation tenue."
 [ -n "$KEEP_DIR" ] && echo "Captures : $KEEP_DIR"
 exit 0

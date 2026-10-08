@@ -17,7 +17,7 @@ Item {
         { label: "Son", sub: "Volume, balance, notifications", icon: "ph-speaker-high", c: Theme.purple },
         { label: "Véhicule", sub: "Préférences, conduite", icon: "ph-car-simple", c: Theme.green },
         { label: "Système", sub: "Infos système, mises à jour", icon: "ph-cube", c: Theme.blue },
-        { label: "Assistant vocal", sub: "Commandes, essai sans micro", icon: "ph-microphone", c: Theme.teal }
+        { label: "Assistant vocal", sub: "Conversation, micro, moteurs", icon: "ph-microphone", c: Theme.teal }
     ]
     readonly property var aboutRows: [
         { k: "Nom du système", v: VehicleData.vehicleName + " V1" },

@@ -152,6 +152,37 @@ Item {
             Icon { name: "ph-cell-signal-full"; size: 19; color: Theme.textSecondary; anchors.verticalCenter: parent.verticalCenter }
         }
         Icon { name: "ph-wifi-high"; size: 20; color: VehicleData.wifiConnected ? Theme.textSecondary : Theme.textDim; anchors.verticalCenter: parent.verticalCenter }
+        // Appui-pour-parler. Équivaut à « Salut Agoojiye » : dans le vent d'une
+        // navette ouverte, un bouton ne se déclenche jamais tout seul et ne
+        // confond pas une conversation de passagers avec un ordre. Rappuyer
+        // clôt la conversation. L'anneau suit le niveau du micro : on voit
+        // qu'il entend avant même de parler.
+        Rectangle {
+            id: micButton
+            readonly property bool active: Assistant.awake || Assistant.thinking
+            width: 40; height: 40; radius: 20
+            anchors.verticalCenter: parent.verticalCenter
+            color: active ? Theme.alpha(Theme.teal, 0.2)
+                          : (micHover.containsMouse ? Theme.alpha(Theme.panelBgTop, 0.9) : "transparent")
+            border.width: 1
+            border.color: active ? Theme.teal : Theme.alpha(Theme.teal, 0.25 + VoiceListener.level * 0.75)
+
+            Icon {
+                anchors.centerIn: parent
+                name: "ph-microphone"
+                fill: micButton.active
+                size: 21
+                color: micButton.active ? Theme.teal
+                                        : (VoiceListener.state === "off" ? Theme.textDim : Theme.textSecondary)
+            }
+            MouseArea {
+                id: micHover
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: micButton.active ? Assistant.sleep() : Assistant.wake()
+            }
+        }
         // Tiroir d'applications. Les sept destinations principales sont dans la
         // barre du bas ; ce bouton ouvre le reste (téléphone, entretien,
         // à propos) sans encombrer la barre.

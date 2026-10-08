@@ -5,7 +5,23 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network)
+
+# Micro : optionnel. Sans Qt Multimedia, l'assistant reste utilisable au
+# clavier (Paramètres → Assistant vocal) et tout le reste est identique.
+# -DAGOOJIYE_MIC=OFF s'en passe même s'il est installé (cible sans micro).
+option(AGOOJIYE_MIC "Micro de l'assistant vocal (Qt Multimedia)" ON)
+if(AGOOJIYE_MIC)
+    find_package(Qt6 QUIET COMPONENTS Multimedia)
+endif()
+if(Qt6Multimedia_FOUND)
+    message(STATUS "Qt Multimedia trouvé : le micro de l'assistant est disponible.")
+elseif(NOT AGOOJIYE_MIC)
+    message(STATUS "Micro désactivé (AGOOJIYE_MIC=OFF) : l'assistant reste au clavier.")
+else()
+    message(STATUS "Qt Multimedia absent : pas de micro, l'assistant reste au clavier "
+                   "(paquet qt6-multimedia-dev).")
+endif()
 
 # Synthèse vocale : optionnelle, et doublée d'un repli. Sans rien du tout,
 # l'application se construit et tourne à l'identique — l'assistant reste
@@ -29,6 +45,8 @@ qt_add_executable(agoojiye-hmi
     main.cpp
     voiceannouncer.h
     voiceannouncer.cpp
+    voicelistener.h
+    voicelistener.cpp
 )
 
 set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
@@ -36,6 +54,7 @@ set_source_files_properties(qml/AppState.qml PROPERTIES QT_QML_SINGLETON_TYPE TR
 set_source_files_properties(qml/VehicleData.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 set_source_files_properties(qml/VehicleSimulator.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 set_source_files_properties(qml/VoiceCommands.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(qml/Assistant.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(agoojiye-hmi
     URI AgoojiyeHMI
@@ -47,6 +66,7 @@ qt_add_qml_module(agoojiye-hmi
         qml/VehicleData.qml
         qml/VehicleSimulator.qml
         qml/VoiceCommands.qml
+        qml/Assistant.qml
         qml/components/Icon.qml
         qml/components/AlertBanner.qml
         qml/components/StatusBar.qml
@@ -65,6 +85,7 @@ qt_add_qml_module(agoojiye-hmi
         qml/components/BatteryArc.qml
         qml/components/Vignette.qml
         qml/components/VoiceConsole.qml
+        qml/components/AssistantBubble.qml
         qml/screens/BootScreen.qml
         qml/screens/HvDiagnosticScreen.qml
         qml/screens/DashboardScreen.qml
@@ -104,7 +125,13 @@ target_link_libraries(agoojiye-hmi
         Qt6::Gui
         Qt6::Qml
         Qt6::Quick
+        Qt6::Network
 )
+
+if(Qt6Multimedia_FOUND)
+    target_link_libraries(agoojiye-hmi PRIVATE Qt6::Multimedia)
+    target_compile_definitions(agoojiye-hmi PRIVATE AGOOJIYE_HAS_MIC)
+endif()
 
 if(Qt6TextToSpeech_FOUND)
     target_link_libraries(agoojiye-hmi PRIVATE Qt6::TextToSpeech)

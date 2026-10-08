@@ -1,0 +1,6 @@
+# Produits par ./voice.sh install — sources compilées, modèles (plus d'un Go),
+# journaux et identifiants de processus. Rien de tout cela ne se versionne.
+src/
+models/
+logs/
+run/

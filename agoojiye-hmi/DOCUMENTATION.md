@@ -50,7 +50,8 @@ développeur :
 | Affichage | 1600 × 900 logique, plein écran |
 | Accélération graphique | **non requise** |
 | Réseau | non requis au fonctionnement |
-| Audio | facultatif (assistant vocal) |
+| Audio | micro et haut-parleur pour l'assistant vocal (facultatif) |
+| Mémoire | 2 Go libres pour les moteurs vocaux (facultatif) |
 
 La ligne la plus importante de ce tableau est **« accélération graphique : non
 requise »**. La cible n'a pas forcément de GPU utilisable, et le rendu peut
@@ -89,16 +90,24 @@ Linux — mais seule la ligne Linux est utilisée et vérifiée. Le repli vocal
 | **Inter** (police) | Tout le texte | Dessinée pour les écrans, lisible aux petites tailles et de loin. |
 | **Qt TextToSpeech** | Assistant vocal | Chemin propre quand le module et son plugin sont installés. |
 | **`spd-say`** (speech-dispatcher) | Repli vocal | Existe parce que le plugin Qt manque sur beaucoup d'installations. |
-| **Bash** | `run.sh`, `test.sh` | Aucune dépendance à installer pour construire, lancer et tester. |
+| **Qt Multimedia** | Micro de l'assistant | Capture audio portable ; facultatif — sans lui, l'assistant reste au clavier. |
+| **Qt Network** | Dialogue avec les moteurs vocaux | HTTP local, sans bibliothèque tierce. |
+| **whisper.cpp** (`whisper-server`) | Reconnaissance de la parole | Whisper en C++, sur processeur, hors ligne ; français correct dès le modèle `base`. |
+| **llama.cpp** (`llama-server`) | Compréhension des phrases libres | Modèle de langage local, sortie contrainte par schéma JSON pendant la génération. |
+| **Qwen2.5 1,5B Instruct** | Le modèle de langage | Petit, multilingue, rapide sur processeur ; licence Apache 2.0. |
+| **Bash** | `run.sh`, `test.sh`, `voice.sh` | Aucune dépendance à installer pour construire, lancer et tester. |
+| **Python 3** (bibliothèque standard) | Faux moteurs de la recette | Testent l'interface sans télécharger 1,2 Go de modèles. |
 
 ### Ce qui n'est **pas** utilisé, volontairement
 
 - **Aucun `ShaderEffect`, aucun `ShaderEffectSource`.** Ils disparaissent sans
   message d'erreur en rendu logiciel — l'écran serait juste vide sur la cible.
-- **Aucune bibliothèque tierce**, aucun gestionnaire de paquets (npm, conan,
-  vcpkg). Le dépôt cloné se construit avec Qt et un compilateur, rien d'autre.
+- **Aucune bibliothèque tierce dans l'interface**, aucun gestionnaire de paquets
+  (npm, conan, vcpkg). Le dépôt cloné se construit avec Qt et un compilateur.
+  Les moteurs vocaux sont des **programmes à part**, compilés par `voice.sh` et
+  joints en HTTP local : l'interface ne lie rien d'eux.
 - **Aucun accès réseau** au fonctionnement. Les cartes et pochettes d'album sont
-  des images embarquées.
+  des images embarquées, et l'assistant vocal ne parle qu'à `127.0.0.1`.
 - **Aucune base de données.** L'état vit en mémoire, la persistance viendra du
   véhicule.
 
@@ -126,6 +135,12 @@ sudo apt install qt6-speech-speechd-plugin  # chemin Qt natif, si disponible
 
 Vérification : si `spd-say -l fr "Bienvenue"` parle dans un terminal, l'assistant
 parlera dans l'application.
+
+Pour que l'assistant **entende** (micro) :
+
+```bash
+sudo apt install qt6-multimedia-dev          # puis ./run.sh --clean
+```
 
 ### 4.2 Lancer
 
@@ -203,6 +218,33 @@ Détails de construction qui comptent :
 - **Qt TextToSpeech est cherché en `QUIET`** : absent, la construction réussit à
   l'identique et `AGOOJIYE_HAS_TTS` n'est pas défini.
 
+### 4.7 Les moteurs vocaux
+
+Une fois pour toutes (≈ 5 min de compilation, 1,2 Go de téléchargement) :
+
+```bash
+./voice.sh install
+```
+
+Puis, à chaque démonstration :
+
+```bash
+./run.sh --voix          # lance les moteurs, puis l'interface
+```
+
+ou séparément : `./voice.sh start`, `./voice.sh status`, `./voice.sh stop`.
+
+`./voice.sh test` vérifie la chaîne sans micro : une voix de synthèse dit
+« Salut Agoojiye, quelle est mon autonomie ? », whisper la transcrit, le modèle
+la comprend. Si ce test passe et que l'interface reste sourde, le problème est
+le micro, pas les moteurs.
+
+| Réglage | Valeurs | Effet |
+|---|---|---|
+| `VOICE_ASR` | `tiny` · **`base`** · `small` | `small` reconnaît mieux, 3 fois plus lent |
+| `VOICE_LLM` | **`1.5b`** · `3b` | `3b` converse mieux ; licence non commerciale |
+| `VOICE_THREADS` | nombre | cœurs par moteur (4 par défaut) |
+
 ---
 
 ## 5. Structure du dépôt
@@ -211,16 +253,21 @@ Détails de construction qui comptent :
 agoojiye-hmi/
 ├── CMakeLists.txt          construction, ressources, singletons
 ├── main.cpp                point d'entrée + outillage de recette (208 l.)
-├── voiceannouncer.{h,cpp}  assistant vocal, deux chemins + repli
+├── voiceannouncer.{h,cpp}  voix de l'assistant, deux chemins + file d'attente
+├── voicelistener.{h,cpp}   oreille : micro, détection de parole, whisper-server
+├── voice.sh                installe et lance les moteurs vocaux
+├── voice/
+│   └── fake_servers.py     faux moteurs pour la recette
 ├── run.sh                  construire et lancer, scénarios en argument
-├── test.sh                 test de fumée en 8 étapes, sans écran
+├── test.sh                 test de fumée en 9 étapes, sans écran
 ├── qml/
 │   ├── Main.qml            coque : barres, écrans, couches (141 l.)
 │   ├── Theme.qml           couleurs et polices, singleton (49 l.)
 │   ├── AppState.qml        état d'interface, singleton (204 l.)
 │   ├── VehicleData.qml     ← POINT DE BRANCHEMENT DU BACKEND (357 l.)
 │   ├── VehicleSimulator.qml source simulée, singleton (309 l.)
-│   ├── VoiceCommands.qml   commandes vocales, singleton (412 l.)
+│   ├── VoiceCommands.qml   table des commandes vocales, singleton
+│   ├── Assistant.qml       conversation : réveil, dialogue, modèle
 │   ├── Icons.js            table des points de code Phosphor
 │   ├── components/         18 briques réutilisées (1 587 l.)
 │   └── screens/            11 écrans + 2 couches (4 910 l.)
@@ -433,38 +480,73 @@ chose.
 
 ### 6.7 L'assistant vocal
 
-Deux moitiés, et une seule est encore à faire.
+On parle à la navette comme à quelqu'un : **« Salut Agoojiye »**, puis ce
+qu'on veut, avec ses mots. Elle répond à voix haute, fait ce qui est faisable,
+et dit pourquoi quand ce ne l'est pas. Tout tourne **sur la machine** : aucune
+phrase ne part sur Internet.
 
-**Ce qu'il comprend — fait.** `VoiceCommands.qml` porte une table de 32
-commandes, ses règles de refus et de confirmation, et la grammaire qu'un moteur
-de reconnaissance recevra. Tout fonctionne dès aujourd'hui, sans micro, depuis
-*Paramètres → Assistant vocal*.
+```
+  micro ─► VoiceListener ─► whisper-server ─► Assistant ─┬─► VoiceCommands ─► AppState
+          (C++ : détection     (reconnaissance,  (réveil,  │   (la table          VehicleData
+           de parole, coupé     local)            dialogue) │    décide)
+           quand il parle)                                  │
+                                                            └─► llama-server
+                                                                (comprend, propose)
+          VoiceAnnouncer ◄── réponses ◄──────────────────────────────┘
+```
 
-**Ce qu'il entend — à brancher.** Un moteur de reconnaissance local (Vosk en
-tête de liste : modèles d'environ 50 Mo, grammaire restreinte, API C) n'aura
-qu'à transmettre le texte reconnu à `VoiceCommands.handle()`.
+Une phrase suit trois chemins possibles, du plus rapide au plus souple :
+
+1. **Formule exacte de la table** (« mode sport ») → exécutée sans attendre.
+2. **Phrase libre** (« tu peux me mettre en sport ? ») → le modèle de langage
+   comprend et propose **un identifiant de commande**, ou répond lui-même si
+   on bavarde (« raconte-moi une blague »).
+3. **Modèle absent** → repli prudent : une formule contenue dans la phrase,
+   jamais pour une ouverture ni un changement de mode.
 
 Les choix qui tiennent l'ensemble :
 
-- **Vocabulaire fermé.** Le moteur ne peut rendre que des phrases de la table :
-  une commande inventée par une erreur de reconnaissance devient impossible
-  plutôt que rare.
-- **La voix est un périphérique d'entrée, pas une couche.** Chaque commande
-  appelle les fonctions que le tactile appelle déjà ; les règles de sécurité
-  n'existent qu'en un exemplaire.
-- **Ce qui ne doit jamais se commander à la voix est absent de la table**, pas
+- **Le modèle propose, la table décide.** Un schéma JSON imposé pendant la
+  génération ne laisse au modèle que deux sorties : un identifiant de la table,
+  ou rien. La table applique ensuite ses refus et ses confirmations, et c'est
+  **sa** réponse — ce qui s'est réellement passé — qui est prononcée. Un modèle
+  qui « croit » ouvrir une trappe en roulant ne peut ni l'ouvrir, ni le dire.
+- **Ce qui ne se commande jamais à la voix est absent de la table**, pas
   désactivé : conduite, frein de stationnement, chaîne haute tension,
-  régulateur, freinage d'urgence.
+  régulateur, freinage d'urgence. Aucun identifiant ne les désigne, donc aucun
+  modèle ne peut les demander.
+- **La voix est un périphérique d'entrée, pas une couche.** Chaque commande
+  appelle les fonctions que le tactile appelle déjà.
 - **L'autorisation se revérifie au moment d'agir.** Un « oui » prononcé après
   que la navette s'est mise à rouler ne rouvre rien.
+- **On ne répond pas à ce qu'on surprend.** Sans le nom, une phrase est
+  ignorée. « Agoojiye » n'étant dans aucun dictionnaire, il est reconnu par son
+  **squelette phonétique** (« Agoujie », « à Goujie », « Agoudjié » passent ;
+  « Algérie », « à gauche » non).
+- **Sourd pendant qu'il parle**, sinon il s'entendrait dans les haut-parleurs.
+- **Dans l'ordre.** Une phrase dite pendant que le modèle réfléchit attend son
+  tour : « merci » ne passe pas avant la réponse qu'il remercie.
 
-Détail des niveaux, ajout d'une commande et branchement d'un moteur :
-[BACKEND.md](BACKEND.md).
+Après le réveil, la conversation reste ouverte 12 s après chaque réponse
+*prononcée* : on enchaîne sans répéter le nom (« et la batterie ? »).
+« Merci » la referme. Le **bouton micro** de la barre d'état vaut « Salut
+Agoojiye » — utile quand le vent couvre la voix.
+
+Une **bulle** montre la conversation par-dessus l'écran en cours ; *Paramètres
+→ Assistant vocal* en montre le fil entier, permet d'écrire à l'assistant, et
+indique l'état des trois maillons (micro, reconnaissance, compréhension).
+
+**Les moteurs** s'installent et se lancent par `./voice.sh` (§4.7). Sans eux,
+l'interface tourne à l'identique ; l'assistant reste utilisable au clavier et
+pour les formules exactes.
 
 **Le vrai risque est matériel** : la navette est ouverte, donc exposée au vent
-et au bruit de roulement. Un bouton d'appui-pour-parler au volant sera plus
-fiable qu'un mot de réveil, et un micro directionnel orienté vers le conducteur
+et au bruit de roulement. La détection de parole suit le bruit de fond plutôt
+qu'un seuil fixe, mais un micro directionnel orienté vers le conducteur
 comptera plus que le choix du modèle.
+
+Détail des niveaux de commande, ajout d'une commande, protocole des moteurs :
+[BACKEND.md](BACKEND.md).
 
 **Pour la sortie**, deux chemins, essayés dans cet ordre :
 
@@ -523,7 +605,7 @@ non gardés dans l'interface, pour que le backend les voie.
 Pas besoin d'écran : Qt tourne en mode *offscreen*. **À lancer avant chaque
 `git push`.**
 
-Huit étapes :
+Neuf étapes :
 
 | # | Étape | Échoue si |
 |---|---|---|
@@ -531,10 +613,11 @@ Huit étapes :
 | 2 | Parcours de l'interface | Qt émet **le moindre avertissement QML** |
 | 3 | Présence des panneaux | un des 39 panneaux ne produit pas de capture |
 | 4 | Séquence de démarrage | la séquence ne se joue pas jusqu'au bout |
-| 5 | Cohérence physique sur 30 s | frein de stationnement en roulant, rapport P en roulant, autonomie négative, accélération hors bornes, ou les 3 phases pas toutes vues |
+| 5 | Cohérence physique sur 30 s | frein de stationnement en roulant, rapport P en roulant, autonomie négative, accélération hors bornes (mesurée sur l'horloge du modèle), ou les 3 phases pas toutes vues |
 | 6 | Chaîne d'alerte | une panne injectée ne remonte pas au bandeau |
 | 7 | Verrou haute tension | un motif est mal rapporté, ou l'isolement n'est pas bloquant |
 | 8 | Assistant vocal | une commande hors table est acceptée, un ouvrant s'ouvre en roulant, un « oui » agit après que la navette a démarré, ou un capteur muet est annoncé comme une valeur |
+| 9 | Conversation | le son n'est pas découpé et compris phrase par phrase, l'assistant répond sans avoir été appelé, le dialogue avec le modèle sort des règles de la table, ou un modèle qui ment obtient l'action ou fait prononcer son mensonge |
 
 L'étape 2 est celle qui attrape les vraies régressions : **une dépendance
 circulaire ou une propriété inconnue ne casse pas la compilation**, elle fait
@@ -557,7 +640,8 @@ existe pour que la simulation se vérifie **comme une donnée** plutôt qu'en
 regardant l'écran : « le frein de stationnement n'est jamais serré en roulant »
 est une comparaison de colonnes ici, et une opinion autrement.
 
-La colonne **`wall`** porte le temps réellement écoulé. Sans elle, une
+La colonne **`tick`** porte l'instant du calcul du modèle qui a produit la
+ligne ; **`wall`**, celui du relevé. Sans elle, une
 accélération se déduirait de l'intervalle *visé* entre deux relevés — or le
 relevé peut lui aussi arriver en retard, et le contrôle accuserait la physique
 d'un défaut qui n'appartient qu'à l'échantillonnage.
@@ -572,6 +656,10 @@ d'un défaut qui n'appartient qu'à l'échantillonnage.
 | `HMI_SCREENSHOT_DIR=<dir>` | parcourt les 39 panneaux, une capture chacun, puis quitte |
 | `HMI_VOICE="a\|b\|…"` | rejoue des phrases comme si elles avaient été reconnues ; `@vitesse=N` change la vitesse entre deux |
 | `HMI_BOOT_FRAMES=<dir>` | capture la séquence de démarrage image par image |
+| `HMI_ASSISTANT="a\|b\|…"` | rejoue des phrases entendues, mot de réveil compris ; `@clavier:texte`, `@vitesse=N`, `@etat` |
+| `HMI_VOICE_WAV=fichier.wav` | fait passer un enregistrement par le chemin du micro |
+| `AGOOJIYE_NO_MIC=1` | n'ouvre pas le micro (la recette le pose toujours) |
+| `AGOOJIYE_ASR_URL`, `AGOOJIYE_LLM_URL` | adresses des moteurs vocaux (`127.0.0.1:8178` et `:8179` par défaut) |
 
 Les arguments de `run.sh` ne font que poser `HMI_HV` et `HMI_FAULT` pour vous.
 
@@ -600,6 +688,10 @@ Une liste courte, à vérifier avant d'embarquer :
       encore en dur ») : navigation, média, téléphone, entretien.
 - [ ] Plateforme Qt choisie (`eglfs` en général) et curseur masqué.
 - [ ] Fluidité mesurée sur la cible (§8.4).
+- [ ] Moteurs vocaux compilés **sur la cible** (`voice.sh` optimise pour le
+      processeur qui compile), lancés comme services, et latence mesurée en
+      roulant.
+- [ ] Micro choisi et essayé **dans la navette en mouvement**.
 - [ ] `./test.sh` au vert.
 
 ---
@@ -615,6 +707,10 @@ Une liste courte, à vérifier avant d'embarquer :
 | `./test.sh` échoue en étape 5 sans changement de code | relevé trop court pour voir les 3 phases | `HMI_TRACE` force déjà le mode déterministe ; vérifier qu'il est bien lu |
 | Argument de `run.sh` refusé | faute de frappe | `./run.sh --help` liste les valeurs valides |
 | `./run.sh: no such file or directory` | mauvais dossier | se placer dans `agoojiye-hmi/` |
+| L'assistant n'entend rien | micro absent, coupé, ou Qt Multimedia manquant | *Paramètres → Assistant vocal* : l'état des trois maillons dit lequel |
+| Il entend mais ne répond pas | le nom n'a pas été reconnu | la page de l'assistant affiche « entendu sans Salut Agoojiye » ; parler plus près, ou bouton micro |
+| Il ne comprend que les formules exactes | modèle de langage arrêté | `./voice.sh status`, puis `./voice.sh start` |
+| Réponses lentes (> 3 s) | machine modeste | `VOICE_ASR=tiny`, ou plus de cœurs avec `VOICE_THREADS` |
 
 ---
 
