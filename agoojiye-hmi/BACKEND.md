@@ -9,7 +9,7 @@ seule direction :
 
    VehicleSimulator.qml  ─┐
    CAN / ECU / capteurs  ─┼──►   VehicleData.qml   ──►    12 écrans
-   GPS / API / socket    ─┘      (ne produit rien,        38 panneaux
+   GPS / API / socket    ─┘      (ne produit rien,        39 panneaux
                                   détient tout)           alertes, témoins
 ```
 
@@ -348,7 +348,98 @@ La main se rend en deux temps — `handoff()` révèle le tableau de bord, puis
 `finished()` retire la couche de démarrage une fois son fondu terminé. Les deux
 se croisent, d'où l'enchaînement plutôt que la coupure.
 
-## L'assistant vocal
+## L'assistant vocal — les commandes
+
+L'assistant **comprend** déjà : 32 commandes, une table, des règles de refus.
+Il lui manque seulement l'oreille. Tout est dans `qml/VoiceCommands.qml`.
+
+```
+  micro ──► moteur de reconnaissance ──► VoiceCommands.handle(texte)
+            (à brancher, ex. Vosk)              │
+                                                ├─► AppState / VehicleData
+                                                │   (les mêmes appels que le tactile)
+                                                └─► signal replied(texte)
+                                                         │
+                                       Main.qml ────────►└─► VoiceAnnouncer.speak()
+```
+
+**Brancher un moteur de reconnaissance**, c'est deux lignes dans `Main.qml`, là
+où la sortie est déjà reliée :
+
+```qml
+// au démarrage : le moteur n'écoute que les phrases de la table
+recognizer.setGrammar(VoiceCommands.grammar())
+// à chaque phrase reconnue
+onRecognized: (text) => VoiceCommands.handle(text)
+```
+
+`grammar()` est **déduite de la table** : une commande qu'on ne sait pas exécuter
+ne peut pas être reconnue, et il n'existe pas deux listes susceptibles de
+diverger. Elle se termine par `[unk]` : sans cette entrée, un moteur à grammaire
+restreinte force n'importe quel bruit vers la phrase la plus proche.
+
+Avec Vosk, vérifier au premier chargement que chaque mot de la grammaire existe
+dans le vocabulaire du modèle français : Vosk écarte en le signalant dans son
+journal un mot qu'il ne connaît pas, et la phrase concernée ne serait alors
+jamais reconnue.
+
+### Les règles
+
+| Niveau | Exemples | Règle |
+|---|---|---|
+| Libre | écrans, média, questions, mode nuit | exécutée aussitôt |
+| Confirmation | modes de conduite, désactiver l'alerte de ligne | « oui » dans les 8 s |
+| À l'arrêt | ouvrir trappe, porte, compartiment batterie | refusée si `VehicleData.moving` |
+| Jamais | conduite, frein, chaîne HT, régulateur, freinage d'urgence | **absente de la table** |
+
+Quatre principes, tous vérifiés par `test.sh` :
+
+- **L'autorisation se revérifie au moment d'agir**, pas seulement à la demande.
+  Entre « ouvre le compartiment batterie » et le « oui », la navette a pu se
+  mettre à rouler : le « oui » est alors refusé.
+- **Une nouvelle phrase abandonne la question en attente.** Sinon un « oui »
+  ultérieur répondrait à la mauvaise question.
+- **Fermer n'est jamais refusé**, seul ouvrir l'est ; **rallumer une aide ne
+  demande rien**, seule l'éteindre demande un « oui ».
+- **Une donnée invalide ne se prononce pas** : capteur de vitesse muet, la
+  réponse est « Donnée indisponible », jamais « zéro kilomètre-heure ».
+
+### Ajouter une commande
+
+Une entrée dans `commands`, rien d'autre — la grammaire, l'écran d'essai et la
+liste affichée suivent :
+
+```qml
+{ id: "go-nav", group: "Écrans", phrases: ["navigation", "ouvre la navigation"],
+  run: function () { AppState.go("nav"); return "Navigation." } },
+```
+
+Champs facultatifs : `stoppedOnly`, `confirm` + `ask`, `already()` (l'action ne
+changerait rien — on le dit au lieu de demander confirmation pour rien).
+
+L'action doit appeler **les fonctions que le tactile appelle déjà**. Une
+commande qui écrirait son propre chemin vers l'état dupliquerait les règles de
+sécurité, et deux exemplaires finissent par diverger.
+
+### Essayer sans micro
+
+*Paramètres → Assistant vocal* : une phrase tapée ou touchée suit exactement le
+chemin d'une phrase reconnue. En recette :
+
+```bash
+HMI_VOICE="mode sport|oui" ./build/agoojiye-hmi
+# confirm|mode sport|Passer en mode sport ?
+# executed|oui|Mode sport.
+
+HMI_VOICE="ouvre le compartiment batterie|@vitesse=20|oui" ./build/agoojiye-hmi
+# confirm|ouvre le compartiment batterie|Ouvrir le compartiment batterie ?
+# refused|oui|Impossible en roulant. Arrêtez la navette d'abord.
+```
+
+`@vitesse=N` change la vitesse entre deux phrases (rapport et frein de
+stationnement suivent, pour garder un état physiquement possible).
+
+## L'assistant vocal — la voix
 
 Il passe par `VoiceAnnouncer` (C++), et **toute la chaîne est optionnelle** :
 sans rien, le projet compile et tourne pareil, la bulle et son onde restent

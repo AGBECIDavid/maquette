@@ -213,22 +213,23 @@ agoojiye-hmi/
 ├── main.cpp                point d'entrée + outillage de recette (208 l.)
 ├── voiceannouncer.{h,cpp}  assistant vocal, deux chemins + repli
 ├── run.sh                  construire et lancer, scénarios en argument
-├── test.sh                 test de fumée en 7 étapes, sans écran
+├── test.sh                 test de fumée en 8 étapes, sans écran
 ├── qml/
 │   ├── Main.qml            coque : barres, écrans, couches (141 l.)
 │   ├── Theme.qml           couleurs et polices, singleton (49 l.)
 │   ├── AppState.qml        état d'interface, singleton (204 l.)
 │   ├── VehicleData.qml     ← POINT DE BRANCHEMENT DU BACKEND (357 l.)
 │   ├── VehicleSimulator.qml source simulée, singleton (309 l.)
+│   ├── VoiceCommands.qml   commandes vocales, singleton (412 l.)
 │   ├── Icons.js            table des points de code Phosphor
-│   ├── components/         17 briques réutilisées (1 238 l.)
+│   ├── components/         18 briques réutilisées (1 587 l.)
 │   └── screens/            11 écrans + 2 couches (4 910 l.)
 └── assets/
     ├── fonts/              Phosphor (2) + Inter (4) — 3,3 Mo
     └── images/             rendus du véhicule, cartes, pochettes — 1,8 Mo
 ```
 
-Environ **7 700 lignes** de QML, C++ et JavaScript.
+Environ **8 600 lignes** de QML, C++ et JavaScript.
 
 ---
 
@@ -432,7 +433,40 @@ chose.
 
 ### 6.7 L'assistant vocal
 
-Deux chemins, essayés dans cet ordre :
+Deux moitiés, et une seule est encore à faire.
+
+**Ce qu'il comprend — fait.** `VoiceCommands.qml` porte une table de 32
+commandes, ses règles de refus et de confirmation, et la grammaire qu'un moteur
+de reconnaissance recevra. Tout fonctionne dès aujourd'hui, sans micro, depuis
+*Paramètres → Assistant vocal*.
+
+**Ce qu'il entend — à brancher.** Un moteur de reconnaissance local (Vosk en
+tête de liste : modèles d'environ 50 Mo, grammaire restreinte, API C) n'aura
+qu'à transmettre le texte reconnu à `VoiceCommands.handle()`.
+
+Les choix qui tiennent l'ensemble :
+
+- **Vocabulaire fermé.** Le moteur ne peut rendre que des phrases de la table :
+  une commande inventée par une erreur de reconnaissance devient impossible
+  plutôt que rare.
+- **La voix est un périphérique d'entrée, pas une couche.** Chaque commande
+  appelle les fonctions que le tactile appelle déjà ; les règles de sécurité
+  n'existent qu'en un exemplaire.
+- **Ce qui ne doit jamais se commander à la voix est absent de la table**, pas
+  désactivé : conduite, frein de stationnement, chaîne haute tension,
+  régulateur, freinage d'urgence.
+- **L'autorisation se revérifie au moment d'agir.** Un « oui » prononcé après
+  que la navette s'est mise à rouler ne rouvre rien.
+
+Détail des niveaux, ajout d'une commande et branchement d'un moteur :
+[BACKEND.md](BACKEND.md).
+
+**Le vrai risque est matériel** : la navette est ouverte, donc exposée au vent
+et au bruit de roulement. Un bouton d'appui-pour-parler au volant sera plus
+fiable qu'un mot de réveil, et un micro directionnel orienté vers le conducteur
+comptera plus que le choix du modèle.
+
+**Pour la sortie**, deux chemins, essayés dans cet ordre :
 
 1. **Qt TextToSpeech**, quand le module *et* son plugin de sortie
    (`libqtexttospeech_speechd.so`) sont installés.
@@ -454,7 +488,7 @@ appelle `spd-say -C` : fermer l'application coupe la voix.
 
 ## 7. Les écrans
 
-11 écrans et 2 couches, 38 panneaux atteignables au total (un écran à barre latérale compte
+11 écrans et 2 couches, 39 panneaux atteignables au total (un écran à barre latérale compte
 une entrée par section).
 
 | Écran | Clé | Sections de la barre latérale |
@@ -467,7 +501,7 @@ une entrée par section).
 | **ADAS** | `adas` | Aides à la conduite · Régulateur de vitesse · Sécurité · Stationnement · Vision · Alerte conducteur |
 | **Média** | `media` | Musique · Radio · Bluetooth · USB · Apple CarPlay · Android Auto |
 | **Lecture en cours** | `mediaNow` | Lecture · Playlists · Sources · Paramètres audio |
-| **Paramètres** | `parametres` | Général · Affichage · Son · Véhicule · Système |
+| **Paramètres** | `parametres` | Général · Affichage · Son · Véhicule · Système · Assistant vocal |
 | **Téléphone** | `phone` | — |
 | **Menu** | `menu` | — (tiroir « toutes les applications ») |
 | **Démarrage** | *(aucune)* | couche, pas écran |
@@ -489,17 +523,18 @@ non gardés dans l'interface, pour que le backend les voie.
 Pas besoin d'écran : Qt tourne en mode *offscreen*. **À lancer avant chaque
 `git push`.**
 
-Sept étapes :
+Huit étapes :
 
 | # | Étape | Échoue si |
 |---|---|---|
 | 1 | Construction | la compilation échoue |
 | 2 | Parcours de l'interface | Qt émet **le moindre avertissement QML** |
-| 3 | Présence des panneaux | un des 38 panneaux ne produit pas de capture |
+| 3 | Présence des panneaux | un des 39 panneaux ne produit pas de capture |
 | 4 | Séquence de démarrage | la séquence ne se joue pas jusqu'au bout |
 | 5 | Cohérence physique sur 30 s | frein de stationnement en roulant, rapport P en roulant, autonomie négative, accélération hors bornes, ou les 3 phases pas toutes vues |
 | 6 | Chaîne d'alerte | une panne injectée ne remonte pas au bandeau |
 | 7 | Verrou haute tension | un motif est mal rapporté, ou l'isolement n'est pas bloquant |
+| 8 | Assistant vocal | une commande hors table est acceptée, un ouvrant s'ouvre en roulant, un « oui » agit après que la navette a démarré, ou un capteur muet est annoncé comme une valeur |
 
 L'étape 2 est celle qui attrape les vraies régressions : **une dépendance
 circulaire ou une propriété inconnue ne casse pas la compilation**, elle fait
@@ -534,7 +569,8 @@ d'un défaut qui n'appartient qu'à l'échantillonnage.
 | `HMI_HV=<5 chiffres>` | applique un motif haute tension |
 | `HMI_FAULT=<mot>` | injecte une panne : `belt`, `tyre`, `battery`, `sensor`, `fault` |
 | `HMI_TRACE=<s>` | relevé CSV pendant N secondes, puis quitte (force le mode déterministe) |
-| `HMI_SCREENSHOT_DIR=<dir>` | parcourt les 38 panneaux, une capture chacun, puis quitte |
+| `HMI_SCREENSHOT_DIR=<dir>` | parcourt les 39 panneaux, une capture chacun, puis quitte |
+| `HMI_VOICE="a\|b\|…"` | rejoue des phrases comme si elles avaient été reconnues ; `@vitesse=N` change la vitesse entre deux |
 | `HMI_BOOT_FRAMES=<dir>` | capture la séquence de démarrage image par image |
 
 Les arguments de `run.sh` ne font que poser `HMI_HV` et `HMI_FAULT` pour vous.

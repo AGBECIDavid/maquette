@@ -44,10 +44,11 @@ CMAKE_PREFIX_PATH=$HOME/Qt/6.8.3/gcc_64 ./run.sh
 ```
 
 Pas besoin d'écran : Qt tourne en mode *offscreen*. Le script échoue si un
-avertissement QML apparaît, si un des 38 panneaux ne s'affiche pas, si l'état
+avertissement QML apparaît, si un des 39 panneaux ne s'affiche pas, si l'état
 véhicule viole une règle physique sur 30 s de simulation (frein de
 stationnement en roulant, vitesse qui se téléporte, autonomie négative), ou si
-une panne injectée ne remonte pas jusqu'au bandeau d'alerte.
+une panne injectée ne remonte pas jusqu'au bandeau d'alerte, ou si
+l'assistant vocal exécute une commande qu'il devait refuser.
 
 Le relevé passe le simulateur en mode déterministe : sans cela les durées de
 phase sont tirées au hasard, et le test réussirait ou échouerait selon le
@@ -132,7 +133,12 @@ qu'absorbé en silence — au niveau du shell, une faute de frappe est délibér
 
 ```bash
 HMI_TRACE=30 ./build/agoojiye-hmi       # état véhicule en CSV, 30 s
+HMI_VOICE="mode sport|oui" ./build/agoojiye-hmi   # rejoue des phrases
 ```
+
+L'assistant vocal comprend déjà ses commandes ; il ne lui manque que le micro.
+Pour l'essayer : *Paramètres → Assistant vocal*. Pour brancher un moteur de
+reconnaissance : [BACKEND.md](BACKEND.md).
 
 Les variables `HMI_HV` et `HMI_FAULT` restent lisibles par le binaire ; les
 arguments de `run.sh` ne font que les poser pour toi.

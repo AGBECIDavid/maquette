@@ -35,6 +35,7 @@ set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 set_source_files_properties(qml/AppState.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 set_source_files_properties(qml/VehicleData.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 set_source_files_properties(qml/VehicleSimulator.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(qml/VoiceCommands.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(agoojiye-hmi
     URI AgoojiyeHMI
@@ -45,6 +46,7 @@ qt_add_qml_module(agoojiye-hmi
         qml/AppState.qml
         qml/VehicleData.qml
         qml/VehicleSimulator.qml
+        qml/VoiceCommands.qml
         qml/components/Icon.qml
         qml/components/AlertBanner.qml
         qml/components/StatusBar.qml
@@ -62,6 +64,7 @@ qt_add_qml_module(agoojiye-hmi
         qml/components/Glow.qml
         qml/components/BatteryArc.qml
         qml/components/Vignette.qml
+        qml/components/VoiceConsole.qml
         qml/screens/BootScreen.qml
         qml/screens/HvDiagnosticScreen.qml
         qml/screens/DashboardScreen.qml

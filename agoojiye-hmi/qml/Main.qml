@@ -15,6 +15,18 @@ Window {
     // une vraie source à la place du simulateur.
     readonly property bool dataSourceRunning: VehicleSimulator.running
 
+    // Branchement de l'assistant vocal sur le haut-parleur. La table de
+    // commandes ne connaît aucun périphérique : c'est ici qu'on la relie à la
+    // sortie, et c'est ici que se branchera le moteur de reconnaissance —
+    // `onRecognized: (text) => VoiceCommands.handle(text)`.
+    Connections {
+        target: VoiceCommands
+        function onReplied(text) {
+            if (VoiceCommands.speakReplies)
+                VoiceAnnouncer.speak(text)
+        }
+    }
+
     Rectangle {
         id: frame
         anchors.fill: parent

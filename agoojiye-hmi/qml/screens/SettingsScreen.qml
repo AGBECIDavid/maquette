@@ -16,7 +16,8 @@ Item {
         { label: "Affichage", sub: "Luminosité, thème, mode", icon: "ph-sun", c: Theme.orange },
         { label: "Son", sub: "Volume, balance, notifications", icon: "ph-speaker-high", c: Theme.purple },
         { label: "Véhicule", sub: "Préférences, conduite", icon: "ph-car-simple", c: Theme.green },
-        { label: "Système", sub: "Infos système, mises à jour", icon: "ph-cube", c: Theme.blue }
+        { label: "Système", sub: "Infos système, mises à jour", icon: "ph-cube", c: Theme.blue },
+        { label: "Assistant vocal", sub: "Commandes, essai sans micro", icon: "ph-microphone", c: Theme.teal }
     ]
     readonly property var aboutRows: [
         { k: "Nom du système", v: VehicleData.vehicleName + " V1" },
@@ -381,6 +382,14 @@ Item {
                         MouseArea { id: updHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor }
                     }
                 }
+            }
+
+            // ---- 5 · Assistant vocal --------------------------------------
+            VoiceConsole {
+                anchors.top: sectionTitle.bottom; anchors.topMargin: 14
+                width: content.width
+                height: content.height - y
+                visible: root.section === 5
             }
         }
     }

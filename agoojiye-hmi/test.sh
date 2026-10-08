@@ -12,6 +12,7 @@
 #     circulaire, type absent…) — c'est ce qui attrape les vraies régressions
 #     de mise en page, elles ne cassent pas la compilation ;
 #   - un panneau attendu n'a pas produit de capture, donc n'a pas pu s'afficher.
+#   - l'assistant vocal exécute ce qu'il devrait refuser, ou l'inverse.
 
 set -uo pipefail
 cd "$(dirname "$0")"
@@ -61,7 +62,7 @@ EXPECTED=(
     adas-0 adas-1 adas-2 adas-3 adas-4 adas-5
     media-0 media-1 media-2 media-3 media-4 media-5
     mediaNow-0 mediaNow-1 mediaNow-2 mediaNow-3
-    parametres-0 parametres-1 parametres-2 parametres-3 parametres-4
+    parametres-0 parametres-1 parametres-2 parametres-3 parametres-4 parametres-5
 )
 for view in "${EXPECTED[@]}"; do
     [ -s "$SHOTS/$view.png" ] || fail "le panneau « $view » n'a produit aucune capture"
@@ -168,7 +169,56 @@ hv_probe() {   # motif → "nb_défauts,bloquant"
 [ "$(hv_probe 1)" = "1,1" ] || fail "motif court mal interprété"
 [ "$(hv_probe xxxxx)" = "0,0" ] || fail "un motif invalide fabrique des pannes"
 
+# ---- 8. assistant vocal --------------------------------------------------
+# Ce qui compte n'est pas qu'il comprenne, c'est qu'il refuse au bon moment.
+# Chaque cas rejoue une suite de phrases comme si le moteur les avait
+# reconnues ; « @vitesse=N » change l'état du véhicule entre deux phrases.
+echo "· assistant vocal"
+
+say() {   # phrases [panne] → un statut par phrase, séparés par des espaces
+    QT_QPA_PLATFORM=offscreen HMI_VOICE="$1" ${2:+HMI_FAULT="$2"} \
+        ./build/agoojiye-hmi 2>/dev/null | grep -v '^@' | cut -d'|' -f1 | tr '\n' ' ' | sed 's/ $//'
+}
+expect() {   # attendu, obtenu, message
+    [ "$2" = "$1" ] || fail "$3 (attendu « $1 », obtenu « $2 »)"
+}
+
+expect "executed" "$(say "accueil")" "une commande simple n'est pas exécutée"
+expect "executed executed" "$(say "va a l'accueil|Y a-t-il une alerte ?")" \
+    "la saisie sans accents ni ponctuation n'est pas reconnue"
+
+# Ce qui n'est pas dans la table ne peut pas être exécuté, quelle que soit la
+# formulation.
+expect "unknown unknown unknown" "$(say "freine|accélère|serre le frein de stationnement")" \
+    "une commande de conduite a été acceptée"
+
+expect "refused" "$(say "@vitesse=30|ouvre la trappe de charge")" \
+    "un ouvrant s'ouvre en roulant"
+expect "executed" "$(say "ouvre la trappe de charge")" \
+    "un ouvrant refuse de s'ouvrir à l'arrêt"
+expect "executed" "$(say "ouvre la trappe de charge|@vitesse=30|ferme la trappe de charge" | cut -d' ' -f2)" \
+    "fermer un ouvrant est refusé en roulant"
+
+expect "confirm executed" "$(say "mode sport|oui")" "la confirmation n'aboutit pas"
+expect "confirm cancelled" "$(say "mode sport|non")" "le refus de confirmation n'annule pas"
+expect "confirm executed" "$(say "mode sport|musique")" \
+    "une nouvelle commande ne remplace pas la question en attente"
+expect "unknown" "$(say "oui")" "un « oui » sans question a déclenché quelque chose"
+
+# Le cas le plus fin : l'autorisation se revérifie au moment d'agir. Entre la
+# question et le « oui », la navette s'est mise à rouler.
+expect "confirm refused" "$(say "ouvre le compartiment batterie|@vitesse=20|oui")" \
+    "un « oui » a ouvert le compartiment batterie en roulant"
+
+# Une donnée invalide ne se prononce pas plus qu'elle ne s'affiche.
+REPLY="$(QT_QPA_PLATFORM=offscreen HMI_FAULT=sensor HMI_VOICE="quelle est ma vitesse" \
+         ./build/agoojiye-hmi 2>/dev/null | cut -d'|' -f3)"
+case "$REPLY" in
+    *indisponible*) ;;
+    *) fail "capteur muet, mais l'assistant annonce une vitesse : « $REPLY »" ;;
+esac
+
 echo
-echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif."
+echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif, assistant vocal sûr."
 [ -n "$KEEP_DIR" ] && echo "Captures : $KEEP_DIR"
 exit 0

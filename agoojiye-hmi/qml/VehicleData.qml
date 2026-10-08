@@ -149,6 +149,20 @@ QtObject {
         { label: "Compartiment batterie", icon: "ph-car-battery", open: false }
     ]
 
+    // Ouvre ou ferme un ouvrant. Avec le simulateur, l'état change aussitôt ;
+    // branché au véhicule, cet appel devient une *demande* au calculateur de
+    // carrosserie, et c'est l'état relu sur le bus qui viendra s'écrire ici.
+    // Réassignation obligatoire, comme pour `hvChain`.
+    function setOpening(label, open) {
+        var next = []
+        for (var i = 0; i < openings.length; i++) {
+            var o = openings[i]
+            next.push({ label: o.label, icon: o.icon,
+                        open: o.label === label ? open : o.open })
+        }
+        openings = next
+    }
+
     // ---- Pneus -------------------------------------------------------------
     property real tyreFrontLeft: 2.5        // bar
     property real tyreFrontRight: 2.5

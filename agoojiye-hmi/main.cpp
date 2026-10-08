@@ -10,6 +10,7 @@
 #include <QVariantList>
 #include <cstdio>
 #include <QElapsedTimer>
+#include <QJSValue>
 
 int main(int argc, char *argv[])
 {
@@ -61,6 +62,73 @@ int main(int argc, char *argv[])
             QMetaObject::invokeMethod(simulator, "injectFault", Q_ARG(QVariant, fault));
     }
 
+    // QA aid: HMI_VOICE="phrase|phrase|…" feeds the voice command table as if
+    // each phrase had been recognised, prints one "status|phrase|reply" line
+    // per step, then exits. It tests what the assistant *does* with a phrase,
+    // independently of any microphone or recognition engine.
+    //
+    // The simulator is stopped so the script controls the vehicle state: a
+    // step written "@vitesse=30" sets the speed, which is how the refusal
+    // rules are exercised — including a speed change between a question and
+    // its "oui".
+    const QString voiceScript = qEnvironmentVariable("HMI_VOICE");
+    if (!voiceScript.isEmpty() && !engine.rootObjects().isEmpty()) {
+        QQmlComponent voiceProbe(&engine);
+        voiceProbe.setData("import QtQml\nimport AgoojiyeHMI\n"
+                           "QtObject {\n"
+                           "  property QtObject voice: VoiceCommands\n"
+                           "  property QtObject data: VehicleData\n"
+                           "  property QtObject sim: VehicleSimulator\n"
+                           "  property QtObject appState: AppState\n"
+                           "}", QUrl());
+        QObject *probeObj = voiceProbe.create();
+        auto get = [probeObj](const char *name) {
+            return probeObj ? probeObj->property(name).value<QObject *>() : nullptr;
+        };
+        QObject *voice = get("voice");
+        QObject *data = get("data");
+        QObject *simulator = get("sim");
+        QObject *appState = get("appState");
+        if (voice && data && simulator && appState) {
+            simulator->setProperty("running", false);
+            data->setProperty("speed", 0.0);
+            voice->setProperty("speakReplies", false);
+            QMetaObject::invokeMethod(appState, "skipBoot");
+
+            for (const QString &step : voiceScript.split('|')) {
+                if (step.startsWith("@vitesse=")) {
+                    // The simulator keeps speed, gear and parking brake
+                    // consistent by construction; with it stopped, the
+                    // script must do the same, or it stages a shuttle
+                    // rolling in P with the brake on.
+                    const double kmh = step.mid(9).toDouble();
+                    data->setProperty("speed", kmh);
+                    data->setProperty("driveGear", kmh > 0.5 ? "D" : "P");
+                    data->setProperty("parkingBrake", kmh <= 0.5);
+                    printf("@|%s|\n", qPrintable(step));
+                    continue;
+                }
+                QVariant ret;
+                QMetaObject::invokeMethod(voice, "handle",
+                                          Q_RETURN_ARG(QVariant, ret),
+                                          Q_ARG(QVariant, step));
+                if (ret.canConvert<QJSValue>())
+                    ret = ret.value<QJSValue>().toVariant();
+                const QVariantMap out = ret.toMap();
+                printf("%s|%s|%s\n",
+                       qPrintable(out.value("status").toString()),
+                       qPrintable(step),
+                       qPrintable(out.value("reply").toString()));
+            }
+            fflush(stdout);
+        }
+        // Combined with HMI_SCREENSHOT_DIR, the sweep runs after the script
+        // instead of the app quitting: the captures then show the console with
+        // its exchanges, which is how the populated state gets reviewed.
+        if (qEnvironmentVariable("HMI_SCREENSHOT_DIR").isEmpty())
+            QTimer::singleShot(0, &app, &QCoreApplication::quit);
+    }
+
     // Dev-only screenshot sweep: HMI_SCREENSHOT_DIR=<dir> walks every screen
     // and grabs a PNG per screen, then exits. Not used by the shipped app.
     const QString screenshotDir = qEnvironmentVariable("HMI_SCREENSHOT_DIR");
@@ -85,7 +153,8 @@ int main(int argc, char *argv[])
                 "adas:0", "adas:1", "adas:2", "adas:3", "adas:4", "adas:5",
                 "media:0", "media:1", "media:2", "media:3", "media:4", "media:5",
                 "mediaNow:0", "mediaNow:1", "mediaNow:2", "mediaNow:3",
-                "parametres:0", "parametres:1", "parametres:2", "parametres:3", "parametres:4"
+                "parametres:0", "parametres:1", "parametres:2", "parametres:3", "parametres:4",
+                "parametres:5"
             };
             auto *index = new int(0);
             auto *timer = new QTimer(&app);
