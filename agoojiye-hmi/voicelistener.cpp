@@ -57,12 +57,36 @@ VoiceListener::VoiceListener(QObject *parent)
     QTimer::singleShot(0, this, &VoiceListener::checkServer);
 
     m_frame.reserve(kFrame);
+
+    // Les micros n'existent pas forcément au démarrage. Sous PipeWire, Qt
+    // remplit sa liste par messages successifs, après le lancement : demander
+    // une seule fois, trop tôt, c'est conclure « aucun micro » pour toute la
+    // session. On suit donc les changements, et on réessaie tant qu'on n'écoute
+    // pas — un micro USB branché en cours de route est pris aussi.
+    m_retry = new QTimer(this);
+    m_retry->setInterval(3000);
+    connect(m_retry, &QTimer::timeout, this, &VoiceListener::startCapture);
+#ifdef AGOOJIYE_HAS_MIC
+    m_devices = new QMediaDevices(this);
+    connect(m_devices, &QMediaDevices::audioInputsChanged, this, &VoiceListener::onDevicesChanged);
+#endif
     QTimer::singleShot(0, this, &VoiceListener::startCapture);
 }
 
 VoiceListener::~VoiceListener()
 {
+    // L'interface est en cours de démolition : ne plus lui écrire.
+    blockSignals(true);
     stopCapture();
+}
+
+bool VoiceListener::micCompiled() const
+{
+#ifdef AGOOJIYE_HAS_MIC
+    return true;
+#else
+    return false;
+#endif
 }
 
 bool VoiceListener::micAvailable() const
@@ -141,11 +165,17 @@ void VoiceListener::setLevel(qreal l)
 void VoiceListener::startCapture()
 {
 #ifdef AGOOJIYE_HAS_MIC
-    if (m_source || !m_enabled)
+    if (m_source || !m_enabled) {
+        m_retry->stop();
         return;
+    }
     const QAudioDevice dev = QMediaDevices::defaultAudioInput();
-    if (dev.isNull())
+    if (dev.isNull()) {
+        // Pas encore de micro : on repassera.
+        m_retry->start();
+        emit micChanged();
         return;
+    }
 
     // 16 kHz mono 16 bits : ce qu'attend la reconnaissance. Si le périphérique
     // le refuse, on prend son format préféré et on convertit nous-mêmes.
@@ -157,14 +187,37 @@ void VoiceListener::startCapture()
     m_resamplePos = 0;
 
     m_source = new QAudioSource(dev, m_format, this);
+    // Un micro débranché, ou un serveur audio relancé, arrête la source en
+    // erreur : on la libère, et la boucle de reprise en ouvrira une autre.
+    connect(m_source, &QAudioSource::stateChanged, this, [this](QAudio::State st) {
+        if (st == QAudio::StoppedState && m_source && m_source->error() != QAudio::NoError) {
+            QTimer::singleShot(0, this, [this] { stopCapture(); m_retry->start(); });
+        }
+    });
     m_io = m_source->start();
     if (!m_io) {
         delete m_source;
         m_source = nullptr;
+        m_retry->start();
         return;
     }
     connect(m_io, &QIODevice::readyRead, this, &VoiceListener::onAudio);
+    m_deviceId = dev.id();
+    m_micName = dev.description();
+    m_retry->stop();
+    emit micChanged();
     updateState();
+#endif
+}
+
+void VoiceListener::onDevicesChanged()
+{
+#ifdef AGOOJIYE_HAS_MIC
+    // Le micro par défaut a changé (casque branché, micro USB…) : on suit.
+    if (m_source && QMediaDevices::defaultAudioInput().id() != m_deviceId)
+        stopCapture();
+    startCapture();
+    emit micChanged();
 #endif
 }
 
@@ -174,9 +227,12 @@ void VoiceListener::stopCapture()
     if (!m_source)
         return;
     m_source->stop();
-    delete m_source;
+    m_source->deleteLater();
     m_source = nullptr;
     m_io = nullptr;
+    m_deviceId.clear();
+    m_micName.clear();
+    emit micChanged();
     resetVad();
     setLevel(0);
 #endif

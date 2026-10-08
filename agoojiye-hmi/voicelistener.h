@@ -11,6 +11,7 @@ class QTimer;
 class QIODevice;
 #ifdef AGOOJIYE_HAS_MIC
 class QAudioSource;
+class QMediaDevices;
 #include <QAudioFormat>
 #endif
 
@@ -41,7 +42,13 @@ class VoiceListener : public QObject
     QML_ELEMENT
     QML_SINGLETON
 
-    Q_PROPERTY(bool micAvailable READ micAvailable CONSTANT)
+    //! Vrai si l'application a été compilée avec Qt Multimedia.
+    Q_PROPERTY(bool micCompiled READ micCompiled CONSTANT)
+    //! Vrai si le système propose un micro. Suivi en continu : sous PipeWire,
+    //! la liste des micros se remplit *après* le démarrage.
+    Q_PROPERTY(bool micAvailable READ micAvailable NOTIFY micChanged)
+    //! Nom du micro écouté, vide sinon — pour vérifier que c'est le bon.
+    Q_PROPERTY(QString micName READ micName NOTIFY micChanged)
     Q_PROPERTY(bool serverReady READ serverReady NOTIFY serverReadyChanged)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
@@ -55,7 +62,9 @@ public:
     explicit VoiceListener(QObject *parent = nullptr);
     ~VoiceListener() override;
 
+    bool micCompiled() const;
     bool micAvailable() const;
+    QString micName() const { return m_micName; }
     bool serverReady() const { return m_serverReady; }
     bool enabled() const { return m_enabled; }
     void setEnabled(bool on);
@@ -74,6 +83,7 @@ public:
 
 signals:
     void heard(const QString &text);
+    void micChanged();
     void serverReadyChanged();
     void enabledChanged();
     void mutedChanged();
@@ -85,6 +95,7 @@ private:
     void startCapture();
     void stopCapture();
     void onAudio();
+    void onDevicesChanged();
 
     // ---- détection de parole --------------------------------------------------
     // Échantillons mono 16 bits à 16 kHz, quelle que soit la source.
@@ -114,7 +125,11 @@ private:
     qreal m_level = 0;
     QString m_state = QStringLiteral("off");
 
+    QString m_micName;
+    QTimer *m_retry = nullptr;
 #ifdef AGOOJIYE_HAS_MIC
+    QMediaDevices *m_devices = nullptr;
+    QByteArray m_deviceId;
     QAudioSource *m_source = nullptr;
     QIODevice *m_io = nullptr;
     QAudioFormat m_format;

@@ -320,8 +320,14 @@ Item {
                 Text { text: "CE QUI EST PRÊT"; font.family: Theme.fontFamily; font.pixelSize: 11; font.weight: Font.Bold; font.letterSpacing: 1.2; color: Theme.textMuted }
                 Repeater {
                     model: [
-                        { label: "Micro", ok: VoiceListener.micAvailable && VoiceListener.enabled,
-                          why: !VoiceListener.micAvailable ? "aucun micro (ou Qt Multimedia absent)" : (VoiceListener.enabled ? "écoute" : "coupé") },
+                        // Trois causes distinctes, trois remèdes distincts : les
+                        // confondre, c'est envoyer chercher au mauvais endroit.
+                        { label: "Micro", ok: VoiceListener.micName !== "",
+                          why: !VoiceListener.micCompiled ? "compilé sans Qt Multimedia : ./run.sh --clean"
+                             : !VoiceListener.enabled ? "coupé"
+                             : !VoiceListener.micAvailable ? "aucun micro trouvé par le système"
+                             : VoiceListener.micName !== "" ? VoiceListener.micName
+                             : "ouverture du micro…" },
                         { label: "Reconnaissance vocale", ok: VoiceListener.serverReady,
                           why: VoiceListener.serverReady ? "whisper — local" : "arrêtée : ./voice.sh start" },
                         { label: "Compréhension libre", ok: Assistant.modelReady,
@@ -337,7 +343,7 @@ Item {
                 }
                 Item {
                     width: chainCol.width; height: 30
-                    visible: VoiceListener.micAvailable
+                    visible: VoiceListener.micCompiled
                     Text { anchors.verticalCenter: parent.verticalCenter; text: "Écoute du micro"; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textSecondary }
                     ToggleSwitch {
                         anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
