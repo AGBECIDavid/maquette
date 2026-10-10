@@ -13,7 +13,8 @@
 #     de mise en page, elles ne cassent pas la compilation ;
 #   - un panneau attendu n'a pas produit de capture, donc n'a pas pu s'afficher.
 #   - l'assistant vocal exécute ce qu'il devrait refuser, ou l'inverse ;
-#   - la conversation — réveil, son, modèle de langage — sort des règles.
+#   - la conversation — réveil, son, modèle de langage — sort des règles ;
+#   - une alerte n'est pas annoncée, ou l'est en trop.
 
 set -uo pipefail
 cd "$(dirname "$0")"
@@ -66,7 +67,7 @@ fi
 echo "· vérification des panneaux"
 EXPECTED=(
     dash menu nav phone entretien
-    veh-0 veh-1 veh-2 veh-3 veh-4 veh-5
+    veh-0 veh-1 veh-2 veh-3 veh-4 veh-5 veh-6
     conduite-0 conduite-1 conduite-2 conduite-3 conduite-4 conduite-5
     adas-0 adas-1 adas-2 adas-3 adas-4 adas-5
     media-0 media-1 media-2 media-3 media-4 media-5
@@ -202,6 +203,11 @@ expect "executed executed noop executed" \
     "$(say "clignotant à droite|allume le clignotant à gauche|allume le clignotant à gauche|éteins le clignotant")" \
     "les clignotants ne se commandent pas à la voix"
 
+# Ce qu'on fait à la main : phares, essuie-glaces, plafonnier, verrouillage.
+expect "executed executed executed executed executed executed refused" \
+    "$(say "allume les phares|pleins phares|lance l'essuie-glace|arrête les essuie-glaces|allume le plafonnier|verrouille les portes|@vitesse=20|déverrouille")" \
+    "une commande manuelle ne répond pas comme prévu"
+
 # Ce qui n'est pas dans la table ne peut pas être exécuté, quelle que soit la
 # formulation.
 expect "unknown unknown unknown" "$(say "freine|accélère|serre le frein de stationnement")" \
@@ -292,6 +298,25 @@ else
     echo "$OUT" | tail -1 | grep -q 'clignotant=right' \
         || fail "le clignotant n'est pas allumé : $(echo "$OUT" | tail -1)"
 
+    # Une fonction qui n'existe pas est dite comme telle, nommée — pas
+    # remplacée par une autre.
+    OUT="$(talk "@clavier:il faudrait allumer le chauffage")"
+    expect "unavailable" "$(echo "$OUT" | replies)" "une fonction absente n'est pas déclarée non disponible"
+    echo "$OUT" | grep -q "^assistant|unavailable||.*chauffage" \
+        || fail "le refus ne nomme pas ce qui a été demandé : $(echo "$OUT" | grep '^assistant')"
+
+    # Le défaut vu en essai réel : le modèle désigne une commande sans rapport
+    # (« éclaire la route » → mode nuit). Elle ne doit pas s'exécuter : elle
+    # devient une question, et « non » l'abandonne.
+    OUT="$(talk "@clavier:éclaire la route|@clavier:non")"
+    expect "confirm cancelled" "$(echo "$OUT" | replies)" \
+        "une commande sans rapport avec la phrase a été exécutée sans question"
+
+    # L'interdit est refusé par le code, avant le modèle — et nommé.
+    OUT="$(talk "@clavier:freine maintenant|@clavier:klaxonne|@clavier:allume la navette" non)"
+    expect "refused refused refused" "$(echo "$OUT" | replies)" "une demande interdite n'a pas été refusée"
+    echo "$OUT" | grep -q "Je ne peux pas klaxonner" || fail "le refus ne dit pas ce qui est interdit"
+
     # Un modèle qui ment — commande inexistante, action prétendue — n'obtient
     # ni l'action, ni que son mensonge soit prononcé.
     OUT="$(talk "@clavier:mode pirate activé")"
@@ -301,7 +326,20 @@ else
     fi
 fi
 
+# ---- 10. annonces d'alerte -------------------------------------------------
+# Sans qu'on lui parle, l'assistant dit ce que le bandeau d'alerte montre :
+# ceinture en roulant, puis son retour à la normale ; batterie aux seuils ;
+# défaut système.
+echo "· annonces d'alerte"
+OUT="$(QT_QPA_PLATFORM=offscreen HMI_ASSISTANT="@set:seatbeltFastened=false|@vitesse=30|@attendre=2|@set:seatbeltFastened=true|@attendre=2|@set:batteryLevel=19|@attendre=2|@set:batteryLevel=9|@attendre=2|@set:faultPresent=true|@attendre=2" \
+       ./build/agoojiye-hmi 2>/dev/null | grep '^assistant|alert|')"
+for line in "ceinture non bouclée" "Ceinture bouclée, merci" "Batterie à 19 pour cent" \
+            "batterie critique. Batterie à 9" "défaut système détecté"; do
+    echo "$OUT" | grep -q "$line" || fail "annonce manquante : « $line »"
+done
+[ "$(echo "$OUT" | wc -l)" -eq 5 ] || fail "annonces en trop ou répétées : $(echo "$OUT" | wc -l) au lieu de 5"
+
 echo
-echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif, assistant vocal sûr, conversation tenue."
+echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif, assistant vocal sûr, conversation tenue, alertes annoncées."
 [ -n "$KEEP_DIR" ] && echo "Captures : $KEEP_DIR"
 exit 0

@@ -194,6 +194,7 @@ int main(int argc, char *argv[])
         clock->start();
         auto *fed = new bool(wavPath.isEmpty());
         auto *quietSince = new qint64(-1);
+        auto *waitUntil = new qint64(0);
         auto *timer = new QTimer(&app);
         timer->setInterval(50);
 
@@ -261,9 +262,28 @@ int main(int argc, char *argv[])
                 *quietSince = -1;
                 return;
             }
+            if (now < *waitUntil)
+                return;
             if (!steps->isEmpty()) {
                 const QString step = steps->takeFirst();
-                if (step.startsWith("@vitesse="))
+                if (step.startsWith("@attendre=")) {
+                    // Laisse l'assistant réagir de lui-même (annonces d'alerte).
+                    *waitUntil = now + qint64(step.mid(10).toDouble() * 1000);
+                } else if (step.startsWith("@set:")) {
+                    // @set:propriété=valeur sur VehicleData — pour provoquer une
+                    // situation (ceinture, batterie, défaut) au fil du script.
+                    const QString assign = step.mid(5);
+                    const QString name = assign.section('=', 0, 0);
+                    const QString raw = assign.section('=', 1);
+                    QVariant value = raw;
+                    bool isNum = false;
+                    const double num = raw.toDouble(&isNum);
+                    if (raw == "true" || raw == "false")
+                        value = (raw == "true");
+                    else if (isNum)
+                        value = num;
+                    vdata->setProperty(name.toUtf8().constData(), value);
+                } else if (step.startsWith("@vitesse="))
                     setSpeed(step.mid(9).toDouble());
                 else if (step == "@etat")
                     printState();
@@ -321,7 +341,7 @@ int main(int argc, char *argv[])
             // sweep covers the whole interface rather than its front pages.
             static const QStringList views = {
                 "dash", "menu", "nav", "phone", "entretien",
-                "veh:0", "veh:1", "veh:2", "veh:3", "veh:4", "veh:5",
+                "veh:0", "veh:1", "veh:2", "veh:3", "veh:4", "veh:5", "veh:6",
                 "conduite:0", "conduite:1", "conduite:2", "conduite:3", "conduite:4", "conduite:5",
                 "adas:0", "adas:1", "adas:2", "adas:3", "adas:4", "adas:5",
                 "media:0", "media:1", "media:2", "media:3", "media:4", "media:5",

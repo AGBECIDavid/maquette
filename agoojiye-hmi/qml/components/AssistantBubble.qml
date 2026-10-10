@@ -41,6 +41,18 @@ PanelCard {
     radius: 20
     border.color: Theme.alpha(Theme.teal, 0.55)
 
+    // Opaque, contrairement aux cartes : posée sur un écran, une bulle
+    // translucide laisse son texte se mêler à celui de dessous, et une alerte
+    // doit se lire d'un coup d'œil.
+    gradient: Gradient {
+        GradientStop { position: 0.0; color: Theme.panelBgTop }
+        GradientStop { position: 1.0; color: Theme.panelBgBottom }
+    }
+
+    // Une annonce spontanée ne répond à rien : on n'affiche pas au-dessus la
+    // dernière phrase du conducteur, qui semblerait l'avoir provoquée.
+    readonly property bool announcing: lastReply !== null && lastReply.status === "alert"
+
     // ---- orbe ----------------------------------------------------------------
     Item {
         id: orb
@@ -90,8 +102,9 @@ PanelCard {
         Text {
             width: parent.width
             elide: Text.ElideRight
-            visible: root.lastUser !== null
-            text: root.lastUser !== null ? "« " + root.lastUser.text + " »" : ""
+            visible: root.lastUser !== null || root.announcing
+            text: root.announcing ? "ANNONCE"
+                : root.lastUser !== null ? "« " + root.lastUser.text + " »" : ""
             font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textMuted
         }
         Text {
@@ -101,7 +114,10 @@ PanelCard {
             elide: Text.ElideRight
             text: root.lastReply !== null ? root.lastReply.text : "Bonjour, je suis " + Assistant.name + "."
             font.family: Theme.fontFamily; font.pixelSize: 18; font.weight: Font.Medium
-            color: root.lastReply !== null && root.lastReply.status === "refused" ? Theme.orange : Theme.textPrimary
+            color: root.lastReply === null ? Theme.textPrimary
+                 : root.lastReply.status === "alert" ? Theme.red
+                 : root.lastReply.status === "refused" || root.lastReply.status === "unavailable" ? Theme.orange
+                 : Theme.textPrimary
             lineHeight: 1.1
         }
         Text {

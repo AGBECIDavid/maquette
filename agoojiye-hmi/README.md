@@ -45,7 +45,7 @@ CMAKE_PREFIX_PATH=$HOME/Qt/6.8.3/gcc_64 ./run.sh
 ```
 
 Pas besoin d'écran : Qt tourne en mode *offscreen*. Le script échoue si un
-avertissement QML apparaît, si un des 39 panneaux ne s'affiche pas, si l'état
+avertissement QML apparaît, si un des 40 panneaux ne s'affiche pas, si l'état
 véhicule viole une règle physique sur 30 s de simulation (frein de
 stationnement en roulant, vitesse qui se téléporte, autonomie négative), ou si
 une panne injectée ne remonte pas jusqu'au bandeau d'alerte, si
@@ -144,9 +144,11 @@ qu'absorbé en silence — au niveau du shell, une faute de frappe est délibér
 ```
 
 Puis : **« Salut Agoojiye »**, et ce que vous voulez, avec vos mots —
-« il fait sombre, tu peux mettre le mode nuit ? », « quelle est mon
-autonomie ? », « tu peux passer en sport ? ». Elle répond à voix haute, fait ce
-qui est faisable, explique ce qui ne l'est pas. « Merci » clôt la conversation.
+« allume les phares », « lance l'essuie-glace », « mets le clignotant à
+droite », « quelle est mon autonomie ? », « tu peux passer en sport ? ». Elle
+répond à voix haute, fait ce qui est faisable, dit ce qui n'existe pas et ce
+qui est interdit. « Merci » clôt la conversation. Elle prévient aussi d'elle-même :
+ceinture non bouclée, défaut système, batterie faible.
 Le bouton micro de la barre du haut remplace le nom quand il y a du bruit.
 
 Tout tourne sur la machine : reconnaissance par whisper.cpp, compréhension par

@@ -126,6 +126,31 @@ void VoiceAnnouncer::stop()
     }
 }
 
+void VoiceAnnouncer::interrupt(const QString &text)
+{
+#ifdef AGOOJIYE_HAS_TTS
+    if (ttsReady()) {
+        m_tts->stop();
+        m_tts->say(text);
+        return;
+    }
+#endif
+    if (!m_spd)
+        return;
+    m_queue.clear();
+    m_queue.append(text);
+    if (m_spd->state() == QProcess::NotRunning) {
+        speakNext();
+        return;
+    }
+    // L'annulation du démon se fait *avant* que l'alerte parte, et on attend
+    // qu'elle soit faite : lancée en parallèle, elle pourrait couper l'alerte
+    // elle-même. La phrase suivante — l'alerte — part quand le client tué
+    // rend la main (voir `finished`).
+    QProcess::execute(m_spdSay, { "-C" });
+    m_spd->kill();
+}
+
 void VoiceAnnouncer::setSpeaking(bool s)
 {
     if (m_speaking == s)

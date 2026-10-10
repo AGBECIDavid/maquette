@@ -163,12 +163,30 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             Text { anchors.centerIn: parent; text: VehicleData.speedLimit; font.family: Theme.fontFamily; font.pixelSize: 13; font.weight: Font.Bold; color: "#0b1020" }
         }
+        // Témoins d'éclairage et de visibilité, comme au combiné : le témoin des
+        // phares dit leur réglage ; les autres n'apparaissent qu'actifs. Bleu
+        // pour les feux de route, comme partout.
         Row {
             spacing: 5
             anchors.verticalCenter: parent.verticalCenter
-            Icon { name: "ph-headlights"; size: 22; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
-            Text { text: "AUTO"; font.family: Theme.fontFamily; font.pixelSize: 11; font.weight: Font.DemiBold; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
+            Icon {
+                name: "ph-headlights"; size: 22; fill: VehicleData.headlightsLit
+                color: VehicleData.highBeam ? Theme.blue
+                     : VehicleData.headlightsLit ? Theme.green
+                     : VehicleData.headlights === "auto" ? Theme.green : Theme.textDim
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                text: VehicleData.highBeam ? "ROUTE" : ({ off: "OFF", auto: "AUTO", on: "ON" })[VehicleData.headlights]
+                font.family: Theme.fontFamily; font.pixelSize: 11; font.weight: Font.DemiBold
+                color: VehicleData.highBeam ? Theme.blue : VehicleData.headlights === "off" ? Theme.textDim : Theme.green
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
+        Icon { visible: VehicleData.fogLights; name: "ph-cloud-fog"; size: 21; color: Theme.green; anchors.verticalCenter: parent.verticalCenter }
+        Icon { visible: VehicleData.wipers !== "off" || VehicleData.washing; name: VehicleData.washing ? "ph-spray-bottle" : "ph-cloud-rain"
+               size: 21; color: Theme.teal; anchors.verticalCenter: parent.verticalCenter }
+        Icon { visible: VehicleData.cabinLight; name: "ph-lightbulb"; size: 20; color: Theme.yellow; anchors.verticalCenter: parent.verticalCenter }
         // La charge restante ne doit jamais dépendre de l'écran ouvert.
         Row {
             spacing: 7

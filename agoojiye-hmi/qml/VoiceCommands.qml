@@ -58,7 +58,28 @@ QtObject {
         { label: "Rapport engagé, frein de stationnement", why: "Immobilisation" },
         { label: "Chaîne haute tension", why: "Aucun défaut ne s'acquitte à la voix" },
         { label: "Régulateur, maintien de voie", why: "Agissent sur l'allure et la direction" },
-        { label: "Freinage d'urgence, alerte collision", why: "Ne se désactivent jamais à la voix" }
+        { label: "Freinage d'urgence, alerte collision", why: "Ne se désactivent jamais à la voix" },
+        { label: "Démarrage du moteur, klaxon", why: "Restent au conducteur" }
+    ]
+
+    // Le même interdit, côté code : si une phrase en relève, la réponse est
+    // donnée ici, sans consulter le modèle de langage — un refus de sécurité ne
+    // dépend pas de l'humeur d'un modèle. Chaque entrée : des mots isolés, ou des
+    // expressions cherchées telles quelles, et ce qu'on dira ne pas pouvoir faire.
+    readonly property var forbiddenVocab: [
+        { words: ["frein", "freine", "freiner", "freins", "freinage", "freinez"], say: "freiner" },
+        { words: ["accelere", "accelerer", "acceleration", "accelerateur", "accelerez", "fonce"], say: "accélérer" },
+        { words: ["volant", "braque", "braquer"], say: "diriger la navette" },
+        { words: ["recule", "reculer", "reculez"], phrases: ["marche arriere", "point mort"], say: "changer de rapport" },
+        { phrases: ["change de vitesse", "passe la vitesse", "frein a main", "frein de stationnement"], say: "toucher à l'immobilisation" },
+        { words: ["demarre", "demarrer", "demarrage", "allumage"],
+          phrases: ["coupe le moteur", "eteins le moteur", "arrete le moteur", "coupe le contact", "mets le contact",
+                    "allume la navette", "allume le vehicule", "allume la voiture", "allume le moteur",
+                    "eteins la navette", "eteins le vehicule", "eteins la voiture"],
+          say: "démarrer ou couper le moteur" },
+        { words: ["regulateur"], phrases: ["maintien de voie", "freinage d urgence", "alerte collision"], say: "agir sur les aides à la conduite" },
+        { phrases: ["haute tension"], say: "agir sur la haute tension" },
+        { words: ["klaxon", "klaxonne", "klaxonner", "klaxonnes", "klaxonnez", "corne"], say: "klaxonner" }
     ]
 
     // La table décide ; elle ne parle pas. Chaque réponse est émise, et c'est
@@ -108,6 +129,7 @@ QtObject {
         { id: "go-dash", group: "Écrans", phrases: ["accueil", "va à l'accueil", "tableau de bord"],
           run: function () { AppState.go("dash"); return "Accueil." } },
         { id: "go-nav", group: "Écrans", phrases: ["navigation", "ouvre la navigation", "carte"],
+          also: ["gps", "itineraire", "carte"],
           run: function () { AppState.go("nav"); return "Navigation." } },
         { id: "go-veh", group: "Écrans", phrases: ["véhicule", "état du véhicule"],
           run: function () { AppState.go("veh"); return "État du véhicule." } },
@@ -116,8 +138,10 @@ QtObject {
         { id: "go-adas", group: "Écrans", phrases: ["aides à la conduite"],
           run: function () { AppState.go("adas"); return "Aides à la conduite." } },
         { id: "go-media", group: "Écrans", phrases: ["musique", "média"],
+          also: ["radio", "media"],
           run: function () { AppState.go("media"); return "Musique." } },
         { id: "go-phone", group: "Écrans", phrases: ["téléphone"],
+          also: ["appel", "appeler"],
           run: function () { AppState.go("phone"); return "Téléphone." } },
         { id: "go-entretien", group: "Écrans", phrases: ["entretien"],
           run: function () { AppState.go("entretien"); return "Entretien." } },
@@ -128,23 +152,29 @@ QtObject {
 
         // ---- média ------------------------------------------------------
         { id: "play", group: "Média", phrases: ["lecture", "reprends la musique"],
+          also: ["musique", "chanson", "morceau"],
           already: function () { return VehicleData.mediaPlaying },
           run: function () { VehicleData.mediaPlaying = true; return "Lecture." } },
         { id: "pause", group: "Média", phrases: ["pause", "arrête la musique"],
+          also: ["musique", "chanson", "morceau"],
           already: function () { return !VehicleData.mediaPlaying },
           run: function () { VehicleData.mediaPlaying = false; return "Pause." } },
         { id: "vol-up", group: "Média", phrases: ["monte le son", "plus fort"],
+          also: ["volume", "son", "fort"],
           already: function () { return AppState.mediaVolume >= 0.999 },
           run: function () { return root._setVolume(AppState.mediaVolume + 0.1) } },
         { id: "vol-down", group: "Média", phrases: ["baisse le son", "moins fort"],
+          also: ["volume", "son", "bas"],
           already: function () { return AppState.mediaVolume <= 0.001 },
           run: function () { return root._setVolume(AppState.mediaVolume - 0.1) } },
 
         // ---- affichage --------------------------------------------------
         { id: "night-on", group: "Affichage", phrases: ["mode nuit"],
+          also: ["nuit", "sombre", "obscur", "ecran"],
           already: function () { return AppState.nightMode },
           run: function () { AppState.nightMode = true; return "Mode nuit activé." } },
         { id: "night-off", group: "Affichage", phrases: ["mode jour"],
+          also: ["jour", "clair", "ecran"],
           already: function () { return !AppState.nightMode },
           run: function () { AppState.nightMode = false; return "Mode jour activé." } },
 
@@ -153,24 +183,28 @@ QtObject {
         // invalide ne se prononce pas. Dire « zéro kilomètre-heure » parce que
         // le capteur est muet, c'est annoncer un arrêt qui n'a pas lieu.
         { id: "ask-speed", group: "Questions", phrases: ["quelle est ma vitesse", "vitesse"],
+          also: ["vitesse", "vite", "allure", "roule"],
           run: function () {
               if (!VehicleData.valid("speed"))
                   return root.unavailable
               return Math.round(VehicleData.speed) + " kilomètres-heure."
           } },
         { id: "ask-range", group: "Questions", phrases: ["quelle est mon autonomie", "autonomie"],
+          also: ["autonomie", "rouler", "kilometre", "kilometres", "km", "reste", "tenir"],
           run: function () {
               if (!VehicleData.valid("battery") || !VehicleData.valid("consumption"))
                   return root.unavailable
               return "Autonomie estimée : " + VehicleData.range + " kilomètres."
           } },
         { id: "ask-battery", group: "Questions", phrases: ["niveau de batterie", "batterie"],
+          also: ["batterie", "charge", "pourcentage"],
           run: function () {
               if (!VehicleData.valid("battery"))
                   return root.unavailable
               return "Batterie à " + VehicleData.batteryLevel + " pour cent."
           } },
         { id: "ask-alerts", group: "Questions", phrases: ["y a-t-il une alerte", "alertes"],
+          also: ["alerte", "probleme", "souci", "panne", "defaut"],
           run: function () {
               var n = VehicleData.activeAlerts.length
               if (n === 0)
@@ -179,20 +213,24 @@ QtObject {
                      + VehicleData.topAlert.label + "."
           } },
         { id: "ask-time", group: "Questions", phrases: ["quelle heure est-il", "l'heure"],
+          also: ["heure"],
           run: function () { return "Il est " + AppState.time.replace(":", " heures ") + "." } },
 
         // ---- modes de conduite : confirmation ---------------------------
         // Le mode change la réponse de l'accélérateur. Une phrase mal comprise
         // ne doit pas suffire à rendre la navette plus vive.
         { id: "mode-eco", group: "Conduite", phrases: ["mode éco", "mode économie"],
+          also: ["eco", "economie", "economique"],
           confirm: true, ask: "Passer en mode éco ?",
           already: function () { return VehicleData.driveMode === "ECO" },
           run: function () { AppState.setDriveMode("eco"); return "Mode éco." } },
         { id: "mode-normal", group: "Conduite", phrases: ["mode normal"],
+          also: ["normal"],
           confirm: true, ask: "Passer en mode normal ?",
           already: function () { return VehicleData.driveMode === "NORMAL" },
           run: function () { AppState.setDriveMode("normal"); return "Mode normal." } },
         { id: "mode-sport", group: "Conduite", phrases: ["mode sport"],
+          also: ["sport", "sportif", "dynamique"],
           confirm: true, ask: "Passer en mode sport ?",
           already: function () { return VehicleData.driveMode === "SPORT" },
           run: function () { AppState.setDriveMode("sport"); return "Mode sport." } },
@@ -201,9 +239,11 @@ QtObject {
         // Rallumer une aide ne demande rien ; l'éteindre demande un « oui ».
         // Le coût d'une erreur n'est pas le même dans les deux sens.
         { id: "ldw-on", group: "Conduite", phrases: ["active l'alerte de ligne", "active l'alerte de franchissement de ligne"],
+          also: ["ligne", "franchissement"],
           already: function () { return AppState.adas.ldw },
           run: function () { AppState.toggleAdas("ldw"); return "Alerte de franchissement de ligne activée." } },
         { id: "ldw-off", group: "Conduite", phrases: ["désactive l'alerte de ligne", "désactive l'alerte de franchissement de ligne"],
+          also: ["ligne", "franchissement"],
           confirm: true, ask: "Désactiver l'alerte de franchissement de ligne ?",
           already: function () { return !AppState.adas.ldw },
           run: function () { AppState.toggleAdas("ldw"); return "Alerte de franchissement de ligne désactivée." } },
@@ -215,25 +255,154 @@ QtObject {
         { id: "blink-right", group: "Signalisation",
           phrases: ["clignotant droit", "clignotant à droite", "mets le clignotant à droite",
                     "allume le clignotant à droite", "allume le clignotant droit", "mets le clignotant droit"],
+          also: ["clignotant", "cligno", "virage", "droite"],
           already: function () { return VehicleData.turnSignal === "right" },
           run: function () { VehicleData.turnSignal = "right"; return "Clignotant droit." } },
         { id: "blink-left", group: "Signalisation",
           phrases: ["clignotant gauche", "clignotant à gauche", "mets le clignotant à gauche",
                     "allume le clignotant à gauche", "allume le clignotant gauche", "mets le clignotant gauche"],
+          also: ["clignotant", "cligno", "virage", "gauche"],
           already: function () { return VehicleData.turnSignal === "left" },
           run: function () { VehicleData.turnSignal = "left"; return "Clignotant gauche." } },
         { id: "blink-off", group: "Signalisation",
           phrases: ["éteins le clignotant", "arrête le clignotant", "coupe le clignotant"],
+          also: ["clignotant", "cligno"],
           already: function () { return VehicleData.turnSignal === "off" || VehicleData.turnSignal === "hazard" },
           run: function () { VehicleData.turnSignal = "off"; return "Clignotant éteint." } },
         { id: "hazard-on", group: "Signalisation",
           phrases: ["allume les warnings", "mets les warnings", "feux de détresse", "allume les feux de détresse"],
+          also: ["warning", "warnings", "detresse"],
           already: function () { return VehicleData.turnSignal === "hazard" },
           run: function () { VehicleData.turnSignal = "hazard"; return "Feux de détresse allumés." } },
         { id: "hazard-off", group: "Signalisation",
           phrases: ["éteins les warnings", "coupe les warnings", "éteins les feux de détresse"],
+          also: ["warning", "warnings", "detresse"],
           already: function () { return VehicleData.turnSignal !== "hazard" },
           run: function () { VehicleData.turnSignal = "off"; return "Feux de détresse éteints." } },
+
+        // ---- éclairage ------------------------------------------------------
+        // Voir et être vu : tout se commande librement. `also` liste des mots
+        // qui désignent la commande sans figurer dans ses formules — ils
+        // servent à vérifier qu'une commande proposée par le modèle de langage
+        // a bien un rapport avec la phrase (voir `relevant()`).
+        { id: "lights-on", group: "Éclairage",
+          phrases: ["allume les phares", "allume le phare", "allume les feux", "mets les phares", "phares"],
+          also: ["phare", "feux", "lumiere", "eclaire"],
+          already: function () { return VehicleData.headlights === "on" },
+          run: function () { VehicleData.headlights = "on"; return "Phares allumés." } },
+        { id: "lights-off", group: "Éclairage",
+          phrases: ["éteins les phares", "coupe les phares", "éteins les feux", "éteins le phare"],
+          also: ["phare", "feux"],
+          already: function () { return VehicleData.headlights === "off" },
+          run: function () { VehicleData.headlights = "off"; VehicleData.highBeam = false; VehicleData.fogLights = false
+                             return "Phares éteints." } },
+        { id: "lights-auto", group: "Éclairage",
+          phrases: ["phares automatiques", "mets les phares en automatique", "phares en auto"],
+          also: ["phare", "feux", "automatique", "auto"],
+          already: function () { return VehicleData.headlights === "auto" },
+          run: function () { VehicleData.headlights = "auto"; return "Phares en automatique." } },
+        // Les feux de route supposent les phares allumés : les demander les
+        // allume, comme le fait le comodo.
+        { id: "highbeam-on", group: "Éclairage",
+          phrases: ["allume les feux de route", "feux de route", "pleins phares", "mets les pleins phares"],
+          also: ["route", "plein", "pleins"],
+          already: function () { return VehicleData.highBeam },
+          run: function () { if (VehicleData.headlights === "off") VehicleData.headlights = "on"
+                             VehicleData.highBeam = true; return "Feux de route allumés." } },
+        { id: "highbeam-off", group: "Éclairage",
+          phrases: ["éteins les feux de route", "coupe les pleins phares", "feux de croisement", "baisse les phares"],
+          also: ["route", "plein", "pleins", "croisement", "eblouis"],
+          already: function () { return !VehicleData.highBeam },
+          run: function () { VehicleData.highBeam = false; return "Feux de croisement." } },
+        { id: "fog-on", group: "Éclairage",
+          phrases: ["allume les antibrouillards", "antibrouillards", "feux antibrouillard"],
+          also: ["brouillard", "antibrouillard"],
+          already: function () { return VehicleData.fogLights },
+          run: function () { if (VehicleData.headlights === "off") VehicleData.headlights = "on"
+                             VehicleData.fogLights = true; return "Antibrouillards allumés." } },
+        { id: "fog-off", group: "Éclairage",
+          phrases: ["éteins les antibrouillards", "coupe les antibrouillards"],
+          also: ["brouillard", "antibrouillard"],
+          already: function () { return !VehicleData.fogLights },
+          run: function () { VehicleData.fogLights = false; return "Antibrouillards éteints." } },
+        { id: "cabin-on", group: "Éclairage",
+          phrases: ["allume le plafonnier", "allume la lumière", "lumière intérieure", "plafonnier"],
+          also: ["lumiere", "plafonnier", "interieur", "lampe"],
+          already: function () { return VehicleData.cabinLight },
+          run: function () { VehicleData.cabinLight = true; return "Plafonnier allumé." } },
+        { id: "cabin-off", group: "Éclairage",
+          phrases: ["éteins le plafonnier", "éteins la lumière", "coupe la lumière"],
+          also: ["lumiere", "plafonnier", "lampe"],
+          already: function () { return !VehicleData.cabinLight },
+          run: function () { VehicleData.cabinLight = false; return "Plafonnier éteint." } },
+
+        // ---- visibilité -------------------------------------------------------
+        { id: "wipers-on", group: "Visibilité",
+          phrases: ["essuie-glace", "essuie-glaces", "lance l'essuie-glace", "lance les essuie-glaces",
+                    "allume les essuie-glaces", "mets les essuie-glaces", "allume l'essuie-glace"],
+          also: ["essuie", "glace", "glaces", "pluie", "pleut", "balai", "balais"],
+          already: function () { return VehicleData.wipers === "normal" },
+          run: function () { VehicleData.wipers = "normal"; return "Essuie-glaces en marche." } },
+        { id: "wipers-fast", group: "Visibilité",
+          phrases: ["essuie-glace rapide", "essuie-glaces plus vite", "essuie-glaces en rapide"],
+          also: ["essuie", "glace", "glaces", "vite", "rapide", "rapidement"],
+          already: function () { return VehicleData.wipers === "fast" },
+          run: function () { VehicleData.wipers = "fast"; return "Essuie-glaces en rapide." } },
+        { id: "wipers-slow", group: "Visibilité",
+          phrases: ["essuie-glace intermittent", "essuie-glaces moins vite", "essuie-glaces lentement"],
+          also: ["essuie", "glace", "glaces", "lent", "lentement", "intermittent", "doucement"],
+          already: function () { return VehicleData.wipers === "intermittent" },
+          run: function () { VehicleData.wipers = "intermittent"; return "Essuie-glaces en intermittent." } },
+        { id: "wipers-auto", group: "Visibilité",
+          phrases: ["essuie-glace automatique", "essuie-glaces en automatique"],
+          also: ["essuie", "glace", "glaces", "automatique", "auto", "pluie"],
+          already: function () { return VehicleData.wipers === "auto" },
+          run: function () { VehicleData.wipers = "auto"; return "Essuie-glaces en automatique." } },
+        { id: "wipers-off", group: "Visibilité",
+          phrases: ["arrête l'essuie-glace", "arrête les essuie-glaces", "coupe les essuie-glaces",
+                    "éteins les essuie-glaces"],
+          also: ["essuie", "glace", "glaces", "balai", "balais"],
+          already: function () { return VehicleData.wipers === "off" },
+          run: function () { VehicleData.wipers = "off"; return "Essuie-glaces arrêtés." } },
+        { id: "washer", group: "Visibilité",
+          phrases: ["lave-glace", "nettoie le pare-brise", "lave le pare-brise"],
+          also: ["lave", "nettoie", "pare", "brise", "sale", "propre"],
+          run: function () { VehicleData.washing = true; return "Lave-glace." } },
+        { id: "defog-on", group: "Visibilité",
+          phrases: ["désembuage", "allume le désembuage", "désembue le pare-brise"],
+          also: ["buee", "embue", "desembuage", "desembue", "pare", "brise"],
+          already: function () { return VehicleData.defog },
+          run: function () { VehicleData.defog = true; return "Désembuage en marche." } },
+        { id: "defog-off", group: "Visibilité",
+          phrases: ["éteins le désembuage", "arrête le désembuage"],
+          also: ["buee", "desembuage"],
+          already: function () { return !VehicleData.defog },
+          run: function () { VehicleData.defog = false; return "Désembuage arrêté." } },
+
+        // ---- verrouillage -------------------------------------------------------
+        // Verrouiller est toujours permis ; déverrouiller en roulant ne l'est pas.
+        { id: "lock", group: "Accès",
+          phrases: ["verrouille les portes", "verrouille", "verrouille la navette", "ferme à clé"],
+          also: ["verrou", "verrouille", "cle", "verrouillage"],
+          already: function () { return VehicleData.locked },
+          run: function () { VehicleData.locked = true; return "Navette verrouillée." } },
+        { id: "unlock", group: "Accès",
+          phrases: ["déverrouille les portes", "déverrouille", "déverrouille la navette"],
+          also: ["verrou", "deverrouille", "cle", "verrouillage"],
+          stoppedOnly: true,
+          already: function () { return !VehicleData.locked },
+          run: function () { VehicleData.locked = false; return "Navette déverrouillée." } },
+
+        // ---- annonces aux passagers ------------------------------------------------
+        // Une navette transporte du public : l'assistant parle aussi pour lui.
+        { id: "announce-stop", group: "Annonces",
+          phrases: ["annonce le prochain arrêt", "annonce l'arrêt", "prochain arrêt"],
+          also: ["annonce", "arret", "station", "passagers"],
+          run: function () { return "Mesdames et messieurs, prochain arrêt : " + VehicleData.nextStop + "." } },
+        { id: "announce-departure", group: "Annonces",
+          phrases: ["annonce le départ", "attention au départ", "annonce la fermeture"],
+          also: ["annonce", "depart", "fermeture", "passagers", "tenez"],
+          run: function () { return "Attention, départ imminent. Merci de vous tenir." } },
 
         // ---- ouvrants : à l'arrêt seulement -----------------------------
         // Ouvrir est refusé en roulant ; fermer ne l'est jamais. Empêcher de
@@ -417,6 +586,129 @@ QtObject {
 
     function normalize(s) { return _normalize(s) }
 
+    // =========================================================================
+    //  Vérifications indépendantes du modèle de langage
+    // =========================================================================
+    //
+    //  Un petit modèle, s'il ne connaît pas la fonction demandée, désigne la
+    //  commande qui lui « ressemble » plutôt que d'avouer. Ces fonctions le
+    //  rattrapent par le texte même de la phrase — aucune ne lui fait confiance.
+
+    // Mots sans valeur pour reconnaître une fonction : articles, pronoms, et
+    // verbes d'action génériques (« allume », « mets »… valent pour tout).
+    readonly property var _stopwords: [
+        "le", "la", "les", "l", "un", "une", "des", "de", "du", "d", "au", "aux", "a", "en",
+        "et", "ou", "sur", "pour", "par", "avec", "dans", "plus", "moins", "tres", "peu",
+        "je", "tu", "il", "elle", "on", "nous", "vous", "me", "te", "se", "moi", "toi", "lui",
+        "mon", "ma", "mes", "ton", "ta", "tes", "sa", "ses", "ce", "cet", "cette", "ca", "cela",
+        "est", "es", "sont", "y", "t", "s", "n", "ne", "pas", "que", "qui", "quoi", "quel", "quelle",
+        "allume", "allumer", "eteins", "eteindre", "mets", "mettre", "met", "coupe", "couper",
+        "ouvre", "ouvrir", "ferme", "fermer", "active", "activer", "desactive", "desactiver",
+        "lance", "lancer", "arrete", "arreter", "passe", "passer", "fais", "faire", "peux",
+        "peut", "pourrais", "veux", "voudrais", "stp", "svp", "plait", "sil", "merci", "mode",
+        "agoojiye", "salut", "bonjour", "hey", "ok", "dis", "allez", "vas", "va", "maintenant",
+        // le véhicule lui-même : le nommer ne désigne aucune de ses fonctions
+        "navette", "vehicule", "voiture", "bus", "camion"
+    ]
+
+    // Mots porteurs de sens, au singulier. Les mots génériques sont écartés
+    // *avant* d'ôter la marque du pluriel : sinon « éteins » deviendrait
+    // « étein », que la liste ne connaît pas, et passerait pour un mot-clé
+    // commun à toutes les commandes qui éteignent quelque chose.
+    function _words(text) {
+        var stop = _stopwords
+        return _normalize(text).replace(/'/g, " ").split(" ")
+            .filter(function (w) { return w.length > 0 && stop.indexOf(w) === -1 })
+            .map(function (w) { return w.length > 3 ? w.replace(/[sx]$/, "") : w })
+            .filter(function (w) { return stop.indexOf(w) === -1 })
+    }
+
+    // Les mots qui désignent une commande : ceux de ses formules, moins les
+    // mots génériques, plus ses synonymes (`also`).
+    function keywords(cmd) {
+        var out = []
+        var src = cmd.phrases.concat(cmd.also || [])
+        for (var i = 0; i < src.length; i++) {
+            var ws = _words(src[i])
+            for (var j = 0; j < ws.length; j++)
+                if (out.indexOf(ws[j]) === -1)
+                    out.push(ws[j])
+        }
+        return out
+    }
+
+    // Vrai si la phrase contient au moins un mot qui désigne la commande.
+    // « Allume les phares » → mode nuit : aucun mot commun, la proposition du
+    // modèle ne passe pas sans qu'on demande.
+    function relevant(cmd, text) {
+        var ws = _words(text)
+        var ks = keywords(cmd)
+        for (var i = 0; i < ws.length; i++)
+            if (ks.indexOf(ws[i]) !== -1)
+                return true
+        return false
+    }
+
+    // Vrai si la phrase nomme au moins une fonction de la table. Sert à ne pas
+    // prendre « accélère les essuie-glaces » pour une demande d'accélérer.
+    function mentionsAllowed(text) {
+        for (var i = 0; i < commands.length; i++)
+            if (relevant(commands[i], text))
+                return true
+        return false
+    }
+
+    // Ce que la phrase demande d'interdit (« freiner », « klaxonner »…), ou ""
+    // si rien. Ne s'applique qu'aux phrases qui ne nomment aucune fonction
+    // permise.
+    function forbiddenAsk(text) {
+        if (mentionsAllowed(text))
+            return ""
+        var n = " " + _normalize(text).replace(/'/g, " ") + " "
+        var ws = _words(text).concat(_normalize(text).replace(/'/g, " ").split(" "))
+        for (var i = 0; i < forbiddenVocab.length; i++) {
+            var f = forbiddenVocab[i]
+            var hit = (f.words || []).some(function (w) { return ws.indexOf(w) !== -1 })
+                      || (f.phrases || []).some(function (p) { return n.indexOf(" " + p + " ") !== -1 })
+            if (hit)
+                return f.say
+        }
+        return ""
+    }
+
+    // Refus d'une demande interdite, avec sa raison.
+    function refuseForbidden(what, heard) {
+        cancelPending()
+        return _finish(heard, { status: "refused",
+            reply: "Je ne peux pas " + what + " : la conduite et la sécurité restent entre vos mains." })
+    }
+
+    // Fonction qui n'existe pas sur la navette : on le dit, en nommant ce qui
+    // a été compris, plutôt que de faire autre chose à la place.
+    function refuseUnavailable(what, heard) {
+        cancelPending()
+        var w = String(what || "").trim().replace(/[.!?]+$/, "")
+        return _finish(heard, { status: "unavailable",
+            reply: (w !== "" ? "« " + w + " » : cette fonction" : "Cette fonction")
+                   + " n'est pas disponible sur la navette." })
+    }
+
+    // Le modèle propose une commande sans rapport visible avec la phrase : on
+    // ne l'exécute pas, on la demande. Une erreur de compréhension devient une
+    // question à laquelle on répond « non », au lieu d'une action à défaire.
+    function proposeGuess(cmd, heard) {
+        var prefix = cancelPending() ? "Demande précédente annulée. " : ""
+        var why = _refusal(cmd)
+        if (why !== "")
+            return _finish(heard, { status: "refused", reply: prefix + why })
+        if (cmd.already && cmd.already())
+            return _finish(heard, { status: "noop", reply: prefix + _alreadyReply(cmd) })
+        pending = { id: cmd.id, run: cmd.run, stoppedOnly: cmd.stoppedOnly,
+                    ask: "Vous voulez dire : " + cmd.phrases[0] + " ?" }
+        _confirmTimer.restart()
+        return _finish(heard, { status: "confirm", reply: prefix + pending.ask })
+    }
+
     function ids() {
         return commands.map(function (c) { return c.id })
     }
@@ -434,6 +726,8 @@ QtObject {
                    + (notes.length ? " (" + notes.join(", ") + ")" : "")
         }).join("\n")
     }
+
+    function byId(id) { return _byId(id) }
 
     function _byId(id) {
         for (var i = 0; i < commands.length; i++)

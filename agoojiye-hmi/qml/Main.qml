@@ -41,6 +41,15 @@ Window {
             if (VoiceCommands.speakReplies)
                 VoiceAnnouncer.speak(text)
         }
+        // Une alerte critique coupe ce qui se dit ; les autres attendent.
+        function onAlerted(text, urgent) {
+            if (!VoiceCommands.speakReplies)
+                return
+            if (urgent)
+                VoiceAnnouncer.interrupt(text)
+            else
+                VoiceAnnouncer.speak(text)
+        }
     }
     // La conversation reste ouverte un moment après chaque réponse *dite*, pas
     // après chaque réponse calculée : une phrase longue ne doit pas manger le
@@ -153,7 +162,7 @@ Window {
             anchors.bottomMargin: bottomNav.height + 16
             readonly property bool onConsole: AppState.screen === "parametres"
                                               && AppState.section("parametres") === 5
-            readonly property bool live: Assistant.awake || Assistant.thinking
+            readonly property bool live: Assistant.awake || Assistant.thinking || Assistant.alerting
                                          || (VoiceAnnouncer.speaking && Assistant.dialog.length > 0)
             visible: opacity > 0
             opacity: live && !onConsole && !AppState.booting ? 1 : 0

@@ -163,13 +163,21 @@ QtObject {
             return
         }
 
-        // ---- 4. le modèle comprend la phrase libre --------------------------
+        // ---- 4. interdit : refusé sans consulter le modèle --------------------
+        // Un refus de sécurité ne dépend pas d'un modèle qui pourrait se tromper.
+        var forbidden = VoiceCommands.forbiddenAsk(said)
+        if (forbidden !== "") {
+            _record(VoiceCommands.refuseForbidden(forbidden, said))
+            return
+        }
+
+        // ---- 5. le modèle comprend la phrase libre --------------------------
         if (modelReady) {
             _askModel(said)
             return
         }
 
-        // ---- 5. repli sans modèle -------------------------------------------
+        // ---- 6. repli sans modèle -------------------------------------------
         _fallback(said)
     }
 
@@ -270,20 +278,20 @@ QtObject {
         + "Tu parles avec le conducteur, en français.\n\n"
         + "Tes réponses sont prononcées à voix haute : une ou deux phrases courtes, naturelles, "
         + "sans liste, sans emoji, sans mise en forme.\n\n"
-        + "Tu réponds toujours par un objet JSON {\"command\": ..., \"reply\": ...}.\n"
-        + "- \"command\" : l'identifiant d'une commande de la liste ci-dessous si le conducteur "
-        + "demande cette action ou cette information, sinon null.\n"
-        + "- \"reply\" : ce que tu dis. Quand tu choisis une commande, le système annonce lui-même "
-        + "le résultat : \"reply\" reste alors très court.\n\n"
+        + "Tu réponds toujours par un objet JSON {\"demande\": ..., \"command\": ..., \"reply\": ...}.\n"
+        + "- \"demande\" : ce que le conducteur demande, reformulé en quelques mots à l'infinitif "
+        + "(« allumer les phares », « connaître l'autonomie », « discuter »).\n"
+        + "- \"command\" : l'identifiant de la commande de la liste qui fait EXACTEMENT cette demande ; "
+        + "\"non_disponible\" si c'est une action ou une information que la liste ne contient pas ; "
+        + "\"interdit\" si c'est conduire, freiner, accélérer, démarrer, klaxonner ou toucher à la sécurité ; "
+        + "null si le conducteur discute simplement.\n"
+        + "- \"reply\" : ce que tu dis, seulement quand \"command\" vaut null.\n\n"
         + "Règles :\n"
+        + "- Ne choisis jamais une commande « qui ressemble » : si aucune ne fait exactement ce qui est "
+        + "demandé, c'est \"non_disponible\". Le mode nuit n'allume pas les phares ; l'écran Véhicule "
+        + "ne règle rien.\n"
         + "- Ne prétends jamais avoir fait une action : seul le système l'exécute et l'annonce.\n"
         + "- Pour la vitesse, la batterie, l'autonomie, les alertes ou l'heure, choisis la commande correspondante.\n"
-        + "- Tu ne peux ni conduire, ni accélérer, ni freiner, ni changer de rapport, ni serrer ou "
-        + "desserrer le frein de stationnement, ni agir sur la haute tension, le régulateur de vitesse, "
-        + "le maintien de voie ou le freinage d'urgence. Si on te le demande, dis-le simplement, "
-        + "avec \"command\": null.\n"
-        + "- Si on te demande une action qui n'est pas dans la liste (chauffage, vitres, phares…), "
-        + "dis simplement que tu ne sais pas encore le faire, avec \"command\": null.\n"
         + "- Ne récite jamais l'état du véhicule de toi-même : il ne sert qu'à répondre à une question "
         + "qui le concerne.\n"
         + "- N'invente aucune valeur du véhicule : n'utilise que l'état fourni dans le message.\n"
@@ -291,16 +299,23 @@ QtObject {
         + "- Pour une conversation générale, réponds brièvement et aimablement.\n\n"
         + "Commandes disponibles :\n" + VoiceCommands.describeForModel()
 
-    // Le schéma ne laisse au modèle que deux sorties possibles pour « command » :
-    // un identifiant de la table, ou null. llama-server le traduit en grammaire,
-    // donc la contrainte s'applique pendant la génération — pas après coup.
+    // Le schéma fixe ce que le modèle peut répondre, pendant la génération même
+    // (llama-server le traduit en grammaire) :
+    //   demande  ce qu'il a compris — l'écrire d'abord l'oblige à analyser la
+    //            phrase avant de choisir, et donne de quoi nommer un refus ;
+    //   command  un identifiant de la table, « non_disponible », « interdit »,
+    //            ou null pour bavarder. Les deux valeurs explicites comptent :
+    //            pour un petit modèle, « rien » est un choix faible, et faute
+    //            de mieux il désignait la commande la plus proche.
     readonly property var responseSchema: ({
         type: "object",
         properties: {
-            command: { anyOf: [ { type: "string", enum: VoiceCommands.ids() }, { type: "null" } ] },
+            demande: { type: "string" },
+            command: { anyOf: [ { type: "string", enum: VoiceCommands.ids().concat(["non_disponible", "interdit"]) },
+                                { type: "null" } ] },
             reply: { type: "string" }
         },
-        required: ["command", "reply"],
+        required: ["demande", "command", "reply"],
         additionalProperties: false
     })
 
@@ -378,19 +393,34 @@ QtObject {
             var out = JSON.parse(content)
             var reply = typeof out.reply === "string" ? out.reply.trim() : ""
             var cmd = typeof out.command === "string" ? out.command : null
-            return { command: cmd, reply: reply }
+            var asked = typeof out.demande === "string" ? out.demande.trim() : ""
+            return { command: cmd, reply: reply, demande: asked }
         } catch (e) {
             return null
         }
     }
 
     function _applyModel(text, out) {
-        var spoken
-        if (out.command !== null) {
-            // La table tranche, et sa réponse est la seule prononcée : c'est elle
-            // qui sait si la trappe s'est ouverte ou a été refusée. La phrase du
-            // modèle, écrite avant de le savoir, est écartée.
-            var entry = VoiceCommands.handleId(out.command, text)
+        var spoken, entry
+        if (out.command === "interdit") {
+            entry = VoiceCommands.refuseForbidden(out.demande || "faire cela", text)
+            _record(entry)
+            spoken = entry.reply
+        } else if (out.command === "non_disponible") {
+            entry = VoiceCommands.refuseUnavailable(out.demande, text)
+            _record(entry)
+            spoken = entry.reply
+        } else if (out.command !== null) {
+            var cmd = VoiceCommands.byId(out.command)
+            // Le modèle a désigné une commande ; encore faut-il qu'elle ait un
+            // rapport avec ce qui a été dit. Sinon, ce n'est qu'une supposition :
+            // elle devient une question, jamais une action.
+            entry = cmd !== null && !VoiceCommands.relevant(cmd, text)
+                    ? VoiceCommands.proposeGuess(cmd, text)
+                    // La table tranche, et sa réponse est la seule prononcée :
+                    // elle sait si l'action a eu lieu. La phrase du modèle,
+                    // écrite avant de le savoir, est écartée.
+                    : VoiceCommands.handleId(out.command, text)
             _record(entry)
             spoken = entry.reply
         } else {
@@ -401,13 +431,13 @@ QtObject {
                 spoken = "Demande précédente annulée. " + spoken
             _say(spoken, "chat")
         }
-        _remember(text, out.command, spoken)
+        _remember(text, out, spoken)
     }
 
-    function _remember(text, command, spoken) {
+    function _remember(text, out, spoken) {
         var t = _turns.concat([
             { role: "user", content: text },
-            { role: "assistant", content: JSON.stringify({ command: command, reply: spoken }) }
+            { role: "assistant", content: JSON.stringify({ demande: out.demande, command: out.command, reply: spoken }) }
         ])
         _turns = t.slice(Math.max(0, t.length - 8))
     }
@@ -488,6 +518,129 @@ QtObject {
         _turns = []
         _inbox = []
         ignored = ""
+    }
+
+    // =========================================================================
+    //  Annonces spontanées
+    // =========================================================================
+    //
+    //  L'assistant ne parle pas seulement quand on lui parle : ce que le
+    //  bandeau d'alerte affiche, il le dit — ceinture, défaut système, batterie,
+    //  pneus, ouvrant, capteur. Sans mot de réveil : c'est le véhicule qui
+    //  prévient. La source est `VehicleData.activeAlerts`, la même que le
+    //  bandeau : on n'annonce rien que l'écran ne montre.
+    //
+    //  Pour rester supportable, et sûr :
+    //   · une alerte s'annonce une fois à son apparition ; seules la ceinture
+    //     et le défaut système se rappellent tant qu'ils durent ;
+    //   · le critique interrompt ce qui se dit ; le reste attend son tour ;
+    //   · « Sons d'alerte » coupé, seul le critique parle encore ;
+    //   · la batterie s'annonce à 20, 10 et 5 %, une fois par seuil.
+
+    // `urgent` : couper ce qui se dit (alerte critique).
+    signal alerted(string text, bool urgent)
+
+    readonly property var reminderMs: ({ belt: 30000, fault: 120000 })
+    readonly property var batteryThresholds: [20, 10, 5]
+
+    property var _alertSeen: ({})       // id → { at, level, label }
+    property int _batteryAnnounced: 101 // dernier seuil annoncé
+
+    // Ce qui se dit quand une alerte critique disparaît. Seulement pour le
+    // critique : dire « pression des pneus corrigée » à chaque rafale serait
+    // du bavardage.
+    readonly property var resolvedLines: ({
+        belt: "Ceinture bouclée, merci.",
+        brake: "Frein de stationnement desserré.",
+        fault: "Défaut système résolu."
+    })
+
+    function _checkAlerts() {
+        // Pendant la séquence de démarrage, l'écran parle seul — sauf la
+        // haute tension, qui la remplace.
+        if (AppState.booting && !AppState.hvDiagnosticOpen)
+            return
+        var now = Date.now()
+        var active = VehicleData.activeAlerts
+        var seen = _alertSeen
+        var current = {}
+
+        for (var i = 0; i < active.length; i++) {
+            var a = active[i]
+            current[a.id] = true
+            if (a.id === "batt")
+                continue                       // annoncée par seuils, plus bas
+            var critical = a.level === "CRITICAL"
+            if (seen[a.id] === undefined) {
+                seen[a.id] = { at: now, level: a.level, label: a.label }
+                _announce((critical ? "Attention : " + a.label.charAt(0).toLowerCase() + a.label.slice(1)
+                                    : a.label) + ". " + a.detail, critical)
+            } else if (reminderMs[a.id] !== undefined && now - seen[a.id].at >= reminderMs[a.id]) {
+                seen[a.id].at = now
+                _announce("Rappel : " + a.label.toLowerCase() + ". " + a.detail, critical)
+            }
+        }
+
+        for (var id in seen) {
+            if (current[id])
+                continue
+            if (seen[id].level === "CRITICAL" && resolvedLines[id] !== undefined)
+                _announce(resolvedLines[id], false, true)
+            delete seen[id]
+        }
+        _alertSeen = seen
+        _checkBattery()
+    }
+
+    function _checkBattery() {
+        var level = VehicleData.batteryLevel
+        if (!VehicleData.valid("battery"))
+            return
+        // Rechargée : les seuils se réarment.
+        if (level > 25) {
+            _batteryAnnounced = 101
+            return
+        }
+        for (var i = 0; i < batteryThresholds.length; i++) {
+            var t = batteryThresholds[i]
+            if (level <= t && _batteryAnnounced > t) {
+                // Un seul message même si l'on franchit plusieurs seuils d'un coup.
+                var lowest = t
+                for (var j = i + 1; j < batteryThresholds.length; j++)
+                    if (level <= batteryThresholds[j]) lowest = batteryThresholds[j]
+                _batteryAnnounced = lowest
+                var critical = level <= 10
+                _announce((critical ? "Attention : batterie critique. " : "")
+                          + "Batterie à " + level + " pour cent. Autonomie estimée : "
+                          + VehicleData.range + " kilomètres. Pensez à recharger.", critical)
+                return
+            }
+        }
+    }
+
+    function _announce(text, critical, quietOk) {
+        // « Sons d'alerte » coupé : le critique parle encore, pas le reste.
+        if (!critical && !AppState.alertSounds && !quietOk)
+            return
+        _push("assistant", text, "alert")
+        alerted(text, critical)
+        alerting = true
+        _alertShown.restart()
+    }
+
+    // Une annonce reste affichée un moment dans la bulle, même sans voix de
+    // synthèse : ce qui est dit doit aussi se lire.
+    property bool alerting: false
+    property Timer _alertShown: Timer {
+        interval: 6000
+        onTriggered: root.alerting = false
+    }
+
+    property Timer _alertTick: Timer {
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: root._checkAlerts()
     }
 
     Component.onCompleted: VoiceCommands.expired.connect(function (text) {

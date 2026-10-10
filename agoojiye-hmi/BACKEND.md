@@ -9,7 +9,7 @@ seule direction :
 
    VehicleSimulator.qml  ─┐
    CAN / ECU / capteurs  ─┼──►   VehicleData.qml   ──►    12 écrans
-   GPS / API / socket    ─┘      (ne produit rien,        39 panneaux
+   GPS / API / socket    ─┘      (ne produit rien,        40 panneaux
                                   détient tout)           alertes, témoins
 ```
 
@@ -396,17 +396,67 @@ d'avoir regardé » ; `VoiceListener::clean()` les écarte.
   llama-server le garde en cache, seule la dernière phrase est calculée ;
 - dernier message : l'état du véhicule (`Assistant.stateSummary()`, données
   invalides décrites comme telles) puis la phrase du conducteur ;
-- `response_format: json_schema` avec `command` ∈ {identifiants de la table,
-  `null`} et `reply` : la contrainte s'applique **pendant** la génération.
+- `response_format: json_schema` imposant `{demande, command, reply}` : la
+  contrainte s'applique **pendant** la génération.
+  - `demande` : ce que le modèle a compris, à l'infinitif (« allumer le
+    chauffage »). L'écrire d'abord l'oblige à analyser avant de choisir, et sert
+    à nommer un refus ;
+  - `command` : un identifiant de la table, **`non_disponible`**, **`interdit`**,
+    ou `null` pour bavarder ;
+  - `reply` : utilisé seulement quand on bavarde.
 
-Le modèle **propose**, la table **décide** : un identifiant passe par
-`VoiceCommands.handleId()`, donc par les mêmes refus et confirmations que le
-tactile, et c'est la réponse de la table qui est prononcée — jamais la phrase du
-modèle, écrite avant de savoir ce qui s'est passé. Un identifiant hors table est
-traité comme une phrase incomprise.
+Le modèle **propose**, la table **décide**, et trois verrous ne lui font pas
+confiance :
+
+1. **L'interdit est refusé par le code, avant le modèle.** `forbiddenVocab`
+   reconnaît freiner, accélérer, démarrer ou couper le moteur, klaxonner,
+   toucher aux aides ou à la haute tension — sauf si la phrase nomme une
+   fonction permise (« accélère les essuie-glaces »).
+2. **Une commande sans rapport avec la phrase devient une question.** Chaque
+   commande a ses mots-clés (ceux de ses formules, plus `also`). Si la phrase
+   n'en contient aucun — « éclaire la route » → mode nuit —, l'assistant demande
+   « Vous voulez dire : mode nuit ? » au lieu d'agir. C'était le défaut des
+   premiers essais réels : un petit modèle, ne connaissant pas une fonction,
+   désignait celle qui lui « ressemblait ».
+3. **Trois réponses distinctes**, toutes rédigées par le code : fait
+   (« Phares allumés. »), non disponible (« « allumer le chauffage » : cette
+   fonction n'est pas disponible sur la navette. »), interdit (« Je ne peux pas
+   klaxonner : la conduite et la sécurité restent entre vos mains. »).
+
+Un identifiant retenu passe par `VoiceCommands.handleId()`, donc par les mêmes
+refus et confirmations que le tactile, et c'est la réponse de la table qui est
+prononcée — jamais la phrase du modèle, écrite avant de savoir ce qui s'est
+passé.
 
 Un modèle qui ne répond pas en 15 s est considéré absent : repli sur la table,
 et nouvel essai de santé toutes les 5 s.
+
+### Annonces spontanées
+
+L'assistant dit, sans qu'on lui parle, ce que le bandeau d'alerte montre. La
+source est `VehicleData.activeAlerts`, vérifiée chaque seconde.
+
+| Alerte | Annonce | Rappel |
+|---|---|---|
+| Ceinture non bouclée en roulant | « Attention : ceinture non bouclée… » | toutes les 30 s |
+| Défaut système | « Attention : défaut système détecté… » | toutes les 2 min |
+| Batterie | « Batterie à 19 pour cent. Autonomie estimée… » | une fois à 20, 10, 5 % |
+| Pneus, ouvrant, capteur, limite, haute tension | le libellé du bandeau | une fois |
+
+Le critique **interrompt** ce qui se dit (`VoiceAnnouncer.interrupt()`) et ne se
+coupe pas ; le reste attend son tour et se tait si « Sons d'alerte » est coupé.
+Une alerte critique levée est dite aussi (« Ceinture bouclée, merci. »). Les
+annonces restent 6 s dans la bulle, voix ou pas.
+
+### Commandes du véhicule
+
+Tout ce que la voix commande est visible et se commande au doigt :
+*Véhicule → Commandes* (phares, feux de route, antibrouillards, plafonnier,
+clignotants, warnings, essuie-glaces, lave-glace, désembuage, verrouillage,
+annonces aux passagers), et des témoins dans la barre du haut. L'état est dans
+`VehicleData` (`headlights`, `highBeam`, `fogLights`, `cabinLight`, `wipers`,
+`washing`, `defog`, `locked`, `turnSignal`, `nextStop`) — un backend réel n'a
+qu'à les écrire.
 
 ### Changer de modèle
 
@@ -427,10 +477,10 @@ façons ; une commande absente ne l'est d'aucune.
 
 | Niveau | Exemples | Règle |
 |---|---|---|
-| Libre | écrans, média, questions, mode nuit, clignotants et feux de détresse | exécutée aussitôt |
+| Libre | écrans, média, questions, mode nuit, clignotants, warnings, phares, feux de route, antibrouillards, plafonnier, essuie-glaces, lave-glace, désembuage, verrouillage, annonces aux passagers | exécutée aussitôt |
 | Confirmation | modes de conduite, désactiver l'alerte de ligne | « oui » dans les 8 s |
-| À l'arrêt | ouvrir trappe, porte, compartiment batterie | refusée si `VehicleData.moving` |
-| Jamais | conduite, frein, chaîne HT, régulateur, freinage d'urgence | **absente de la table** |
+| À l'arrêt | ouvrir trappe, porte, compartiment batterie ; déverrouiller | refusée si `VehicleData.moving` |
+| Jamais | conduite, frein, démarrage, klaxon, chaîne HT, régulateur, freinage d'urgence | **absente de la table**, et refusée par le code |
 
 Quatre principes, tous vérifiés par `test.sh` :
 

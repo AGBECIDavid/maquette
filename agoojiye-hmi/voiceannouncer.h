@@ -49,6 +49,10 @@ public:
     //! Prononce `text`. Sans moteur disponible, l'appel est ignoré.
     Q_INVOKABLE void speak(const QString &text);
     Q_INVOKABLE void stop();
+    //! Coupe ce qui se dit, vide la file, et prononce `text` aussitôt. Réservé
+    //! aux alertes critiques : une ceinture débouclée en roulant passe avant
+    //! la fin d'une blague.
+    Q_INVOKABLE void interrupt(const QString &text);
 
 signals:
     void speakingChanged();

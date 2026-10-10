@@ -19,12 +19,14 @@ Item {
 
     function statusColor(s) {
         return { executed: Theme.green, noop: Theme.blueLight, confirm: Theme.orange,
-                 cancelled: Theme.textMuted, refused: Theme.red, unknown: Theme.textMuted }[s]
+                 cancelled: Theme.textMuted, refused: Theme.red, unknown: Theme.textMuted,
+                 unavailable: Theme.orange, alert: Theme.red }[s]
                || Theme.textMuted
     }
     function statusLabel(s) {
         return { executed: "EXÉCUTÉ", noop: "DÉJÀ FAIT", confirm: "À CONFIRMER",
-                 cancelled: "ANNULÉ", refused: "REFUSÉ", unknown: "NON COMPRIS" }[s] || ""
+                 cancelled: "ANNULÉ", refused: "REFUSÉ", unknown: "NON COMPRIS",
+                 unavailable: "NON DISPONIBLE", alert: "ALERTE" }[s] || ""
     }
 
     function send(text) {

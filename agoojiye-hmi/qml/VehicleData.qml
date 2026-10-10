@@ -206,7 +206,29 @@ QtObject {
     property int outsideTemp: 23            // °C
     property int speedLimit: 50             // km/h — limite en vigueur
     property int cruiseSpeed: 50            // km/h — consigne du régulateur
-    property bool headlightsAuto: true
+    // ---- Commandes de confort et de visibilité ----------------------------
+    // Ce que le conducteur fait d'ordinaire à la main, au comodo ou au tableau
+    // de bord. Chacune est visible à l'écran (barre du haut, Véhicule →
+    // Commandes) : une commande dont on ne voit pas l'effet ne peut pas être
+    // vérifiée — c'est la leçon du clignotant.
+    //
+    // Phares : "off", "auto" (selon la luminosité) ou "on" (croisement).
+    property string headlights: "auto"
+    readonly property bool headlightsAuto: headlights === "auto"
+    // Allumés de fait : forcés, ou en automatique quand le capteur de
+    // luminosité signale la pénombre.
+    readonly property bool headlightsLit: headlights === "on"
+                                          || (headlights === "auto" && lowLight)
+    property bool lowLight: false          // capteur de luminosité : il fait sombre
+    property bool highBeam: false          // feux de route (pleins phares)
+    property bool fogLights: false         // antibrouillards
+    property bool cabinLight: false        // plafonnier
+    // Essuie-glaces : "off", "auto", "intermittent", "normal", "fast".
+    property string wipers: "off"
+    property bool washing: false           // lave-glace en cours (impulsion)
+    property bool defog: false             // désembuage du pare-brise
+    property bool locked: false            // verrouillage centralisé
+    property string nextStop: "Gare Centrale"   // prochain arrêt de la ligne
 
     // ---- Témoins ---------------------------------------------------------
     // Ces états décrivent une réalité physique et doivent rester cohérents
@@ -295,6 +317,14 @@ QtObject {
     // compteur, se lit comme une barre pleine — donc comme un écran en panne.
     readonly property string noValue: "- -"
 
+    // Nom lisible d'un signal. Le nom technique (« speed ») est celui du bus ;
+    // le conducteur, et l'assistant qui le lui dit, parlent français.
+    function signalLabel(name) {
+        return ({ speed: "vitesse", battery: "batterie", consumption: "consommation",
+                  range: "autonomie", motorTemp: "température moteur",
+                  batteryTemp: "température batterie" })[name] || name
+    }
+
     function reading(name, value, digits) {
         if (quality(name) === "MISSING")
             return noValue
@@ -359,7 +389,7 @@ QtObject {
         for (var i = 0; i < names.length; i++) {
             if (signalState[names[i]] === "MISSING")
                 out.push({ id: "sig-" + names[i], level: "WARNING", icon: "ph-crosshair-simple",
-                           label: "Signal indisponible : " + names[i],
+                           label: "Signal indisponible : " + signalLabel(names[i]),
                            detail: "La valeur affichée n'est pas fiable." })
         }
 

@@ -328,7 +328,7 @@ Item {
                     Icon { name: "ph-tire"; size: 25; anchors.verticalCenter: parent.verticalCenter
                            color: VehicleData.tyrePressureWarning ? Theme.yellow : Theme.textDim }
                     Icon { name: "ph-headlights"; size: 25; anchors.verticalCenter: parent.verticalCenter
-                           color: VehicleData.headlightsAuto ? Theme.blue : Theme.textDim }
+                           color: VehicleData.highBeam ? Theme.blue : VehicleData.headlightsLit ? Theme.green : Theme.textDim }
                 }
             }
         }

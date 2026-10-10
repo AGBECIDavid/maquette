@@ -12,7 +12,8 @@ Item {
         { label: "Pression des pneus", icon: "ph-tire" },
         { label: "Énergie", icon: "ph-battery-charging" },
         { label: "Températures", icon: "ph-thermometer-simple" },
-        { label: "Informations", icon: "ph-info" }
+        { label: "Informations", icon: "ph-info" },
+        { label: "Commandes", icon: "ph-hand-tap" }
     ]
 
     // 12458 -> "12 458"
@@ -595,6 +596,141 @@ Item {
                     SettingRow { width: (infoPane.width - 18) / 2; iconName: "ph-calendar-blank"; accentColor: Theme.purple; label: "Mise en service"; value: VehicleData.commissioningDate }
                     SettingRow { width: (infoPane.width - 18) / 2; iconName: "ph-cube"; accentColor: Theme.blue; label: "Version logicielle"; value: VehicleData.softwareVersion }
                     SettingRow { width: (infoPane.width - 18) / 2; iconName: "ph-wrench"; accentColor: Theme.orange; label: "Prochaine révision"; value: "Dans " + root.formatKm(VehicleData.serviceDueIn) + " km"; chevron: "ph-caret-right"; onClicked: AppState.go("entretien") }
+                }
+            }
+            // ---- 6 · Commandes ----------------------------------------------
+            // Ce qu'on fait à la main au comodo et au tableau de bord. Tout ce
+            // que l'assistant vocal sait commander est ici, au doigt — et l'état
+            // affiché est le même, qu'on ait parlé ou touché.
+            Row {
+                id: ctrlPane
+                anchors.fill: parent
+                anchors.topMargin: 8
+                spacing: 18
+                visible: root.section === 6
+                readonly property real colW: (width - 18) / 2
+
+                Column {
+                    width: ctrlPane.colW
+                    spacing: 11
+                    Text { text: "COMMANDES"; font.family: Theme.fontFamily; font.pixelSize: 17; font.weight: Font.Bold; font.letterSpacing: 1; color: Theme.textPrimary; bottomPadding: 3 }
+
+                    Text { text: "PHARES"; font.family: Theme.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.textMuted }
+                    SegmentedControl {
+                        width: parent.width
+                        options: ["Éteints", "Auto", "Allumés"]
+                        accentColor: Theme.green
+                        currentIndex: ["off", "auto", "on"].indexOf(VehicleData.headlights)
+                        onSelected: (i) => {
+                            VehicleData.headlights = ["off", "auto", "on"][i]
+                            if (i === 0) { VehicleData.highBeam = false; VehicleData.fogLights = false }
+                        }
+                    }
+                    SettingRow {
+                        width: parent.width; iconName: "ph-headlights"; accentColor: Theme.blue
+                        label: "Feux de route"; sub: "Pleins phares"
+                        ToggleSwitch { checked: VehicleData.highBeam; accentColor: Theme.blue; anchors.verticalCenter: parent.verticalCenter
+                                       onToggled: { if (!VehicleData.highBeam && VehicleData.headlights === "off") VehicleData.headlights = "on"
+                                                    VehicleData.highBeam = !VehicleData.highBeam } }
+                    }
+                    SettingRow {
+                        width: parent.width; iconName: "ph-cloud-fog"; accentColor: Theme.green
+                        label: "Antibrouillards"
+                        ToggleSwitch { checked: VehicleData.fogLights; accentColor: Theme.green; anchors.verticalCenter: parent.verticalCenter
+                                       onToggled: { if (!VehicleData.fogLights && VehicleData.headlights === "off") VehicleData.headlights = "on"
+                                                    VehicleData.fogLights = !VehicleData.fogLights } }
+                    }
+                    SettingRow {
+                        width: parent.width; iconName: "ph-lightbulb"; accentColor: Theme.yellow
+                        label: "Plafonnier"
+                        ToggleSwitch { checked: VehicleData.cabinLight; accentColor: Theme.yellow; anchors.verticalCenter: parent.verticalCenter
+                                       onToggled: VehicleData.cabinLight = !VehicleData.cabinLight }
+                    }
+
+                    Text { text: "CLIGNOTANTS"; font.family: Theme.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.textMuted; topPadding: 6 }
+                    SegmentedControl {
+                        width: parent.width
+                        options: ["Gauche", "Éteints", "Droite"]
+                        accentColor: Theme.green
+                        currentIndex: Math.max(0, ["left", "off", "right"].indexOf(VehicleData.turnSignal))
+                        onSelected: (i) => VehicleData.turnSignal = ["left", "off", "right"][i]
+                    }
+                    SettingRow {
+                        width: parent.width; iconName: "ph-warning"; accentColor: Theme.red
+                        label: "Feux de détresse"
+                        ToggleSwitch { checked: VehicleData.turnSignal === "hazard"; accentColor: Theme.red; anchors.verticalCenter: parent.verticalCenter
+                                       onToggled: VehicleData.turnSignal = VehicleData.turnSignal === "hazard" ? "off" : "hazard" }
+                    }
+                }
+
+                Column {
+                    width: ctrlPane.colW
+                    spacing: 11
+                    Item { width: 1; height: 24 }   // hauteur du titre, pour aligner les deux colonnes
+
+                    Text { text: "ESSUIE-GLACES"; font.family: Theme.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.textMuted }
+                    SegmentedControl {
+                        width: parent.width
+                        options: ["Arrêt", "Auto", "Interm.", "Normal", "Rapide"]
+                        accentColor: Theme.teal
+                        currentIndex: Math.max(0, ["off", "auto", "intermittent", "normal", "fast"].indexOf(VehicleData.wipers))
+                        onSelected: (i) => VehicleData.wipers = ["off", "auto", "intermittent", "normal", "fast"][i]
+                    }
+                    SettingRow {
+                        width: parent.width; iconName: "ph-spray-bottle"; accentColor: Theme.teal
+                        label: "Lave-glace"; sub: VehicleData.washing ? "En cours…" : "Une impulsion"
+                        Rectangle {
+                            width: 86; height: 36; radius: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: washHover.containsMouse ? Theme.alpha(Theme.teal, 0.28) : Theme.alpha(Theme.teal, 0.14)
+                            border.width: 1; border.color: Theme.alpha(Theme.teal, 0.5)
+                            Text { anchors.centerIn: parent; text: "Laver"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.DemiBold; color: Theme.textPrimary }
+                            MouseArea { id: washHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: VehicleData.washing = true }
+                        }
+                    }
+                    SettingRow {
+                        width: parent.width; iconName: "ph-wind"; accentColor: Theme.teal
+                        label: "Désembuage"; sub: "Pare-brise"
+                        ToggleSwitch { checked: VehicleData.defog; accentColor: Theme.teal; anchors.verticalCenter: parent.verticalCenter
+                                       onToggled: VehicleData.defog = !VehicleData.defog }
+                    }
+
+                    Text { text: "ACCÈS"; font.family: Theme.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.textMuted; topPadding: 6 }
+                    // Déverrouiller en roulant n'est pas permis — au doigt pas plus
+                    // qu'à la voix : l'interrupteur se fige plutôt que de mentir.
+                    SettingRow {
+                        width: parent.width; iconName: VehicleData.locked ? "ph-lock-simple" : "ph-lock-simple-open"; accentColor: Theme.blue
+                        label: "Verrouillage"; sub: VehicleData.locked && VehicleData.moving ? "Déverrouillage à l'arrêt seulement" : (VehicleData.locked ? "Verrouillée" : "Déverrouillée")
+                        ToggleSwitch { checked: VehicleData.locked; accentColor: Theme.blue; anchors.verticalCenter: parent.verticalCenter
+                                       enabled: !(VehicleData.locked && VehicleData.moving)
+                                       opacity: enabled ? 1 : 0.45
+                                       onToggled: VehicleData.locked = !VehicleData.locked }
+                    }
+
+                    Text { text: "ANNONCES AUX PASSAGERS"; font.family: Theme.fontFamily; font.pixelSize: 12; font.weight: Font.DemiBold; font.letterSpacing: 1.4; color: Theme.textMuted; topPadding: 6 }
+                    Row {
+                        width: parent.width
+                        spacing: 11
+                        Repeater {
+                            model: [ { id: "announce-stop", label: "Prochain arrêt" },
+                                     { id: "announce-departure", label: "Départ imminent" } ]
+                            delegate: Rectangle {
+                                required property var modelData
+                                width: (parent.width - 11) / 2; height: 54; radius: 13
+                                color: annHover.containsMouse ? Theme.alpha(Theme.purple, 0.2) : Theme.alpha(Theme.purple, 0.1)
+                                border.width: 1; border.color: Theme.alpha(Theme.purple, 0.45)
+                                Row {
+                                    anchors.centerIn: parent
+                                    spacing: 10
+                                    Icon { name: "ph-megaphone"; size: 19; color: Theme.purple; anchors.verticalCenter: parent.verticalCenter }
+                                    Text { text: modelData.label; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.Medium; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                                }
+                                // Même chemin qu'à la voix : l'annonce est prononcée.
+                                MouseArea { id: annHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                            onClicked: VoiceCommands.handleId(modelData.id, "") }
+                            }
+                        }
+                    }
                 }
             }
         }

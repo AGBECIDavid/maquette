@@ -259,7 +259,7 @@ agoojiye-hmi/
 ├── voice/
 │   └── fake_servers.py     faux moteurs pour la recette
 ├── run.sh                  construire et lancer, scénarios en argument
-├── test.sh                 test de fumée en 9 étapes, sans écran
+├── test.sh                 test de fumée en 10 étapes, sans écran
 ├── qml/
 │   ├── Main.qml            coque : barres, écrans, couches (141 l.)
 │   ├── Theme.qml           couleurs et polices, singleton (49 l.)
@@ -526,6 +526,19 @@ Les choix qui tiennent l'ensemble :
 - **Sourd pendant qu'il parle**, sinon il s'entendrait dans les haut-parleurs.
 - **Dans l'ordre.** Une phrase dite pendant que le modèle réfléchit attend son
   tour : « merci » ne passe pas avant la réponse qu'il remercie.
+- **Trois réponses, jamais une substitution.** Fait, non disponible (nommé),
+  ou interdit. Un petit modèle qui ne connaît pas une fonction désigne celle
+  qui lui « ressemble » : chaque commande porte ses mots-clés, et une
+  proposition sans rapport avec la phrase devient une question, pas une
+  action. L'interdit est refusé par le code, avant même le modèle.
+- **Il prévient de lui-même** : ceinture, défaut système, batterie à 20, 10 et
+  5 %, pneus, ouvrant, capteur. Le critique interrompt ce qui se dit et se
+  rappelle tant qu'il dure.
+
+Tout ce qu'il commande — phares, feux de route, antibrouillards, plafonnier,
+clignotants, warnings, essuie-glaces, lave-glace, désembuage, verrouillage,
+annonces aux passagers — est aussi visible et commandable au doigt dans
+*Véhicule → Commandes*, avec des témoins dans la barre du haut.
 
 Après le réveil, la conversation reste ouverte 12 s après chaque réponse
 *prononcée* : on enchaîne sans répéter le nom (« et la batterie ? »).
@@ -570,14 +583,14 @@ appelle `spd-say -C` : fermer l'application coupe la voix.
 
 ## 7. Les écrans
 
-11 écrans et 2 couches, 39 panneaux atteignables au total (un écran à barre latérale compte
+11 écrans et 2 couches, 40 panneaux atteignables au total (un écran à barre latérale compte
 une entrée par section).
 
 | Écran | Clé | Sections de la barre latérale |
 |---|---|---|
 | **Tableau de bord** | `dash` | — (écran de référence : vitesse, énergie, alertes) |
 | **Navigation** | `nav` | — (carte, itinéraire, prochaine manœuvre) |
-| **Véhicule** | `veh` | Aperçu · Ouvrants et accès · Pression des pneus · Énergie · Températures · Informations |
+| **Véhicule** | `veh` | Aperçu · Ouvrants et accès · Pression des pneus · Énergie · Températures · Informations · Commandes |
 | **Entretien** | `entretien` | — (sous-écran de Véhicule) |
 | **Conduite** | `conduite` | Modes de conduite · Régénération · Traction · Direction · Suspension · Freinage |
 | **ADAS** | `adas` | Aides à la conduite · Régulateur de vitesse · Sécurité · Stationnement · Vision · Alerte conducteur |
@@ -605,19 +618,20 @@ non gardés dans l'interface, pour que le backend les voie.
 Pas besoin d'écran : Qt tourne en mode *offscreen*. **À lancer avant chaque
 `git push`.**
 
-Neuf étapes :
+Dix étapes :
 
 | # | Étape | Échoue si |
 |---|---|---|
 | 1 | Construction | la compilation échoue |
 | 2 | Parcours de l'interface | Qt émet **le moindre avertissement QML** |
-| 3 | Présence des panneaux | un des 39 panneaux ne produit pas de capture |
+| 3 | Présence des panneaux | un des 40 panneaux ne produit pas de capture |
 | 4 | Séquence de démarrage | la séquence ne se joue pas jusqu'au bout |
 | 5 | Cohérence physique sur 30 s | frein de stationnement en roulant, rapport P en roulant, autonomie négative, accélération hors bornes (mesurée sur l'horloge du modèle), ou les 3 phases pas toutes vues |
 | 6 | Chaîne d'alerte | une panne injectée ne remonte pas au bandeau |
 | 7 | Verrou haute tension | un motif est mal rapporté, ou l'isolement n'est pas bloquant |
 | 8 | Assistant vocal | une commande hors table est acceptée, un ouvrant s'ouvre en roulant, un « oui » agit après que la navette a démarré, ou un capteur muet est annoncé comme une valeur |
 | 9 | Conversation | le son n'est pas découpé et compris phrase par phrase, l'assistant répond sans avoir été appelé, le dialogue avec le modèle sort des règles de la table, ou un modèle qui ment obtient l'action ou fait prononcer son mensonge |
+| 10 | Annonces d'alerte | la ceinture, son retour à la normale, la batterie aux seuils ou le défaut système ne sont pas annoncés, ou une annonce est répétée à tort |
 
 L'étape 2 est celle qui attrape les vraies régressions : **une dépendance
 circulaire ou une propriété inconnue ne casse pas la compilation**, elle fait
@@ -653,10 +667,10 @@ d'un défaut qui n'appartient qu'à l'échantillonnage.
 | `HMI_HV=<5 chiffres>` | applique un motif haute tension |
 | `HMI_FAULT=<mot>` | injecte une panne : `belt`, `tyre`, `battery`, `sensor`, `fault` |
 | `HMI_TRACE=<s>` | relevé CSV pendant N secondes, puis quitte (force le mode déterministe) |
-| `HMI_SCREENSHOT_DIR=<dir>` | parcourt les 39 panneaux, une capture chacun, puis quitte |
+| `HMI_SCREENSHOT_DIR=<dir>` | parcourt les 40 panneaux, une capture chacun, puis quitte |
 | `HMI_VOICE="a\|b\|…"` | rejoue des phrases comme si elles avaient été reconnues ; `@vitesse=N` change la vitesse entre deux |
 | `HMI_BOOT_FRAMES=<dir>` | capture la séquence de démarrage image par image |
-| `HMI_ASSISTANT="a\|b\|…"` | rejoue des phrases entendues, mot de réveil compris ; `@clavier:texte`, `@vitesse=N`, `@etat` |
+| `HMI_ASSISTANT="a\|b\|…"` | rejoue des phrases entendues, mot de réveil compris ; `@clavier:texte`, `@vitesse=N`, `@etat`, `@attendre=N`, `@set:propriété=valeur` |
 | `HMI_VOICE_WAV=fichier.wav` | fait passer un enregistrement par le chemin du micro |
 | `AGOOJIYE_NO_MIC=1` | n'ouvre pas le micro (la recette le pose toujours) |
 | `AGOOJIYE_ASR_URL`, `AGOOJIYE_LLM_URL` | adresses des moteurs vocaux (`127.0.0.1:8178` et `:8179` par défaut) |

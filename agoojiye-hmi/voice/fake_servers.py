@@ -72,15 +72,22 @@ class Asr(BaseHTTPRequestHandler):
 # n'existe pas et prétend l'avoir exécutée. L'interface ne doit ni l'exécuter,
 # ni le répéter.
 RULES = [
-    ("sport", {"command": "mode-sport", "reply": "Je passe en mode sport."}),
-    ("nuit", {"command": "night-on", "reply": "J'active le mode nuit."}),
-    ("clignotant", {"command": "blink-right", "reply": "Je mets le clignotant."}),
-    ("trappe", {"command": "flap-open", "reply": "J'ouvre la trappe de charge."}),
-    ("autonomie", {"command": "ask-range", "reply": "Je regarde."}),
-    ("batterie", {"command": "ask-battery", "reply": "Je regarde."}),
-    ("freine", {"command": None, "reply": "Je ne peux pas freiner : la conduite reste entre vos mains."}),
-    ("blague", {"command": None, "reply": "Pourquoi les navettes sont-elles calmes ? Elles ont toujours de l'énergie en réserve."}),
-    ("pirate", {"command": "brake-now", "reply": "J'ai freiné d'urgence."}),
+    ("sport", {"demande": "passer en mode sport", "command": "mode-sport", "reply": ""}),
+    ("nuit", {"demande": "activer le mode nuit", "command": "night-on", "reply": ""}),
+    ("clignotant", {"demande": "allumer le clignotant droit", "command": "blink-right", "reply": ""}),
+    ("trappe", {"demande": "ouvrir la trappe de charge", "command": "flap-open", "reply": ""}),
+    ("autonomie", {"demande": "connaître l'autonomie", "command": "ask-range", "reply": ""}),
+    ("batterie", {"demande": "connaître la batterie", "command": "ask-battery", "reply": ""}),
+    ("blague", {"demande": "entendre une blague", "command": None,
+                "reply": "Pourquoi les navettes sont-elles calmes ? Elles ont toujours de l'énergie en réserve."}),
+    # Le défaut vu en essai réel : une fonction inconnue, et le modèle désigne
+    # la commande « qui ressemble ». L'interface doit le rattraper.
+    ("éclaire", {"demande": "éclairer la route", "command": "night-on", "reply": ""}),
+    # Le modèle, lui, sait dire qu'une fonction n'existe pas.
+    ("chauffage", {"demande": "allumer le chauffage", "command": "non_disponible", "reply": ""}),
+    ("vitre", {"demande": "ouvrir les vitres", "command": "non_disponible", "reply": ""}),
+    # Le modèle ment : commande inexistante, action prétendue.
+    ("pirate", {"demande": "freiner d'urgence", "command": "brake-now", "reply": "J'ai freiné d'urgence."}),
     ("lent", None),   # ne répond pas à temps
 ]
 
@@ -113,13 +120,14 @@ class Llm(BaseHTTPRequestHandler):
             assert rf["type"] == "json_schema"
             schema = rf["json_schema"]["schema"]
             ids = schema["properties"]["command"]["anyOf"][0]["enum"]
-            assert "mode-sport" in ids and schema["properties"]["command"]["anyOf"][1] == {"type": "null"}
-            assert schema["required"] == ["command", "reply"]
+            assert "mode-sport" in ids and "non_disponible" in ids and "interdit" in ids
+            assert schema["properties"]["command"]["anyOf"][1] == {"type": "null"}
+            assert schema["required"] == ["demande", "command", "reply"]
         except (KeyError, IndexError, AssertionError, ValueError) as e:
             return self._send(400, {"error": "requête mal formée : %r" % e})
 
         said = msgs[-1]["content"].split("Conducteur :", 1)[-1].lower()
-        answer = {"command": None, "reply": "D'accord."}
+        answer = {"demande": "discuter", "command": None, "reply": "D'accord."}
         for key, out in RULES:
             if key in said:
                 if out is None:

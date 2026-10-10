@@ -189,6 +189,17 @@ QtObject {
         onTriggered: if (sim.running) VehicleData.turnSignal = "off"
     }
 
+    // Le lave-glace est une impulsion : la pompe gicle quelques secondes, les
+    // balais passent, puis tout revient comme avant.
+    property Connections _washWatch: Connections {
+        target: VehicleData
+        function onWashingChanged() { if (VehicleData.washing) sim._washTimer.restart() }
+    }
+    property Timer _washTimer: Timer {
+        interval: 3000
+        onTriggered: VehicleData.washing = false
+    }
+
     property Timer _tick: Timer {
         interval: sim.stepMs
         running: sim.running
