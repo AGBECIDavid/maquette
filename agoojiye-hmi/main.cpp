@@ -12,6 +12,7 @@
 #include <QElapsedTimer>
 #include <QDateTime>
 #include <QJSValue>
+#include "localurl.h"
 
 namespace {
 // A `property var` read from C++ holds either a QJSValue or an already
@@ -161,7 +162,8 @@ int main(int argc, char *argv[])
     };
     QObject *assistant = single("assistant");
     if (assistant && qEnvironmentVariableIsSet("AGOOJIYE_LLM_URL"))
-        assistant->setProperty("llmUrl", qEnvironmentVariable("AGOOJIYE_LLM_URL"));
+        assistant->setProperty("llmUrl", localServiceUrl("AGOOJIYE_LLM_URL",
+                                                         assistant->property("llmUrl").toString()));
 
     // QA aid: HMI_ASSISTANT="phrase|phrase|…" plays transcripts to the
     // assistant as if the microphone had heard them — wake-word rules

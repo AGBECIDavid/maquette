@@ -673,7 +673,7 @@ d'un défaut qui n'appartient qu'à l'échantillonnage.
 | `HMI_ASSISTANT="a\|b\|…"` | rejoue des phrases entendues, mot de réveil compris ; `@clavier:texte`, `@vitesse=N`, `@etat`, `@attendre=N`, `@set:propriété=valeur` |
 | `HMI_VOICE_WAV=fichier.wav` | fait passer un enregistrement par le chemin du micro |
 | `AGOOJIYE_NO_MIC=1` | n'ouvre pas le micro (la recette le pose toujours) |
-| `AGOOJIYE_ASR_URL`, `AGOOJIYE_LLM_URL` | adresses des moteurs vocaux (`127.0.0.1:8178` et `:8179` par défaut) |
+| `AGOOJIYE_ASR_URL`, `AGOOJIYE_LLM_URL` | adresses des moteurs vocaux (`127.0.0.1:8178` et `:8179` par défaut) ; boucle locale seulement, toute autre adresse est ignorée avec un avertissement |
 
 Les arguments de `run.sh` ne font que poser `HMI_HV` et `HMI_FAULT` pour vous.
 

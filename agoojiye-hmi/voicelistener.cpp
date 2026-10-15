@@ -1,4 +1,5 @@
 #include "voicelistener.h"
+#include "localurl.h"
 
 #include <QFile>
 #include <QHttpMultiPart>
@@ -41,7 +42,7 @@ const char *kPrompt = "Salut Agoojiye. Allume le clignotant à droite. Mode spor
 VoiceListener::VoiceListener(QObject *parent)
     : QObject(parent)
 {
-    m_url = qEnvironmentVariable("AGOOJIYE_ASR_URL", QStringLiteral("http://127.0.0.1:8178"));
+    m_url = localServiceUrl("AGOOJIYE_ASR_URL", QStringLiteral("http://127.0.0.1:8178"));
     // La recette ne doit jamais écouter la pièce où elle tourne.
     m_enabled = !qEnvironmentVariableIsSet("AGOOJIYE_NO_MIC");
     m_prompt = QString::fromUtf8(kPrompt);

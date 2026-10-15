@@ -109,7 +109,11 @@ void VoiceAnnouncer::speakNext()
 {
     if (m_queue.isEmpty())
         return;
-    m_spd->start(m_spdSay, { "-w", "-l", kLanguage, "-r", kRate, m_queue.takeFirst() });
+    // « -- » : la phrase n'est jamais lue comme une option, même si elle
+    // commence par un tiret (« -C » viderait la file, « -o » changerait de
+    // moteur). Le texte peut venir du modèle de langage : il ne décide pas des
+    // options.
+    m_spd->start(m_spdSay, { "-w", "-l", kLanguage, "-r", kRate, "--", m_queue.takeFirst() });
 }
 
 void VoiceAnnouncer::stop()

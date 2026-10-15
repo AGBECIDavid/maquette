@@ -53,6 +53,7 @@ qt_standard_project_setup()
 
 qt_add_executable(agoojiye-hmi
     main.cpp
+    localurl.h
     voiceannouncer.h
     voiceannouncer.cpp
     voicelistener.h
