@@ -1,1 +1,3 @@
 build/
+# Journal laissé par aqtinstall quand on installe Qt depuis ce dossier.
+aqtinstall.log

@@ -55,8 +55,10 @@ QT_QPA_PLATFORM=offscreen HMI_SCREENSHOT_DIR="$SHOTS" \
 
 # Bruit attendu, sans rapport avec l'interface : pas de dossier d'exécution
 # XDG dans un conteneur, pas de moteur de synthèse vocale installé, pas de
-# serveur audio (PulseAudio/PipeWire) pour Qt Multimedia.
-NOISE='XDG_RUNTIME_DIR|text-to-speech plug-ins|pa_context_connect'
+# serveur audio (PulseAudio/PipeWire) pour Qt Multimedia, et la ligne
+# d'information que Qt Multimedia ≥ 6.5 écrit au démarrage quand il passe par
+# FFmpeg (le Qt 6.10 de Debian/Kali le fait ; le Qt 6.4 d'Ubuntu 24.04 non).
+NOISE='XDG_RUNTIME_DIR|text-to-speech plug-ins|pa_context_connect|qt\.multimedia\.ffmpeg: Using Qt multimedia with FFmpeg'
 if grep -Ev "$NOISE" "$LOG" | grep -q '[^[:space:]]'; then
     echo "Avertissements pendant le parcours :" >&2
     grep -Ev "$NOISE" "$LOG" >&2
