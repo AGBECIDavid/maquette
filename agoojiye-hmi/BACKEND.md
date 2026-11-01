@@ -659,6 +659,13 @@ moteurs qui parlent l'API des vrais, **refusent toute requête mal formée**, et
 répondent d'avance — dont un modèle qui ment (commande inventée, action
 prétendue), pour vérifier que ni l'action ni le mensonge ne passent.
 
+### Limite connue : pas d'annulation d'écho
+
+En essai réel, l'assistant n'écoute bien qu'avec des écouteurs : sur les
+haut-parleurs, le micro reçoit aussi le média et les annonces de guidage.
+L'écoute n'est coupée que pendant que l'assistant lui-même parle
+(`VoiceListener.muted`). Pistes et ordre de traitement : DOCUMENTATION.md, §6.7.
+
 ## L'assistant vocal — la voix
 
 Il passe par `VoiceAnnouncer` (C++), et **toute la chaîne est optionnelle** :

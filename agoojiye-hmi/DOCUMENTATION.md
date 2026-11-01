@@ -627,6 +627,27 @@ fait rien, `available` reste faux, et l'interface s'appuie sur son affichage
 (bulle + onde animée) pour rester lisible. Le destructeur tue le processus et
 appelle `spd-say -C` : fermer l'application coupe la voix.
 
+#### Limite connue : il faut un casque pour l'instant
+
+Constaté en essai réel : **l'assistant n'écoute correctement qu'avec des
+écouteurs branchés.** Sur les haut-parleurs, le micro capte aussi ce qui sort
+des haut-parleurs. L'écoute est déjà coupée pendant que l'assistant parle,
+mais pas pendant le reste du son (média, annonces de guidage), et la détection
+de parole, qui se règle sur le bruit ambiant, s'en trouve faussée. Dans une
+navette, un casque n'est pas une solution.
+
+À traiter dans un prochain lot, après diagnostic sur la machine :
+
+- **annulation d'écho** au niveau du système (module `echo-cancel` de
+  PipeWire / PulseAudio, qui retire du micro ce qui part vers les
+  haut-parleurs) — la piste la plus directe, sans changer le code ;
+- couper aussi l'écoute pendant les annonces de guidage et baisser le média
+  quand l'assistant est réveillé ;
+- sur la cible, un micro directionnel orienté vers le conducteur, loin des
+  haut-parleurs ;
+- le bouton micro (« appuyer pour parler ») comme mode par défaut si le bruit
+  de la navette en roulant reste trop fort.
+
 ---
 
 ## 7. Les écrans
@@ -785,6 +806,7 @@ Une liste courte, à vérifier avant d'embarquer :
 | Il entend mais ne répond pas | le nom n'a pas été reconnu | la page de l'assistant affiche « entendu sans Salut Agoojiye » ; parler plus près, ou bouton micro |
 | Il ne comprend que les formules exactes | modèle de langage arrêté | `./voice.sh status`, puis `./voice.sh start` |
 | Réponses lentes (> 3 s) | machine modeste | `VOICE_ASR=tiny`, ou plus de cœurs avec `VOICE_THREADS` |
+| L'assistant n'entend bien qu'avec un casque | le micro capte les haut-parleurs (pas d'annulation d'écho) | limite connue, §6.7 ; en attendant, casque ou bouton micro |
 
 ---
 
