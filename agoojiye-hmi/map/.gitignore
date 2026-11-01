@@ -1,0 +1,4 @@
+# Fichiers de travail de map.sh — les données elles-mêmes se versionnent.
+source/.locate.*
+source/.fetch.q
+source/*.part
