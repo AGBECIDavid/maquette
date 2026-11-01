@@ -1,0 +1,108 @@
+RAPPORT DES DONNÉES OPENSTREETMAP — GDIZ
+Données OSM du : 2026-11-01T16:42:42Z
+Emprise : 6.57184,2.22566 → 6.62742,2.27863  (5.9 × 6.2 km)
+Contour de la zone : « Zone Industrielle de Glo‑Djigbé », 3.89 km² (39 points)  — chiffre officiel : 16,4 km²
+« zone » = dans le contour ; « autour » = dans l'emprise, hors du contour.
+
+ROUTES (km, par type OSM)             zone    autour
+  tertiary                             12.45     10.94
+  unclassified                          2.31     18.53
+  residential                           0.00     18.68
+  track                                 0.00     14.20
+  trunk                                 0.00      7.27
+  service                               5.19      2.01
+  path                                  0.00      0.58   (non roulable)
+  secondary                             0.00      0.04
+  tertiary_link                         0.02      0.00
+  → roulable                           19.96     71.68
+  → routes de la zone d'un seul tenant : 100 % (1 morceaux touchent la zone)
+  → sens unique : 50 tronçons
+  → revêtement dans la zone : asphalt 13.5 km, non renseignée 6.5 km
+  → rues nommées dans la zone (0) : aucune
+  → rues nommées autour (1) : RNIE 2
+
+BÂTIMENTS : 48 dans la zone (0 nommés), 198 autour
+  types dans la zone : yes 48
+
+OCCUPATION DU SOL (km²)              zone    autour
+  residential                           0.00      4.34
+  orchard                               0.00      0.12
+  construction                          0.00      0.06
+  commercial                            0.00      0.04
+  farmyard                              0.00      0.01
+  religious                             0.00      0.01
+
+PORTES : 17 dans la zone, 1 autour
+  (sans nom)                               (6.61247, 2.26031)
+  (sans nom)                               (6.61235, 2.26048)
+  (sans nom)                               (6.60066, 2.25195)
+  (sans nom)                               (6.59962, 2.25118)
+  (sans nom)                               (6.59459, 2.25124)
+  (sans nom)                               (6.59858, 2.25040)
+  (sans nom)                               (6.59595, 2.25468)
+  (sans nom)                               (6.59574, 2.25452)
+  (sans nom)                               (6.59526, 2.25415)
+  (sans nom)                               (6.59640, 2.25501)
+  (sans nom)                               (6.59657, 2.25514)
+  (sans nom)                               (6.59703, 2.25547)
+  (sans nom)                               (6.59715, 2.25557)
+  (sans nom)                               (6.59821, 2.25411)
+  (sans nom)                               (6.59770, 2.25598)
+  (sans nom)                               (6.59823, 2.25639)
+  (sans nom)                               (6.59932, 2.25494)
+
+LIEUX NOMMÉS DANS LA ZONE — destinations : 2
+  SIPI 2                                        amenity=post_office          (6.59307, 2.25328)
+  SIPI 3                                        amenity=post_office          (6.60021, 2.25692)
+LIEUX NOMMÉS AUTOUR : 42   (hors emprise, ignorés : 1)
+  A.WO.C.A                                      shop=boutique                (6.62499, 2.23923)
+  AJDOKE BUSINESS                               shop=hardware                (6.62522, 2.23884)
+  AMELIA COUTURE                                shop=sewing                  (6.62277, 2.24339)
+  Agafon                                        place=hamlet                 (6.58030, 2.25639)
+  Agbodjèdo                                     place=hamlet                 (6.61342, 2.25230)
+  Anavié                                        place=hamlet                 (6.59604, 2.26516)
+  Atelier Matelassier                           shop=furniture               (6.62142, 2.24580)
+  Boutique                                      shop=boutique                (6.62353, 2.24194)
+  Boutique                                      shop=boutique                (6.62356, 2.24184)
+  Boutique                                      shop=boutique                (6.62496, 2.23927)
+  Boutique 1 lubrifiant champion                amenity=cafe                 (6.62138, 2.24611)
+  Boutique 2 lubrifiant champion                shop=charity                 (6.62144, 2.24603)
+  Boutique 3 Champion lubrifiant                shop=yes                     (6.62139, 2.24591)
+  Boutique de la station                        shop=charity                 (6.62121, 2.24622)
+  Cabinet d'expertise agréable SAVI AGRI        amenity=veterinary           (6.62343, 2.24214)
+  Café bar restaurant Cœur d'océane             amenity=restaurant           (6.62510, 2.23900)
+  Challenge GSM Informatik                      shop=computer                (6.62535, 2.23842)
+  Champion lubrifiant                           shop=fuel                    (6.62133, 2.24602)
+  Chez Émile                                    amenity=restaurant           (6.61797, 2.25136)
+  Djitin-Aga                                    place=village                (6.58371, 2.26121)
+  Dokodji                                       place=village                (6.58257, 2.27816)
+  Dékangbomè                                    place=hamlet                 (6.57530, 2.27718)
+  Dékanmè                                       place=hamlet                 (6.58458, 2.27199)
+  Essence                                       shop=fuel                    (6.62366, 2.24163)
+  Ets AHOUMENOU &FILS                           shop=hardware                (6.62217, 2.24446)
+  Ets Sindeme et fils                           office=telecommunication     (6.62516, 2.23892)
+  Gbéhossodji                                   place=hamlet                 (6.58453, 2.26890)
+  Guékoumèdé                                    place=hamlet                 (6.62337, 2.22770)
+  Halte Routière Miwa                           amenity=restaurant           (6.61659, 2.25484)
+  Houincomè                                     place=hamlet                 (6.58093, 2.26918)
+  Houézè                                        place=hamlet                 (6.59923, 2.26775)
+  IVOIRE PLUS                                   amenity=restaurant           (6.62457, 2.24060)
+  Lycée Agricole Mèdji de Sékou (LAMS)          amenity=school               (6.62123, 2.23633)
+  Marché Tangbo Djevié                          ?                            (6.58898, 2.27832)
+  Mécanicien                                    craft=sun_protection         (6.62202, 2.24487)
+  R-MAN GSM                                     craft=electronics_repair     (6.62359, 2.24180)
+  SENA PASSION COIFFURE ET TRESSE               shop=beauty                  (6.62202, 2.24493)
+  Tangbo                                        place=town                   (6.59572, 2.27849)
+  Tanto                                         place=hamlet                 (6.60794, 2.26736)
+  Vulcanisateur                                 craft=electronics_repair     (6.62337, 2.24220)
+  VÉTÉRINAIRE ET COMPAGNIE BENIN SARL           amenity=veterinary           (6.62345, 2.24210)
+  Wibatin                                       place=hamlet                 (6.62603, 2.24966)
+
+VERDICT
+  · Le contour OSM (3.9 km²) est plus petit que la zone officielle (16,4 km²) : une partie de la GDIZ n'y figure pas encore.
+  ✓ 20.0 km de routes roulables dans la zone.
+  ✓ Routes de la zone d'un seul tenant à 100 % : les itinéraires se calculent.
+  · Aucune rue nommée dans la zone : le guidage parlera en repères (« tournez à droite vers la porte 2 »), pas en noms de rue.
+  × 2 lieu(x) nommé(s) dans la zone : les destinations (usines, portes, logements…) devront être ajoutées par l'équipe.
+
+Données © contributeurs OpenStreetMap, licence ODbL — openstreetmap.org/copyright
