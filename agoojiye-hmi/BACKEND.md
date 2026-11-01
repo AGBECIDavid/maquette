@@ -659,12 +659,12 @@ moteurs qui parlent l'API des vrais, **refusent toute requête mal formée**, et
 répondent d'avance — dont un modèle qui ment (commande inventée, action
 prétendue), pour vérifier que ni l'action ni le mensonge ne passent.
 
-### Limite connue : pas d'annulation d'écho
+### Limite connue : il faut un casque pour l'instant
 
-En essai réel, l'assistant n'écoute bien qu'avec des écouteurs : sur les
-haut-parleurs, le micro reçoit aussi le média et les annonces de guidage.
-L'écoute n'est coupée que pendant que l'assistant lui-même parle
-(`VoiceListener.muted`). Pistes et ordre de traitement : DOCUMENTATION.md, §6.7.
+En essai réel, l'assistant n'écoute bien qu'avec des écouteurs. L'écoute est
+coupée tant que la voix de synthèse parle (`VoiceListener.muted`, réponses et
+consignes de guidage comprises) ; il n'y a pas d'annulation d'écho. Cause à
+établir, hypothèses et pistes : DOCUMENTATION.md, §6.7.
 
 ## L'assistant vocal — la voix
 
