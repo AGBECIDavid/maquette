@@ -263,17 +263,19 @@ QtObject {
     property bool wifiConnected: true
     property bool bluetoothConnected: true
 
-    // ---- Navigation -------------------------------------------------------
-    property bool navigationActive: true
-    property real nextManeuverDistance: 1.2         // km
-    property string nextManeuverStreet: "Avenue des Champs-Élysées"
-    property string nextManeuverIcon: "ph-arrow-bend-up-right"
-    property string followingStreet: "Boulevard Périphérique"
-    property real routeProgress: 0.42               // 0..1
-    property string arrivalTime: "16:04"
-    property real distanceRemaining: 4.2            // km
-    property string timeRemaining: "10 min"
-    property string trafficCondition: "Fluide"
+    // ---- Position (GNSS) --------------------------------------------------
+    // Écrites par la source : le récepteur GPS en production (voir BACKEND.md,
+    // gpsd), le simulateur en démonstration. Tout le reste — itinéraire,
+    // guidage, prochaine manœuvre — est calculé par `Navigation` à partir de
+    // ces quatre valeurs et de la vitesse.
+    //
+    // Sans position valide, `gpsFix` est faux et latitude / longitude ne sont
+    // pas lues : la navigation estime quelques secondes, puis dit « position
+    // perdue ». Elle n'invente jamais une position.
+    property real latitude: NaN             // degrés décimaux, WGS 84
+    property real longitude: NaN
+    property real heading: 0                // cap, degrés depuis le nord (0..360)
+    property bool gpsFix: false
 
     // ---- Média ------------------------------------------------------------
     property bool mediaPlaying: true

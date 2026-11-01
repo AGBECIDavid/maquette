@@ -19,6 +19,8 @@
 #   ./run.sh battery          batterie critique
 #   ./run.sh sensor           capteur de vitesse muet
 #   ./run.sh fault            défaut système
+#   ./run.sh gps              signal GPS perdu en roulant (puis retrouvé)
+#   ./run.sh gps-froid        démarrage sans GPS : la navette cherche ses satellites
 #
 # Les deux se combinent : ./run.sh 01000 tyre
 #
@@ -40,13 +42,13 @@ for arg in "$@"; do
         --build) BUILD_ONLY=1 ;;
         --clean) rm -rf "$BUILD_DIR" ;;
         --voix|--voice) VOICE=1 ;;
-        -h|--help) sed -n '2,28p' "$0" | sed 's/^# \?//'; exit 0 ;;
+        -h|--help) sed -n '2,30p' "$0" | sed 's/^# \?//'; exit 0 ;;
         *)
             # Un motif haute tension ne contient que des 0 et des 1 ; un nom de
             # panne est un mot. Les deux ne peuvent pas se confondre.
             if [[ "$arg" =~ ^[01]{1,5}$ ]]; then
                 HV_PATTERN="$arg"
-            elif [[ "$arg" =~ ^(belt|tyre|battery|sensor|fault)$ ]]; then
+            elif [[ "$arg" =~ ^(belt|tyre|battery|sensor|fault|gps|gps-froid)$ ]]; then
                 FAULT="$arg"
             else
                 # Ici l'utilisateur a tapé quelque chose exprès : une faute de
@@ -54,7 +56,7 @@ for arg in "$@"; do
                 echo "Argument inconnu : $arg" >&2
                 echo >&2
                 echo "Motif haute tension : 5 chiffres 0/1, ex. 10000" >&2
-                echo "Panne : belt, tyre, battery, sensor, fault" >&2
+                echo "Panne : belt, tyre, battery, sensor, fault, gps, gps-froid" >&2
                 echo "Aide complète : ./run.sh --help" >&2
                 exit 2
             fi

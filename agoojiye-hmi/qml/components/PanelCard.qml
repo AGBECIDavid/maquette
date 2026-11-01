@@ -18,12 +18,16 @@ Rectangle {
     // highlight doesn't turn a dense list into stripes.
     property bool elevated: radius >= 16
 
+    // Opaque : pour une carte posée sur la carte de navigation. Translucide,
+    // elle laisserait les noms de lieux et de routes se mêler à son texte.
+    property bool opaque: false
+
     default property alias content: inner.data
 
     gradient: Gradient {
         orientation: Gradient.Vertical
-        GradientStop { position: 0.0; color: Theme.panelGradTop }
-        GradientStop { position: 1.0; color: Theme.panelGradBottom }
+        GradientStop { position: 0.0; color: root.opaque ? Theme.panelBgTop : Theme.panelGradTop }
+        GradientStop { position: 1.0; color: root.opaque ? Theme.panelBgBottom : Theme.panelGradBottom }
     }
 
     Rectangle {

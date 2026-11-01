@@ -14,7 +14,7 @@ Item {
         { label: "VÉHICULE", icon: "ph-car-simple", sub: "État du véhicule et informations", go: "veh",
           badge: VehicleData.faultPresent ? "Défaut" : "", alert: true },
         { label: "NAVIGATION", icon: "ph-navigation-arrow", sub: "Carte, itinéraire et guidage", go: "nav",
-          badge: VehicleData.navigationActive ? "En cours" : "", alert: false },
+          badge: Navigation.state === "guiding" ? "En cours" : "", alert: false },
         { label: "MÉDIA", icon: "ph-music-notes", sub: "Musique, radio et audio", go: "media",
           badge: VehicleData.mediaPlaying ? "Lecture" : "", alert: false },
         { label: "TÉLÉPHONE", icon: "ph-phone", sub: "Appels, contacts et Bluetooth", go: "phone",

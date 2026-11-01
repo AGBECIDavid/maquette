@@ -69,6 +69,36 @@ Window {
         value: VoiceAnnouncer.speaking
     }
 
+    // ---- branchement de la navigation ------------------------------------
+    // Même principe que la voix : Navigation ne lit aucun capteur. Elle reçoit
+    // la position et la vitesse de VehicleData — que le GPS réel ou le
+    // simulateur les y aient écrites — et rend au simulateur le chemin à
+    // suivre et la vitesse conseillée.
+    //
+    //   VehicleData ──position, vitesse──► Navigation ──chemin──► VehicleSimulator
+    //                                          └──consignes──► VoiceAnnouncer
+    Binding { target: Navigation; property: "gpsLatitude"; value: VehicleData.latitude }
+    Binding { target: Navigation; property: "gpsLongitude"; value: VehicleData.longitude }
+    Binding { target: Navigation; property: "gpsHeading"; value: VehicleData.heading }
+    Binding { target: Navigation; property: "gpsFix"; value: VehicleData.gpsFix }
+    Binding { target: Navigation; property: "vehicleSpeed"; value: VehicleData.speed }
+    Binding { target: VehicleSimulator; property: "path"; value: Navigation.drivePath }
+    Binding { target: VehicleSimulator; property: "pathLoopFrom"; value: Navigation.drivePathLoopFrom }
+    Binding { target: VehicleSimulator; property: "pathVersion"; value: Navigation.drivePathVersion }
+    Binding { target: VehicleSimulator; property: "advisedSpeed"; value: Navigation.advisedSpeed }
+    // L'annonce « prochain arrêt » de l'assistant dit la destination en cours.
+    Binding {
+        target: VehicleData; property: "nextStop"; value: Navigation.destinationName
+        when: Navigation.state === "guiding"
+    }
+    Connections {
+        target: Navigation
+        function onAnnounce(text) {
+            if (VoiceCommands.speakReplies && Navigation.voiceGuidance)
+                VoiceAnnouncer.speak(text)
+        }
+    }
+
     Rectangle {
         id: frame
         anchors.fill: parent

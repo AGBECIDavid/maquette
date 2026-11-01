@@ -81,6 +81,11 @@ qml/
   Assistant.qml       la conversation : réveil, dialogue, modèle de langage
   components/         briques réutilisées par tous les écrans
   screens/            un fichier par écran
+navigation.cpp        la navigation : position, itinéraire, guidage
+mapdata.cpp           la carte : accroche à la route, calcul d'itinéraire
+mapview.cpp           la carte dessinée
+map/lieux.json        ← les destinations de la carte, tenues par l'équipe
+map.sh, map/          la carte OpenStreetMap de la GDIZ, embarquée
 voicelistener.cpp     l'oreille : micro, détection de parole
 voice.sh, voice/      moteurs vocaux locaux, et leurs faux pour la recette
 assets/               polices, rendus 3D du véhicule
@@ -129,12 +134,30 @@ aucun nom à retenir, et `./run.sh --help` les liste tous.
 ./run.sh tyre         # pression des pneus        ./run.sh sensor   # capteur muet
 ./run.sh belt         # ceinture non bouclée      ./run.sh fault    # défaut système
 ./run.sh battery      # batterie critique
+./run.sh gps          # GPS perdu en roulant      ./run.sh gps-froid # démarrage sans GPS
 
 ./run.sh 01000 tyre   # les deux à la fois
 ```
 
 Un argument mal tapé est refusé avec la liste des valeurs valides, plutôt
 qu'absorbé en silence — au niveau du shell, une faute de frappe est délibérée.
+
+## La carte
+
+L'écran **Navigation** montre la zone industrielle de Glo-Djigbé (GDIZ), tirée
+d'OpenStreetMap et embarquée : rien ne passe par le réseau. « Où allez-vous ? »,
+une destination, jusqu'à trois itinéraires à comparer, « Démarrer » — puis le
+guidage, consignes dites à voix haute, comme une application de GPS. Sans
+destination, la navette simulée fait le tour de la zone.
+
+```bash
+./map.sh fetch        # retélécharger la zone depuis OpenStreetMap (rapport + aperçu)
+./map.sh build        # après avoir modifié map/lieux.json (les destinations)
+```
+
+Les destinations sont dans `map/lieux.json`, un fichier à compléter par
+l'équipe (noms des usines, des portes…). Brancher le vrai GPS :
+[BACKEND.md](BACKEND.md), §« La carte et le GPS ».
 
 ## Parler à la navette
 

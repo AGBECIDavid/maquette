@@ -184,7 +184,12 @@ Item {
     }
 
     // ---- right: next manoeuvre ------------------------------------------
+    // En guidage : la prochaine consigne, comme sur l'écran Navigation. Sinon,
+    // la route où l'on roule et un accès direct au choix de destination.
     PanelCard {
+        id: navCard
+        readonly property bool guiding: Navigation.state === "guiding" || Navigation.state === "arrived"
+        readonly property var next: Navigation.nextStep
         x: parent.width - 36 - 340
         y: 36
         width: 340
@@ -198,28 +203,41 @@ Item {
             width: parent.width - 48
             spacing: 14
             Text { text: "NAVIGATION"; font.family: Theme.fontFamily; font.pixelSize: 14; font.weight: Font.Bold; font.letterSpacing: 1.4; color: Theme.blue }
+
+            // ---- guidage ----
             Row {
+                visible: navCard.guiding
                 spacing: 14
-                Icon { name: VehicleData.nextManeuverIcon; size: 38; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
+                width: parent.width
+                Icon { name: navCard.next.icon || "ph-navigation-arrow"; size: 38; color: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
-                    Row {
-                        spacing: 6
-                        Text { text: VehicleData.nextManeuverDistance.toFixed(1); font.family: Theme.fontFamily; font.pixelSize: 28; font.weight: Font.Bold; color: Theme.textPrimary }
-                        Text { text: "km"; font.family: Theme.fontFamily; font.pixelSize: 16; color: Theme.textMuted; anchors.verticalCenter: parent.verticalCenter }
+                    width: parent.width - 52
+                    Text {
+                        visible: Navigation.state === "guiding"
+                        text: navCard.next.distanceText || ""
+                        font.family: Theme.fontFamily; font.pixelSize: 28; font.weight: Font.Bold; color: Theme.textPrimary
                     }
-                    Text { text: VehicleData.nextManeuverStreet; font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textSecondary }
+                    Text {
+                        width: parent.width
+                        text: navCard.next.text || ""
+                        wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight
+                        font.family: Theme.fontFamily; font.pixelSize: 14; color: Theme.textSecondary
+                    }
                 }
             }
             Column {
+                visible: navCard.guiding && Navigation.thenStep.text !== undefined
                 spacing: 2
+                width: parent.width
                 Text { text: "Puis"; font.family: Theme.fontFamily; font.pixelSize: 13; color: Theme.textMuted }
-                Text { text: VehicleData.followingStreet; font.family: Theme.fontFamily; font.pixelSize: 15; color: Theme.textBright }
+                Text { width: parent.width; elide: Text.ElideRight; text: Navigation.thenStep.text || ""; font.family: Theme.fontFamily; font.pixelSize: 15; color: Theme.textBright }
             }
             Rectangle {
+                visible: navCard.guiding
                 width: parent.width; height: 5; radius: 3; color: Theme.trackBg
                 Rectangle {
-                    width: parent.width * VehicleData.routeProgress; height: parent.height; radius: 3
+                    width: parent.width * Navigation.progress; height: parent.height; radius: 3
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
                         GradientStop { position: 0.0; color: Theme.blueDeep }
@@ -228,12 +246,13 @@ Item {
                 }
             }
             Row {
+                visible: navCard.guiding
                 width: parent.width
                 Repeater {
                     model: [
-                        { v: VehicleData.arrivalTime, l: "arrivée" },
-                        { v: VehicleData.distanceRemaining.toFixed(1) + " km", l: "restants" },
-                        { v: VehicleData.timeRemaining, l: "temps" }
+                        { v: Navigation.arrivalTime, l: "arrivée" },
+                        { v: Navigation.formatDistance(Navigation.remainingDistance), l: "restants" },
+                        { v: Navigation.formatDuration(Navigation.remainingTime), l: "temps" }
                     ]
                     delegate: Item {
                         width: navCol.width / 3
@@ -246,6 +265,40 @@ Item {
                         }
                     }
                 }
+            }
+
+            // ---- sans destination ----
+            Row {
+                visible: !navCard.guiding
+                spacing: 14
+                width: parent.width
+                Icon { name: "ph-map-trifold"; size: 34; color: Theme.textSecondary; anchors.verticalCenter: parent.verticalCenter }
+                Column {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - 48
+                    Text {
+                        width: parent.width; elide: Text.ElideRight
+                        text: Navigation.positionState === "ok" || Navigation.positionState === "estimated"
+                              ? (Navigation.currentRoad !== "" ? Navigation.currentRoad : Navigation.mapName)
+                              : "Position GPS indisponible"
+                        font.family: Theme.fontFamily; font.pixelSize: 17; font.weight: Font.DemiBold
+                        color: Navigation.positionState === "ok" || Navigation.positionState === "estimated" ? Theme.textPrimary : Theme.yellow
+                    }
+                    Text { text: "Aucun trajet en cours"; font.family: Theme.fontFamily; font.pixelSize: 13; color: Theme.textMuted }
+                }
+            }
+            Rectangle {
+                visible: !navCard.guiding
+                width: parent.width; height: 46; radius: 12
+                color: whereHover.containsMouse ? Theme.alpha(Theme.blue, 0.24) : Theme.alpha(Theme.blue, 0.14)
+                border.width: 1; border.color: Theme.alpha(Theme.blue, 0.45)
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 10
+                    Icon { name: "ph-magnifying-glass"; size: 18; color: Theme.blueLight; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Où allez-vous ?"; font.family: Theme.fontFamily; font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                }
+                MouseArea { id: whereHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: AppState.go("nav") }
             }
         }
     }

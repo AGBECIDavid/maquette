@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QFontDatabase>
 #include <QUrl>
+#include <QQuickItem>
 #include <QQuickWindow>
 #include <QTimer>
 #include <QQmlComponent>
@@ -13,6 +14,7 @@
 #include <QDateTime>
 #include <QJSValue>
 #include "localurl.h"
+#include "navigation.h"
 
 namespace {
 // A `property var` read from C++ holds either a QJSValue or an already
@@ -458,6 +460,168 @@ int main(int argc, char *argv[])
                     timer->stop();
                     app.quit();
                 }
+            });
+            timer->start();
+        }
+    }
+
+    // QA aid: HMI_NAV="pas|pas|…" drives the navigation as a user would and
+    // prints what it shows, one line per step — then exits. Steps:
+    //
+    //   aller=<id>        destination (aperçu des itinéraires)
+    //   point=<x>,<y>     destination : un point de la carte, en mètres
+    //   depart=<id>       point de départ ("" : la navette)
+    //   route=<n>         choisir l'itinéraire n
+    //   demarrer          lancer le guidage          arreter    tout annuler
+    //   panneau=<nom>     ouvrir un panneau de l'écran (search, origin, steps)
+    //   ecran=<clé>       aller à un écran (dash, nav…)
+    //   @attendre=<s>     laisser rouler             @etat      imprimer l'état
+    //   @jusqua=<état>    attendre un état (arrived, guiding…), 300 s au plus
+    //   @capture=<nom>    capture d'écran dans HMI_NAV_DIR
+    //   @verifier         itinéraire entre chaque paire de destinations
+    //   @rendu=<n>        temps moyen de rendu de l'écran, sur n images
+    //
+    // Chaque consigne vocale s'imprime aussi (« annonce|… ») : la recette lit
+    // ce que la navette dirait. HMI_SIM_SPEED=<n> fait rouler le simulateur n
+    // fois plus vite, pour qu'un trajet de 4 minutes se vérifie en 30 s.
+    const QString navScript = qEnvironmentVariable("HMI_NAV");
+    if (!navScript.isEmpty() && !engine.rootObjects().isEmpty()) {
+        auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+        QQmlComponent probe(&engine);
+        probe.setData("import QtQml\nimport AgoojiyeHMI\n"
+                      "QtObject {\n"
+                      "  property QtObject nav: Navigation\n"
+                      "  property QtObject app: AppState\n"
+                      "  property QtObject data: VehicleData\n"
+                      "  property QtObject sim: VehicleSimulator\n"
+                      "}", QUrl());
+        QObject *probeObj = probe.create();
+        QObject *nav = probeObj ? probeObj->property("nav").value<QObject *>() : nullptr;
+        QObject *appState = probeObj ? probeObj->property("app").value<QObject *>() : nullptr;
+        QObject *data = probeObj ? probeObj->property("data").value<QObject *>() : nullptr;
+        QObject *simulator = probeObj ? probeObj->property("sim").value<QObject *>() : nullptr;
+        if (window && nav && appState && data && simulator) {
+            QMetaObject::invokeMethod(appState, "skipBoot");
+            QMetaObject::invokeMethod(appState, "go", Q_ARG(QVariant, QStringLiteral("nav")));
+            const double warp = qEnvironmentVariable("HMI_SIM_SPEED", "1").toDouble();
+            if (warp > 0)
+                simulator->setProperty("timeScale", warp);
+            if (auto *navigation = qobject_cast<Navigation *>(nav)) {
+                QObject::connect(navigation, &Navigation::announce, &app, [](const QString &text) {
+                    printf("annonce|%s\n", qPrintable(text));
+                    fflush(stdout);
+                });
+            }
+
+            auto printState = [=]() {
+                const QVariantMap next = nav->property("nextStep").toMap();
+                QVariantMap diag;
+                QMetaObject::invokeMethod(nav, "diagnostics", Q_RETURN_ARG(QVariantMap, diag));
+                printf("etat|%s|position=%s|vitesse=%.0f|restant=%.0f|prochaine=%s|a=%.0f|itineraires=%lld|ecart_max=%.1f|recalculs=%d|erreur=%s\n",
+                       qPrintable(nav->property("state").toString()),
+                       qPrintable(nav->property("positionState").toString()),
+                       data->property("speed").toDouble(),
+                       nav->property("remainingDistance").toDouble(),
+                       qPrintable(next.value("text").toString()),
+                       next.value("distance").toDouble(),
+                       static_cast<long long>(nav->property("routes").toList().size()),
+                       diag.value("maxDeviation").toDouble(), diag.value("reroutes").toInt(),
+                       qPrintable(nav->property("routeError").toString()));
+                fflush(stdout);
+            };
+
+            const QStringList steps = navScript.split('|');
+            auto *index = new int(0);
+            auto *waitUntil = new qint64(0);
+            auto *waitState = new QString();
+            auto *clock = new QElapsedTimer();
+            clock->start();
+            const QString shots = qEnvironmentVariable("HMI_NAV_DIR");
+            auto *timer = new QTimer(&app);
+            timer->setInterval(100);
+            QObject::connect(timer, &QTimer::timeout, &app, [=, &app]() mutable {
+                if (clock->elapsed() < *waitUntil)
+                    return;
+                if (!waitState->isEmpty()) {
+                    if (nav->property("state").toString() != *waitState) {
+                        if (clock->elapsed() < *waitUntil + 300000)
+                            return;
+                        printf("delai|%s non atteint\n", qPrintable(*waitState));
+                    }
+                    waitState->clear();
+                }
+                if (*index >= steps.size()) {
+                    timer->stop();
+                    app.quit();
+                    return;
+                }
+                const QString step = steps[(*index)++].trimmed();
+                const QString key = step.section('=', 0, 0);
+                const QString arg = step.section('=', 1);
+                bool ok = true;
+                if (key == "aller") {
+                    QMetaObject::invokeMethod(nav, "preview", Q_RETURN_ARG(bool, ok), Q_ARG(QString, arg));
+                } else if (key == "point") {
+                    QMetaObject::invokeMethod(nav, "previewPoint", Q_RETURN_ARG(bool, ok),
+                                              Q_ARG(double, arg.section(',', 0, 0).toDouble()),
+                                              Q_ARG(double, arg.section(',', 1, 1).toDouble()));
+                } else if (key == "depart") {
+                    QMetaObject::invokeMethod(nav, "setOrigin", Q_RETURN_ARG(bool, ok), Q_ARG(QString, arg));
+                } else if (key == "route") {
+                    QMetaObject::invokeMethod(nav, "selectRoute", Q_ARG(int, arg.toInt()));
+                } else if (key == "demarrer") {
+                    QMetaObject::invokeMethod(nav, "start", Q_RETURN_ARG(bool, ok));
+                } else if (key == "arreter") {
+                    QMetaObject::invokeMethod(nav, "stop");
+                } else if (key == "ecran") {
+                    QMetaObject::invokeMethod(appState, "go", Q_ARG(QVariant, arg));
+                } else if (key == "panneau") {
+                    if (QObject *screen = window->findChild<QObject *>("navigationScreen"))
+                        screen->setProperty("panel", arg);
+                } else if (key == "@attendre") {
+                    *waitUntil = clock->elapsed() + qint64(arg.toDouble() * 1000);
+                } else if (key == "@jusqua") {
+                    *waitState = arg;
+                    *waitUntil = clock->elapsed();
+                } else if (key == "@etat") {
+                    printState();
+                } else if (key == "@verifier") {
+                    QVariantMap c;
+                    QMetaObject::invokeMethod(nav, "selfCheck", Q_RETURN_ARG(QVariantMap, c));
+                    printf("verif|lieux=%d|paires=%d|echecs=%lld|contresens=%d|hors_route=%lld|ms=%lld|%s\n",
+                           c.value("places").toInt(), c.value("pairs").toInt(),
+                           static_cast<long long>(c.value("failures").toStringList().size()),
+                           c.value("wrongWay").toInt(),
+                           static_cast<long long>(c.value("unsnapped").toStringList().size()),
+                           c.value("ms").toLongLong(),
+                           qPrintable((c.value("failures").toStringList() + c.value("unsnapped").toStringList())
+                                          .mid(0, 10).join(',')));
+                } else if (key == "@rendu") {
+                    // On force la carte à se redessiner entièrement à chaque
+                    // image : c'est le pire cas, celui d'une carte qui défile.
+                    const int n = qMax(1, arg.toInt());
+                    auto *mapItem = window->findChild<QQuickItem *>("navigationMap");
+                    if (mapItem) {
+                        QMetaObject::invokeMethod(mapItem, "resetPaintStats");
+                        for (int i = 0; i < n; i++) {
+                            mapItem->update();
+                            window->grabWindow();
+                        }
+                        printf("rendu|images=%d|moyenne_ms=%.1f\n", n, mapItem->property("paintMs").toDouble());
+                    } else {
+                        printf("rendu|images=0|moyenne_ms=-1\n");
+                    }
+                } else if (key == "@capture") {
+                    if (!shots.isEmpty())
+                        window->grabWindow().save(shots + "/" + arg + ".png");
+                } else {
+                    printf("inconnu|%s\n", qPrintable(step));
+                }
+                printf("pas|%s|%s\n", qPrintable(step), ok ? "ok" : "refuse");
+                fflush(stdout);
+                // Laisse l'écran se mettre à jour avant le pas suivant.
+                if (!key.startsWith('@'))
+                    *waitUntil = qMax(*waitUntil, clock->elapsed() + 700);
             });
             timer->start();
         }

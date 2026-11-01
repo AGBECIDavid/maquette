@@ -204,6 +204,13 @@ ouvrant non fermé, signal indisponible.
 
 ## Outils de recette
 
+Pour la navigation : `HMI_NAV="aller=porte-7|demarrer|@jusqua=arrived|@etat"`
+pilote l'écran comme un utilisateur et imprime l'état, les annonces vocales et
+le temps de dessin (`@rendu=20`) ; `HMI_SIM_SPEED=8` fait rouler la navette
+simulée huit fois plus vite. La liste complète des pas est en tête du bloc
+`HMI_NAV` de `main.cpp`.
+
+
 ```bash
 ./run.sh 10000                             # défaut de la chaîne HT
 ./run.sh tyre                              # injecte une panne au démarrage
@@ -244,7 +251,7 @@ valeurs venues du véhicule.
 | Réglementaire | `speedLimit`, `cruiseSpeed`, `headlightsAuto` |
 | Témoins | `seatbeltFastened`, `parkingBrake`, `driveMode` |
 | Connectivité | `network`, `wifiConnected`, `bluetoothConnected` |
-| Navigation | `navigationActive`, `nextManeuverDistance`, `nextManeuverStreet`, `nextManeuverIcon`, `followingStreet`, `routeProgress`, `arrivalTime`, `distanceRemaining`, `timeRemaining`, `trafficCondition` |
+| Position (GPS) | `latitude`, `longitude`, `heading`, `gpsFix` — voir « La carte et le GPS » |
 | Média | `mediaPlaying`, `trackTitle`, `trackArtist`, `trackAlbum` |
 | Téléphone | `contactCount`, `recentCallCount`, `missedCallCount` |
 | Démarrage | `startupChecks` |
@@ -275,10 +282,7 @@ remonter dans `VehicleData` quand leur format sera arrêté :
 - la playlist, la file d'attente et les stations radio (`MediaScreen`,
   `MediaNowScreen`)
 - le journal d'appels et le contact affiché (`PhoneScreen`)
-- les étapes d'itinéraire et les libellés de la carte (`NavigationScreen`)
 - les appareils Bluetooth appairés (`MediaScreen`)
-- les noms de rue, hérités des maquettes d'origine (parisiens) — à remplacer
-  par le contexte de déploiement réel
 
 L'historique d'entretien, l'usure des plaquettes et l'état des composants sont
 remontés dans `VehicleData` depuis la reprise : ils figuraient en dur dans deux
@@ -318,6 +322,119 @@ barre (téléphone, entretien, à propos). Le même bouton le referme.
 précédent. **La séquence de démarrage n'est pas un écran** : elle n'a pas de clé
 de navigation, donc aucun bouton ne peut y ramener — l'animation ne se rejoue
 jamais sur un changement de page.
+
+## La carte et le GPS
+
+La carte est celle de la **zone industrielle de Glo-Djigbé (GDIZ)**, tirée
+d'OpenStreetMap et **embarquée** : l'IHM ne télécharge rien, ne dépend d'aucun
+réseau, et calcule ses itinéraires elle-même.
+
+```
+  OpenStreetMap ──./map.sh fetch──► map/source/      (données brutes, une fois)
+  map/lieux.json ─┐                                   (destinations, équipe)
+                  └─./map.sh build──► map/gdiz.map.json  ─► embarqué à la compilation
+
+  VehicleData (latitude, longitude, heading, gpsFix, speed)
+        │  posés par Main.qml
+        ▼
+  Navigation (C++) ── itinéraire, guidage, annonces ──► écran, tableau de bord, voix
+        │
+        └─ chemin + vitesse conseillée ──► VehicleSimulator (démo seulement)
+```
+
+| Fichier | Rôle |
+|---|---|
+| `map.sh` | `fetch` télécharge la zone, `report` dit ce qu'elle contient, `build` prépare la carte embarquée |
+| `map/lieux.json` | **les destinations** — fichier tenu par l'équipe (nom, catégorie, lat/lon) |
+| `map/gdiz.map.json` | la carte embarquée (≈ 90 Ko), projetée en mètres autour de la zone |
+| `mapdata.{h,cpp}` | chargement, accroche à la route, itinéraire (A*), consignes — sans Qt Quick, testable seul |
+| `navigation.{h,cpp}` | singleton QML `Navigation` : position, aperçu, guidage, annonces, GPS perdu |
+| `mapview.{h,cpp}` | `MapView`, la carte dessinée au QPainter (pas de GPU, pas de tuiles) |
+
+### Ajouter ou renommer une destination
+
+1. Éditer `map/lieux.json` — une entrée par lieu, catégorie parmi `entree`,
+   `porte`, `usine`, `service`, `sante`, `commerce`, `restauration`,
+   `carburant`, `ecole`, `marche`, `village`, `repere`. La position n'a pas
+   besoin d'être sur la route : la carte rattache le lieu à la route la plus
+   proche.
+2. `./map.sh build` — refuse un id en double, une catégorie inconnue, un lieu
+   hors de la carte.
+3. `./run.sh` pour recompiler, puis `./test.sh` : l'étape 11 vérifie que le
+   nouveau lieu est atteignable depuis tous les autres.
+
+Les 15 portes du bloc d'usines sont numérotées du nord au sud faute de nom dans
+OpenStreetMap ; c'est le premier fichier à compléter avec les noms réels.
+
+### Mettre la carte à jour
+
+`./map.sh fetch` retélécharge la zone (OpenStreetMap évolue : la GDIZ y est
+partielle, 3,9 km² cartographiés sur 16,4). Puis `./map.sh build`, recompiler,
+`./test.sh`. La mention « © contributeurs OpenStreetMap » reste affichée sur la
+carte : c'est une condition de la licence ODbL, pas une décoration.
+
+### Brancher le vrai GPS
+
+Un récepteur GNSS **n'a pas besoin d'internet** : il calcule sa position à
+partir des satellites. Sous Linux, le plus simple est **gpsd**, qui lit le
+récepteur (USB ou série, NMEA) et sert la position en JSON sur
+`127.0.0.1:2947` :
+
+```bash
+sudo apt install gpsd
+sudo gpsd -n /dev/ttyACM0 -F /var/run/gpsd.sock     # le port du récepteur
+gpspipe -w | head                                   # vérifier : lignes "TPV"
+```
+
+Côté IHM, il suffit d'écrire quatre propriétés de `VehicleData` à chaque
+message `TPV` — par exemple depuis le C++, comme le reste du bus (§« Depuis le
+C++ ») :
+
+```cpp
+// Connexion à gpsd, une ligne JSON par message.
+socket->connectToHost("127.0.0.1", 2947);
+socket->write("?WATCH={\"enable\":true,\"json\":true}\n");
+
+// Pour chaque ligne reçue :
+const QJsonObject o = QJsonDocument::fromJson(line).object();
+if (o["class"].toString() == "TPV") {
+    const bool fix = o["mode"].toInt() >= 2;          // 2 = 2D, 3 = 3D
+    vehicleData->setProperty("gpsFix", fix);
+    if (fix) {
+        vehicleData->setProperty("latitude", o["lat"].toDouble());
+        vehicleData->setProperty("longitude", o["lon"].toDouble());
+        if (o.contains("track"))
+            vehicleData->setProperty("heading", o["track"].toDouble());
+    }
+}
+```
+
+Et rien d'autre : `Navigation` lit ces valeurs, quelle que soit leur source.
+La vitesse vient de `VehicleData.speed` (le bus du véhicule), pas du GPS —
+elle sert à estimer la position quand le signal manque.
+
+### Ce que fait la navigation sans GPS
+
+| Situation | À l'écran | Ce qui se passe |
+|---|---|---|
+| Démarrage, pas encore de position | « Recherche du signal GPS » | la dernière position connue (gardée d'une session à l'autre) est montrée en gris ; aucun itinéraire n'est proposé depuis la navette |
+| Signal perdu en roulant | « Signal GPS perdu — position estimée » | la position avance le long de l'itinéraire à la vitesse des roues ; pas de recalcul |
+| Plus de 30 s ou 300 m sans signal | « Position perdue — guidage suspendu » | annoncé à voix haute ; distances affichées `- -` |
+| Signal retrouvé | — | annoncé ; le guidage reprend où est la navette |
+
+Rejouer ces cas : `./run.sh gps` (perte en roulant) et `./run.sh gps-froid`
+(démarrage sans GPS).
+
+### Limites connues
+
+- **Les données OpenStreetMap de la GDIZ sont incomplètes** : la partie
+  aménagée y est (routes, ronds-points, bloc d'usines, portes), le reste des
+  16,4 km² non. Les rues intérieures n'ont pas de nom : les consignes parlent
+  en repères (« au Rond-point 3 », « au niveau de la Porte 7 »).
+- La durée est estimée à partir d'une allure par type de route (navette de
+  zone, 15 à 50 km/h), pas du trafic : il n'y a pas de trafic hors ligne.
+- Le dessin complet de la carte prend 15 à 25 ms en rendu logiciel sur la
+  machine de recette ; à mesurer sur la cible (§ Outils de recette, `@rendu`).
 
 ## Séquence de démarrage
 

@@ -14,7 +14,9 @@
 #   - un panneau attendu n'a pas produit de capture, donc n'a pas pu s'afficher.
 #   - l'assistant vocal exécute ce qu'il devrait refuser, ou l'inverse ;
 #   - la conversation — réveil, son, modèle de langage — sort des règles ;
-#   - une alerte n'est pas annoncée, ou l'est en trop.
+#   - une alerte n'est pas annoncée, ou l'est en trop ;
+#   - la navigation ne trouve pas un itinéraire entre deux destinations, en
+#     prend un à contresens, perd la navette en route ou n'arrive pas.
 
 set -uo pipefail
 cd "$(dirname "$0")"
@@ -25,6 +27,9 @@ cd "$(dirname "$0")"
 export AGOOJIYE_NO_MIC=1
 export AGOOJIYE_ASR_URL=http://127.0.0.1:9
 export AGOOJIYE_LLM_URL=http://127.0.0.1:9
+# Elle n'écrit pas non plus dans les réglages de la machine (dernière position
+# connue, destinations récentes) : une recette ne laisse pas de trace.
+export AGOOJIYE_NO_PERSIST=1
 
 KEEP_DIR=""
 if [ "${1:-}" = "--keep" ]; then
@@ -341,7 +346,60 @@ for line in "ceinture non bouclée" "Ceinture bouclée, merci" "Batterie à 19 p
 done
 [ "$(echo "$OUT" | wc -l)" -eq 5 ] || fail "annonces en trop ou répétées : $(echo "$OUT" | wc -l) au lieu de 5"
 
+# ---- 11. navigation ----------------------------------------------------------
+# La carte embarquée, le calcul d'itinéraire et le guidage, de bout en bout.
+# Le simulateur roule 8 fois plus vite : un trajet de 4 minutes en 30 s.
+echo "· navigation"
+nav() {   # script [panne] [accélération] → sortie du pilote HMI_NAV
+    # `env` : une affectation produite par une expansion (${…:+…}) n'en est
+    # une que pour lui ; bash la prendrait pour le nom de la commande.
+    env QT_QPA_PLATFORM=offscreen HMI_NAV="$1" ${2:+HMI_FAULT="$2"} HMI_SIM_SPEED="${3:-8}" \
+        ${KEEP_DIR:+HMI_NAV_DIR="$SHOTS"} timeout 240 ./build/agoojiye-hmi 2>&1
+}
+field() { sed -n "s/.*|$1=\([^|]*\).*/\1/p" | tail -1; }
+
+# Chaque destination atteignable depuis chacune des autres, sans sens unique
+# pris à rebours, et chaque lieu rattaché à une route.
+OUT="$(nav "@verifier")"
+LINE="$(echo "$OUT" | grep '^verif|')" || fail "la vérification des itinéraires n'a pas tourné"
+[ "$(echo "$LINE" | field echecs)" = "0" ] || fail "destinations sans itinéraire : $LINE"
+[ "$(echo "$LINE" | field contresens)" = "0" ] || fail "itinéraire à contresens d'un sens unique : $LINE"
+[ "$(echo "$LINE" | field hors_route)" = "0" ] || fail "lieu trop loin de toute route : $LINE"
+echo "  $(echo "$LINE" | field paires) itinéraires vérifiés en $(echo "$LINE" | field ms) ms"
+
+# Un trajet complet : aperçu, départ, consignes, arrivée — et la navette ne
+# quitte jamais son itinéraire.
+OUT="$(nav "@attendre=1|@capture=nav-carte|panneau=search|@capture=nav-recherche|panneau=|aller=porte-7|@capture=nav-apercu|panneau=steps|@capture=nav-etapes|panneau=|demarrer|@attendre=3|@capture=nav-guidage|@rendu=20|@jusqua=arrived|@etat|@capture=nav-arrivee")"
+echo "$OUT" | grep -vE "^(pas|annonce|etat|rendu|verif)\|" | grep -vE "$NOISE" | grep . && fail "avertissements pendant la navigation"
+echo "$OUT" | grep -q "^delai|" && fail "la navette n'est jamais arrivée : $(echo "$OUT" | grep '^etat|' | tail -1)"
+echo "$OUT" | grep -q "^annonce|C'est parti pour Porte 7" || fail "le départ n'est pas annoncé"
+echo "$OUT" | grep -q "^annonce|.*Rond-point.*sortie" || fail "aucune consigne de rond-point annoncée"
+echo "$OUT" | grep -q "^annonce|Vous êtes arrivé : Porte 7" || fail "l'arrivée n'est pas annoncée"
+ETAT="$(echo "$OUT" | grep '^etat|' | tail -1)"
+echo "$ETAT" | grep -q "^etat|arrived|" || fail "état final inattendu : $ETAT"
+[ "$(echo "$ETAT" | field recalculs)" = "0" ] || fail "recalculs pendant un trajet suivi à la lettre : $ETAT"
+awk -v e="$(echo "$ETAT" | field ecart_max)" 'BEGIN { exit !(e < 10) }' \
+    || fail "la navette s'est écartée de l'itinéraire : $(echo "$ETAT" | field ecart_max) m"
+MS="$(echo "$OUT" | grep '^rendu|' | field moyenne_ms)"
+# Budget : 40 ms par dessin complet, soit 25 images/s au pire, sur la machine
+# de recette en rendu logiciel. Une régression de rendu (cache perdu, dessin
+# de tout le réseau à chaque image) le fait exploser bien avant la cible.
+awk -v m="$MS" 'BEGIN { exit !(m >= 0 && m < 40) }' || fail "dessin de la carte trop lent : $MS ms par image"
+echo "  trajet suivi jusqu'à l'arrivée ; carte dessinée en $MS ms"
+
+# Signal GPS perdu en roulant : la position est estimée, le guidage continue
+# sans recalcul intempestif, puis le signal revient.
+OUT="$(nav "@attendre=1|aller=lycee-lams|demarrer|@attendre=4|@etat|@capture=nav-gps-estime|@attendre=12|@etat" gps 4)"
+echo "$OUT" | grep '^etat|' | head -1 | grep -q "position=estimated" || fail "position non estimée après la perte du GPS"
+echo "$OUT" | grep '^etat|' | tail -1 | grep -q "position=ok" || fail "le signal GPS retrouvé n'a pas été repris"
+[ "$(echo "$OUT" | grep '^etat|' | tail -1 | field recalculs)" -le 1 ] || fail "recalculs en série après le retour du GPS"
+
+# Démarrage sans GPS : on cherche, on ne propose pas d'itinéraire depuis nulle part.
+OUT="$(nav "@attendre=1|@etat|aller=sipi-2|@etat|@capture=nav-gps-recherche" gps-froid 1)"
+echo "$OUT" | grep '^etat|' | head -1 | grep -q "position=searching" || fail "pas d'état « recherche GPS » au démarrage à froid"
+echo "$OUT" | grep '^etat|' | tail -1 | grep -q "erreur=Position inconnue" || fail "itinéraire proposé sans position connue"
+
 echo
-echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif, assistant vocal sûr, conversation tenue, alertes annoncées."
+echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif, assistant vocal sûr, conversation tenue, alertes annoncées, navigation vérifiée."
 [ -n "$KEEP_DIR" ] && echo "Captures : $KEEP_DIR"
 exit 0

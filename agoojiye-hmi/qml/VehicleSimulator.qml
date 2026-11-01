@@ -49,6 +49,10 @@ QtObject {
     // bond, ce qui téléporterait la navette. On repart de la cadence normale.
     readonly property real maxStepSeconds: 0.35
 
+    // Accélération du temps simulé, pour la recette : à 8, un trajet de
+    // 4 minutes se joue en 30 s. Toujours 1 en démonstration.
+    property real timeScale: 1
+
     // ---- déterminisme pour la recette -------------------------------------
     // Les durées de phase sont tirées au hasard, ce qui rend la démo vivante
     // mais un test instable : selon le tirage, 30 s de relevé peuvent ne jamais
@@ -129,7 +133,16 @@ QtObject {
 
     function injectFault(kind) {
         faultMode = kind
-        if (kind === "belt") {
+        if (kind === "gps") {
+            // Perte en roulant : le signal tient 8 s, disparaît 45 s, revient.
+            // Assez pour voir la position passer d'« estimée » à « perdue ».
+            _gpsOutage.start()
+        } else if (kind === "gps-froid") {
+            // Démarrage à froid : 20 s avant le premier point, comme un
+            // récepteur qui n'a pas encore son almanach.
+            gpsAvailable = false
+            _gpsColdStart.start()
+        } else if (kind === "belt") {
             VehicleData.seatbeltFastened = false
         } else if (kind === "tyre") {
             VehicleData.tyreRearLeft = 1.8          // crevaison lente
@@ -145,6 +158,9 @@ QtObject {
 
     function clearFaults() {
         faultMode = ""
+        gpsAvailable = true
+        _gpsOutage.stop()
+        _gpsColdStart.stop()
         VehicleData.seatbeltFastened = true
         VehicleData.tyreRearLeft = 2.6
         VehicleData.faultPresent = false
@@ -169,6 +185,107 @@ QtObject {
             targetSpeed = 0
             phaseTimer = deterministic ? 3 : 4 + Math.random() * 5
         }
+    }
+
+    // ---- trajet sur la carte ----------------------------------------------
+    // Le chemin vient de Navigation, posé par Main.qml : l'itinéraire pendant
+    // un guidage, une boucle de service dans la zone sinon. Points
+    // [latitude, longitude, distance depuis le départ en m]. Un nouveau chemin
+    // part toujours de là où est la navette : on le reprend à zéro.
+    property var path: []
+    property int pathVersion: 0
+    // Distance où reprend la boucle quand on arrive au bout ; -1 : pas de
+    // boucle, on s'arrête au bout (fin d'un guidage).
+    property real pathLoopFrom: 0
+    // Vitesse conseillée par la navigation (virages, ronds-points, arrivée).
+    property real advisedSpeed: 50
+    readonly property bool routeMode: pathLoopFrom < 0 && path.length > 1
+    property real _along: 0
+    property int _seg: 0
+    property bool gpsAvailable: true
+
+    // Le chemin, sa version et son point de boucle changent ensemble, mais
+    // leurs liaisons se mettent à jour une à une : on attend qu'elles aient
+    // toutes abouti avant de lire `routeMode`.
+    onPathVersionChanged: Qt.callLater(_newPath)
+    function _newPath() {
+        _along = 0
+        _seg = 0
+        if (routeMode) {
+            // Départ d'un guidage : on roule jusqu'à destination, sans les
+            // arrêts de la boucle de service.
+            phase = "roulage"
+            targetSpeed = 45
+            phaseTimer = 1e9
+        } else if (phase === "arret" && phaseTimer > 1e6) {
+            // Fin d'un guidage : la navette repart sur sa boucle.
+            phaseTimer = 3
+        }
+    }
+
+    function _pointAt(d) {
+        var p = sim.path
+        var n = p.length
+        if (n === 0)
+            return null
+        if (d <= p[0][2])
+            return { lat: p[0][0], lon: p[0][1] }
+        if (d >= p[n - 1][2])
+            return { lat: p[n - 1][0], lon: p[n - 1][1] }
+        var i = sim._seg
+        if (i >= n - 1 || p[i][2] > d)
+            i = 0
+        while (i < n - 2 && p[i + 1][2] < d)
+            i++
+        var len = p[i + 1][2] - p[i][2]
+        var t = len > 1e-6 ? (d - p[i][2]) / len : 0
+        return { lat: p[i][0] + (p[i + 1][0] - p[i][0]) * t,
+                 lon: p[i][1] + (p[i + 1][1] - p[i][1]) * t, seg: i }
+    }
+
+    function _bearing(a, b) {
+        var k = Math.cos(a.lat * Math.PI / 180)
+        var deg = Math.atan2((b.lon - a.lon) * k, b.lat - a.lat) * 180 / Math.PI
+        return deg < 0 ? deg + 360 : deg
+    }
+
+    function _advanceOnPath(meters) {
+        var p = sim.path
+        if (p.length < 2)
+            return
+        var length = p[p.length - 1][2]
+        var d = sim._along + meters
+        if (d >= length)
+            d = sim.pathLoopFrom >= 0 ? sim.pathLoopFrom + (d - length) : length
+        sim._along = d
+        var here = _pointAt(d)
+        if (here.seg !== undefined)
+            sim._seg = here.seg
+        // Le cap se mesure sur 8 m autour de la position : un nœud de dessin
+        // ne fait pas sursauter la flèche.
+        var back = _pointAt(Math.max(0, d - 4)), ahead = _pointAt(Math.min(length, d + 4))
+        if (back.lat !== ahead.lat || back.lon !== ahead.lon)
+            VehicleData.heading = Math.round(_bearing(back, ahead) * 10) / 10
+        VehicleData.gpsFix = sim.gpsAvailable
+        if (sim.gpsAvailable) {
+            VehicleData.latitude = here.lat
+            VehicleData.longitude = here.lon
+        }
+    }
+
+    // Les durées de panne suivent le temps simulé : accéléré pour la recette,
+    // le scénario garde ses proportions.
+    property Timer _gpsOutage: Timer {
+        interval: 8000 / sim.timeScale
+        onTriggered: { sim.gpsAvailable = false; sim._gpsBack.start() }
+    }
+    property Timer _gpsBack: Timer {
+        interval: 45000 / sim.timeScale
+        onTriggered: sim.gpsAvailable = true
+    }
+    property Timer _gpsColdStart: Timer {
+        interval: 20000 / sim.timeScale
+        onTriggered: sim.gpsAvailable = true
     }
 
     // Un clignotant gauche ou droit se coupe de lui-même une fois le virage
@@ -208,15 +325,17 @@ QtObject {
         onTriggered: {
             // Temps réellement écoulé depuis le tick précédent, borné.
             var now = Date.now()
-            var dt = sim.lastTickMs > 0
+            var dt = (sim.lastTickMs > 0
                 ? Math.min(sim.maxStepSeconds, (now - sim.lastTickMs) / 1000.0)
-                : sim.stepMs / 1000.0
+                : sim.stepMs / 1000.0) * sim.timeScale
             sim.lastTickMs = now
             if (dt <= 0)
                 return
 
             var v = VehicleData.speed / 3.6                   // m/s
-            var target = sim.targetSpeed / 3.6
+            // La consigne de la phase, plafonnée par ce que la route permet :
+            // on ralentit avant un rond-point, on s'arrête à destination.
+            var target = Math.min(sim.targetSpeed, sim.advisedSpeed) / 3.6
 
             // ---- 1. vitesse : approche bornée de la consigne --------------
             var accel = 0
@@ -290,6 +409,9 @@ QtObject {
             sim._battPct = Math.max(0, Math.min(100, pct))
             VehicleData.batteryLevel = Math.round(sim._battPct)
 
+            // ---- 3 bis. position sur la carte ------------------------------
+            sim._advanceOnPath(v * dt)
+
             // ---- 4. compteur kilométrique --------------------------------
             sim._odoFraction += dDist
             if (sim._odoFraction >= 1) {
@@ -328,6 +450,12 @@ QtObject {
                 VehicleData.cruiseSpeed = Math.round(sim.targetSpeed)
 
             // ---- 7. avancement du scénario --------------------------------
+            // En guidage, arrivée = arrêt, jusqu'au prochain chemin.
+            if (sim.routeMode && sim.phase === "roulage" && sim.advisedSpeed < 1 && VehicleData.speed < 0.5) {
+                sim.phase = "arret"
+                sim.targetSpeed = 0
+                sim.phaseTimer = 1e9
+            }
             sim.phaseTimer -= dt
             if (sim.phase === "ralentissement" && VehicleData.speed < 0.5)
                 sim.nextPhase()

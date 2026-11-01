@@ -8,12 +8,18 @@
 #   ./map.sh fetch --bbox S,O,N,E  même chose, emprise donnée à la main
 #                                  (degrés décimaux : sud, ouest, nord, est)
 #   ./map.sh report                refait le rapport sans retélécharger
+#   ./map.sh build                 prépare la carte embarquée (map/gdiz.map.json)
+#                                  à partir des données et de map/lieux.json
 #
 # Résultat dans map/source/ :
 #   gdiz.osm.json   les données brutes (routes, bâtiments, zones, lieux)
 #   zone.json       l'emprise utilisée, et d'où elle vient
 #   rapport.txt     ce qu'il y a, ce qui manque — c'est lui qu'il faut lire
 #   apercu.svg      la zone dessinée, à ouvrir dans un navigateur
+#
+# Puis map/gdiz.map.json : ce que l'IHM embarque. Il se refait après chaque
+# modification de map/lieux.json (les destinations, tenues par l'équipe), et
+# il faut recompiler ensuite.
 #
 # Il faut curl et python3, rien d'autre. Le téléchargement passe par l'API
 # publique Overpass d'OpenStreetMap : une seule requête, quelques Mo.
@@ -128,6 +134,12 @@ EOF
     say "$(du -h "$OUT/gdiz.osm.json" | cut -f1) reçus"
 }
 
+build() {
+    [ -s "$OUT/gdiz.osm.json" ] || die "Pas encore de données : ./map.sh fetch"
+    python3 "$PWD/tools/map/build.py" "$OUT" "$PWD/map/lieux.json" "$PWD/map/gdiz.map.json"
+    say "recompiler pour embarquer la nouvelle carte : ./run.sh"
+}
+
 case "${1:-}" in
     fetch)
         need
@@ -147,6 +159,11 @@ case "${1:-}" in
         python3 "$TOOL" report "$OUT/gdiz.osm.json" "$OUT"
         echo
         say "à lire : map/source/rapport.txt — à regarder : map/source/apercu.svg"
+        build
+        ;;
+    build)
+        need
+        build
         ;;
     report)
         need
@@ -154,7 +171,7 @@ case "${1:-}" in
         python3 "$TOOL" report "$OUT/gdiz.osm.json" "$OUT"
         ;;
     *)
-        sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'
+        sed -n '3,29p' "$0" | sed 's/^# \{0,1\}//'
         exit 2
         ;;
 esac

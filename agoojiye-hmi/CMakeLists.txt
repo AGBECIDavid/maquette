@@ -58,6 +58,12 @@ qt_add_executable(agoojiye-hmi
     voiceannouncer.cpp
     voicelistener.h
     voicelistener.cpp
+    mapdata.h
+    mapdata.cpp
+    navigation.h
+    navigation.cpp
+    mapview.h
+    mapview.cpp
 )
 
 set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
@@ -97,6 +103,10 @@ qt_add_qml_module(agoojiye-hmi
         qml/components/Vignette.qml
         qml/components/VoiceConsole.qml
         qml/components/AssistantBubble.qml
+        qml/components/NavPlaceList.qml
+        qml/components/NavRoutePanel.qml
+        qml/components/NavGuidancePanel.qml
+        qml/components/NavStepList.qml
         qml/screens/BootScreen.qml
         qml/screens/HvDiagnosticScreen.qml
         qml/screens/DashboardScreen.qml
@@ -121,13 +131,13 @@ qt_add_qml_module(agoojiye-hmi
         assets/images/dash-road.png
         assets/images/boot-shuttle.png
         assets/images/vehicule-car.png
-        assets/images/nav-map.jpg
         assets/images/album-blue.jpg
         assets/images/album-purple.jpg
         assets/images/adas-road.png
         assets/images/conduite-car.png
         assets/images/avatar-alice.jpg
         assets/images/settings-car.png
+        map/gdiz.map.json
 )
 
 target_link_libraries(agoojiye-hmi

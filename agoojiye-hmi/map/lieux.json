@@ -1,0 +1,59 @@
+{
+  "_lisez_moi": [
+    "Les destinations proposées par la carte. Ce fichier appartient à l'équipe : on l'édite à la main.",
+    "Une entrée = un lieu : id (unique, sans espace), nom affiché, catégorie, position (lat, lon en degrés décimaux).",
+    "Catégories : entree, porte, usine, service, sante, commerce, restauration, carburant, ecole, marche, village, repere.",
+    "La position n'a pas besoin d'être sur la route : la carte rattache le lieu à la route la plus proche.",
+    "Pour trouver une position : clic droit sur openstreetmap.org → « Afficher l'adresse », ou relevé GPS sur place.",
+    "Après modification : ./map.sh build, puis recompiler. La recette vérifie que chaque lieu est atteignable."
+  ],
+  "lieux": [
+    { "id": "entree-nord", "nom": "Entrée nord — RNIE 2", "categorie": "entree", "lat": 6.61241, "lon": 2.26039,
+      "note": "Poste de contrôle au rond-point de la RNIE 2" },
+    { "id": "rnie2-est", "nom": "Rond-point RNIE 2 — Tangbo", "categorie": "entree", "lat": 6.59792, "lon": 2.27233,
+      "note": "Accès par la route à double voie du sud" },
+
+    { "id": "sipi-2", "nom": "SIPI 2", "categorie": "service", "lat": 6.59307, "lon": 2.25328,
+      "note": "Société d'investissement et de promotion de l'industrie" },
+    { "id": "sipi-3", "nom": "SIPI 3", "categorie": "service", "lat": 6.60021, "lon": 2.25692,
+      "note": "Société d'investissement et de promotion de l'industrie" },
+
+    { "id": "porte-1",  "nom": "Porte 1",  "categorie": "porte", "lat": 6.6006591, "lon": 2.2519508 },
+    { "id": "porte-2",  "nom": "Porte 2",  "categorie": "porte", "lat": 6.5996165, "lon": 2.2511809 },
+    { "id": "porte-3",  "nom": "Porte 3",  "categorie": "porte", "lat": 6.599324,  "lon": 2.2549399 },
+    { "id": "porte-4",  "nom": "Porte 4",  "categorie": "porte", "lat": 6.5985806, "lon": 2.2504008 },
+    { "id": "porte-5",  "nom": "Porte 5",  "categorie": "porte", "lat": 6.5982348, "lon": 2.2563896 },
+    { "id": "porte-6",  "nom": "Porte 6",  "categorie": "porte", "lat": 6.5982091, "lon": 2.2541093 },
+    { "id": "porte-7",  "nom": "Porte 7",  "categorie": "porte", "lat": 6.5976997, "lon": 2.2559773 },
+    { "id": "porte-8",  "nom": "Porte 8",  "categorie": "porte", "lat": 6.5971538, "lon": 2.2555749 },
+    { "id": "porte-9",  "nom": "Porte 9",  "categorie": "porte", "lat": 6.5970281, "lon": 2.2554718 },
+    { "id": "porte-10", "nom": "Porte 10", "categorie": "porte", "lat": 6.5965708, "lon": 2.2551386 },
+    { "id": "porte-11", "nom": "Porte 11", "categorie": "porte", "lat": 6.5964004, "lon": 2.2550092 },
+    { "id": "porte-12", "nom": "Porte 12", "categorie": "porte", "lat": 6.5959498, "lon": 2.2546769 },
+    { "id": "porte-13", "nom": "Porte 13", "categorie": "porte", "lat": 6.5957405, "lon": 2.2545171 },
+    { "id": "porte-14", "nom": "Porte 14", "categorie": "porte", "lat": 6.5952612, "lon": 2.254155 },
+    { "id": "porte-15", "nom": "Porte 15", "categorie": "porte", "lat": 6.5945912, "lon": 2.2512377 },
+
+    { "id": "rp-1", "nom": "Rond-point 1", "categorie": "repere", "lat": 6.61095, "lon": 2.25930 },
+    { "id": "rp-2", "nom": "Rond-point 2", "categorie": "repere", "lat": 6.60326, "lon": 2.25359 },
+    { "id": "rp-3", "nom": "Rond-point 3", "categorie": "repere", "lat": 6.59996, "lon": 2.25782 },
+    { "id": "rp-4", "nom": "Rond-point 4", "categorie": "repere", "lat": 6.59682, "lon": 2.24877 },
+    { "id": "rp-5", "nom": "Rond-point 5", "categorie": "repere", "lat": 6.59294, "lon": 2.25259 },
+    { "id": "rp-6", "nom": "Rond-point 6", "categorie": "repere", "lat": 6.58981, "lon": 2.25563 },
+    { "id": "rp-7", "nom": "Rond-point 7", "categorie": "repere", "lat": 6.58652, "lon": 2.25888 },
+
+    { "id": "marche-tangbo", "nom": "Marché de Tangbo-Djèvié", "categorie": "marche", "lat": 6.58898, "lon": 2.27832 },
+    { "id": "lycee-lams", "nom": "Lycée agricole Mèdji de Sékou", "categorie": "ecole", "lat": 6.62123, "lon": 2.23633 },
+    { "id": "halte-miwa", "nom": "Halte routière Miwa", "categorie": "restauration", "lat": 6.61659, "lon": 2.25484 },
+    { "id": "chez-emile", "nom": "Chez Émile", "categorie": "restauration", "lat": 6.61797, "lon": 2.25136 },
+    { "id": "station-champion", "nom": "Station Champion lubrifiant", "categorie": "carburant", "lat": 6.62133, "lon": 2.24602 },
+
+    { "id": "tangbo", "nom": "Tangbo", "categorie": "village", "lat": 6.59572, "lon": 2.27849 },
+    { "id": "wibatin", "nom": "Wibatin", "categorie": "village", "lat": 6.62603, "lon": 2.24966 },
+    { "id": "djitin-aga", "nom": "Djitin-Aga", "categorie": "village", "lat": 6.58371, "lon": 2.26121 },
+    { "id": "dokodji", "nom": "Dokodji", "categorie": "village", "lat": 6.58257, "lon": 2.27816 },
+    { "id": "agbodjedo", "nom": "Agbodjèdo", "categorie": "village", "lat": 6.61342, "lon": 2.25230 },
+    { "id": "houeze", "nom": "Houézè", "categorie": "village", "lat": 6.59923, "lon": 2.26775 },
+    { "id": "tanto", "nom": "Tanto", "categorie": "village", "lat": 6.60794, "lon": 2.26736 }
+  ]
+}

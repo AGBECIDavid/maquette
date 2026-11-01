@@ -183,6 +183,8 @@ aucun nom à retenir.
 ./run.sh battery      # batterie critique
 ./run.sh sensor       # capteur de vitesse muet
 ./run.sh fault        # défaut système
+./run.sh gps          # signal GPS perdu en roulant, puis retrouvé
+./run.sh gps-froid    # démarrage sans GPS : recherche des satellites
 
 ./run.sh 01000 tyre   # les deux se combinent
 ```
@@ -255,11 +257,20 @@ agoojiye-hmi/
 ├── main.cpp                point d'entrée + outillage de recette (208 l.)
 ├── voiceannouncer.{h,cpp}  voix de l'assistant, deux chemins + file d'attente
 ├── voicelistener.{h,cpp}   oreille : micro, détection de parole, whisper-server
+├── mapdata.{h,cpp}         carte : accroche à la route, itinéraire, consignes
+├── navigation.{h,cpp}      singleton Navigation : position, guidage, annonces
+├── mapview.{h,cpp}         la carte, dessinée au QPainter
+├── map.sh                  récupère la carte OSM, prépare la carte embarquée
+├── map/
+│   ├── lieux.json          ← LES DESTINATIONS, tenues par l'équipe
+│   ├── gdiz.map.json       carte embarquée (générée par map.sh build)
+│   └── source/             extrait OpenStreetMap brut, rapport, aperçu
+├── tools/map/              scripts Python de map.sh (bibliothèque standard)
 ├── voice.sh                installe et lance les moteurs vocaux
 ├── voice/
 │   └── fake_servers.py     faux moteurs pour la recette
 ├── run.sh                  construire et lancer, scénarios en argument
-├── test.sh                 test de fumée en 10 étapes, sans écran
+├── test.sh                 test de fumée en 11 étapes, sans écran
 ├── qml/
 │   ├── Main.qml            coque : barres, écrans, couches (141 l.)
 │   ├── Theme.qml           couleurs et polices, singleton (49 l.)
@@ -372,7 +383,7 @@ Quatre détails de sûreté valent d'être connus :
   défaut : savoir ce qui a été contrôlé et jugé sain fait partie du diagnostic.
 - « Relancer le diagnostic » **réinterroge** la chaîne, il n'efface rien.
 
-### 6.3 La navigation
+### 6.3 Passer d'un écran à l'autre
 
 Sept destinations permanentes dans la barre du bas, décrites une seule fois dans
 `AppState.navSections` :
@@ -400,6 +411,43 @@ Les principes tenus :
   revenir retombe sur la section qu'on avait ouverte, pas sur la première.
 - Le menu « toutes les applications » n'occupe pas un des sept boutons : il
   s'ouvre depuis la barre du haut, comme un tiroir.
+
+### 6.3 bis La carte et le guidage
+
+La carte de la **zone industrielle de Glo-Djigbé** est embarquée : elle vient
+d'OpenStreetMap, préparée une fois par `./map.sh`, et compilée dans le
+programme. **Aucun réseau n'est nécessaire**, ni pour l'afficher, ni pour
+calculer un itinéraire.
+
+Ce que fait l'écran Navigation, comme une application de guidage :
+
+- **Choisir une destination** : « Où allez-vous ? » ouvre la liste des lieux,
+  filtrable par catégorie (entrées, portes, services, villages…) et classée par
+  distance *par la route*. On peut aussi toucher un lieu sur la carte, ou faire
+  un appui long n'importe où pour y poser une destination.
+- **Comparer** : jusqu'à trois itinéraires, avec durée, distance, « par … » et
+  heure d'arrivée ; le plus rapide est signalé, les autres disent combien ils
+  coûtent en plus. « Étapes » détaille les consignes. Le départ peut être
+  changé (« Départ : Ma position » → un autre lieu) pour préparer un trajet.
+- **Être guidé** : la carte suit la navette cap en haut ; la prochaine
+  manœuvre s'affiche en grand (« Au Rond-point 2, prenez la 2ᵉ sortie »), la
+  suivante si elle est proche ; en bas, l'heure d'arrivée, le temps et la
+  distance restants. Les consignes sont **dites à voix haute** (de loin, puis
+  au moment d'agir) ; un bouton coupe la voix.
+- **Hors itinéraire** : écart de plus de 40 m pendant plus de 2,5 s → nouvel
+  itinéraire, annoncé.
+- **GPS perdu** : position estimée à partir de la vitesse des roues pendant
+  30 s / 300 m, puis « position perdue » — jamais une position inventée.
+- **Arrivée** : annoncée, avec le côté (« C'est sur votre droite »).
+
+Le calcul est un A* sur le graphe des routes OpenStreetMap, sur la durée, en
+respectant les sens uniques et les ronds-points ; les 1 406 trajets possibles
+entre les 38 destinations se calculent en 0,15 s. Le tableau de bord montre la
+même prochaine manœuvre ; l'annonce « prochain arrêt » de l'assistant dit la
+destination en cours.
+
+Détails, mise à jour de la carte, branchement du GPS : [BACKEND.md](BACKEND.md),
+§« La carte et le GPS ».
 
 ### 6.4 Les alertes et la qualité des signaux
 
@@ -589,7 +637,7 @@ une entrée par section).
 | Écran | Clé | Sections de la barre latérale |
 |---|---|---|
 | **Tableau de bord** | `dash` | — (écran de référence : vitesse, énergie, alertes) |
-| **Navigation** | `nav` | — (carte, itinéraire, prochaine manœuvre) |
+| **Navigation** | `nav` | — (carte de la GDIZ, destinations, itinéraires, guidage) |
 | **Véhicule** | `veh` | Aperçu · Ouvrants et accès · Pression des pneus · Énergie · Températures · Informations · Commandes |
 | **Entretien** | `entretien` | — (sous-écran de Véhicule) |
 | **Conduite** | `conduite` | Modes de conduite · Régénération · Traction · Direction · Suspension · Freinage |
@@ -618,7 +666,7 @@ non gardés dans l'interface, pour que le backend les voie.
 Pas besoin d'écran : Qt tourne en mode *offscreen*. **À lancer avant chaque
 `git push`.**
 
-Dix étapes :
+Onze étapes :
 
 | # | Étape | Échoue si |
 |---|---|---|
@@ -632,6 +680,7 @@ Dix étapes :
 | 8 | Assistant vocal | une commande hors table est acceptée, un ouvrant s'ouvre en roulant, un « oui » agit après que la navette a démarré, ou un capteur muet est annoncé comme une valeur |
 | 9 | Conversation | le son n'est pas découpé et compris phrase par phrase, l'assistant répond sans avoir été appelé, le dialogue avec le modèle sort des règles de la table, ou un modèle qui ment obtient l'action ou fait prononcer son mensonge |
 | 10 | Annonces d'alerte | la ceinture, son retour à la normale, la batterie aux seuils ou le défaut système ne sont pas annoncés, ou une annonce est répétée à tort |
+| 11 | Navigation | une destination n'est pas atteignable depuis une autre, un itinéraire prend un sens unique à rebours, un trajet simulé n'arrive pas, s'écarte de son tracé ou n'annonce pas ses consignes, le GPS perdu n'est pas estimé puis repris, un itinéraire est proposé sans position, ou la carte met plus de 40 ms à se dessiner |
 
 L'étape 2 est celle qui attrape les vraies régressions : **une dépendance
 circulaire ou une propriété inconnue ne casse pas la compilation**, elle fait
@@ -665,13 +714,18 @@ d'un défaut qui n'appartient qu'à l'échantillonnage.
 | Variable | Effet |
 |---|---|
 | `HMI_HV=<5 chiffres>` | applique un motif haute tension |
-| `HMI_FAULT=<mot>` | injecte une panne : `belt`, `tyre`, `battery`, `sensor`, `fault` |
+| `HMI_FAULT=<mot>` | injecte une panne : `belt`, `tyre`, `battery`, `sensor`, `fault`, `gps`, `gps-froid` |
 | `HMI_TRACE=<s>` | relevé CSV pendant N secondes, puis quitte (force le mode déterministe) |
 | `HMI_SCREENSHOT_DIR=<dir>` | parcourt les 40 panneaux, une capture chacun, puis quitte |
 | `HMI_VOICE="a\|b\|…"` | rejoue des phrases comme si elles avaient été reconnues ; `@vitesse=N` change la vitesse entre deux |
 | `HMI_BOOT_FRAMES=<dir>` | capture la séquence de démarrage image par image |
 | `HMI_ASSISTANT="a\|b\|…"` | rejoue des phrases entendues, mot de réveil compris ; `@clavier:texte`, `@vitesse=N`, `@etat`, `@attendre=N`, `@set:propriété=valeur` |
 | `HMI_VOICE_WAV=fichier.wav` | fait passer un enregistrement par le chemin du micro |
+| `HMI_NAV="pas\|pas\|…"` | pilote la navigation : `aller=<id>`, `point=x,y`, `depart=<id>`, `route=<n>`, `demarrer`, `arreter`, `ecran=<clé>`, `panneau=<nom>`, `@attendre=N`, `@jusqua=<état>`, `@etat`, `@verifier`, `@rendu=N`, `@capture=<nom>` |
+| `HMI_NAV_DIR=<dir>` | dossier des captures de `HMI_NAV` |
+| `HMI_SIM_SPEED=<n>` | le simulateur roule n fois plus vite (recette) |
+| `AGOOJIYE_NO_PERSIST=1` | n'écrit pas les réglages de navigation (dernière position, récents) ; la recette le pose |
+| `AGOOJIYE_MAP=<fichier>` | charge une autre carte que celle embarquée |
 | `AGOOJIYE_NO_MIC=1` | n'ouvre pas le micro (la recette le pose toujours) |
 | `AGOOJIYE_ASR_URL`, `AGOOJIYE_LLM_URL` | adresses des moteurs vocaux (`127.0.0.1:8178` et `:8179` par défaut) ; boucle locale seulement, toute autre adresse est ignorée avec un avertissement |
 
@@ -679,7 +733,9 @@ Les arguments de `run.sh` ne font que poser `HMI_HV` et `HMI_FAULT` pour vous.
 
 ### 8.4 Ce qui n'est pas encore mesuré
 
-**La fluidité d'animation sur le matériel réel n'a jamais été mesurée.** Toutes
+**La fluidité d'animation sur le matériel réel n'a jamais été mesurée.** Seul
+le dessin de la carte l'est, en rendu logiciel sur la machine de recette : 15 à
+25 ms par image (étape 11, budget 40 ms). Toutes
 les exécutions de recette passent par `QT_QPA_PLATFORM=offscreen`, qui ne dit
 rien du nombre d'images par seconde sur la cible. C'est la première chose à faire
 dès qu'un exemplaire du matériel est disponible : `QSG_RENDER_TIMING=1` et une
@@ -699,7 +755,11 @@ Une liste courte, à vérifier avant d'embarquer :
 - [ ] Qualité des signaux réellement pilotée : `setQuality(nom, "MISSING")` quand
       une trame CAN manque, faute de quoi `- -` ne s'affichera jamais.
 - [ ] Points encore en dur passés en revue (liste dans `BACKEND.md`, §« Points
-      encore en dur ») : navigation, média, téléphone, entretien.
+      encore en dur ») : média, téléphone, entretien.
+- [ ] Récepteur GPS branché par gpsd et `VehicleData.latitude/longitude/heading/gpsFix`
+      alimentés (BACKEND.md, §« Brancher le vrai GPS »).
+- [ ] `map/lieux.json` complété avec les vrais noms (usines, portes) et la
+      carte remise à jour (`./map.sh fetch`, `./map.sh build`).
 - [ ] Plateforme Qt choisie (`eglfs` en général) et curseur masqué.
 - [ ] Fluidité mesurée sur la cible (§8.4).
 - [ ] Moteurs vocaux compilés **sur la cible** (`voice.sh` optimise pour le
