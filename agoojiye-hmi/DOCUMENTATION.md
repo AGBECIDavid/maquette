@@ -246,6 +246,21 @@ le micro, pas les moteurs.
 | `VOICE_ASR` | `tiny` · **`base`** · `small` | `small` reconnaît mieux, 3 fois plus lent |
 | `VOICE_LLM` | **`1.5b`** · `3b` | `3b` converse mieux ; licence non commerciale |
 | `VOICE_THREADS` | nombre | cœurs par moteur (4 par défaut) |
+| `VOICE_STRICT` | `1` | refuse de lancer un modèle sans empreinte de référence (à poser sur le véhicule) |
+
+**Intégrité.** Les sources des deux moteurs sont épinglées par commit : si
+l'étiquette téléchargée ne désigne plus le commit attendu, rien n'est compilé.
+Les modèles sont comparés à `voice/modeles.sha256` : un modèle dont l'empreinte
+diffère n'est jamais lancé. Ce fichier n'existe pas encore — les empreintes
+n'ont pas pu être calculées depuis l'environnement de développement. À faire
+une fois, sur une machine où les modèles sont installés :
+
+```bash
+./voice.sh verify     # affiche l'empreinte SHA-256 de chaque modèle
+# la comparer à celle de la page « Files » du modèle sur huggingface.co, puis :
+./voice.sh pin        # l'inscrit dans voice/modeles.sha256
+git add voice/modeles.sha256
+```
 
 ---
 
@@ -254,7 +269,7 @@ le micro, pas les moteurs.
 ```
 agoojiye-hmi/
 ├── CMakeLists.txt          construction, ressources, singletons
-├── main.cpp                point d'entrée + outillage de recette (208 l.)
+├── main.cpp                point d'entrée, --diagnostic, outillage de recette (démo seulement)
 ├── voiceannouncer.{h,cpp}  voix de l'assistant, deux chemins + file d'attente
 ├── voicelistener.{h,cpp}   oreille : micro, détection de parole, whisper-server
 ├── mapdata.{h,cpp}         carte : accroche à la route, itinéraire, consignes
@@ -268,26 +283,30 @@ agoojiye-hmi/
 ├── tools/map/              scripts Python de map.sh (bibliothèque standard)
 ├── voice.sh                installe et lance les moteurs vocaux
 ├── voice/
-│   └── fake_servers.py     faux moteurs pour la recette
+│   ├── fake_servers.py     faux moteurs pour la recette
+│   └── modeles.sha256      empreintes des modèles (écrit par voice.sh pin)
 ├── run.sh                  construire et lancer, scénarios en argument
-├── test.sh                 test de fumée en 11 étapes, sans écran
+├── test.sh                 recette en 13 étapes, sans écran
+├── tests/                  tests unitaires Qt Test (moteur de carte)
+├── AUDIT.md                audit technique et de sécurité, état des corrections
+├── TIERS.md                composants tiers et leurs licences
 ├── qml/
-│   ├── Main.qml            coque : barres, écrans, couches (141 l.)
-│   ├── Theme.qml           couleurs et polices, singleton (49 l.)
-│   ├── AppState.qml        état d'interface, singleton (204 l.)
-│   ├── VehicleData.qml     ← POINT DE BRANCHEMENT DU BACKEND (357 l.)
-│   ├── VehicleSimulator.qml source simulée, singleton (309 l.)
+│   ├── Main.qml            coque : barres, écrans, couches
+│   ├── Theme.qml           couleurs et polices, singleton
+│   ├── AppState.qml        état d'interface, singleton
+│   ├── VehicleData.qml     ← POINT DE BRANCHEMENT DU BACKEND
+│   ├── VehicleSimulator.qml source simulée, singleton
 │   ├── VoiceCommands.qml   table des commandes vocales, singleton
 │   ├── Assistant.qml       conversation : réveil, dialogue, modèle
 │   ├── Icons.js            table des points de code Phosphor
-│   ├── components/         18 briques réutilisées (1 587 l.)
-│   └── screens/            11 écrans + 2 couches (4 910 l.)
+│   ├── components/         18 briques réutilisées
+│   └── screens/            11 écrans + 2 couches
 └── assets/
     ├── fonts/              Phosphor (2) + Inter (4) — 3,3 Mo
     └── images/             rendus du véhicule, cartes, pochettes — 1,8 Mo
 ```
 
-Environ **8 600 lignes** de QML, C++ et JavaScript.
+Environ 18 500 lignes de QML, C++, JavaScript, shell et Python.
 
 ---
 
@@ -316,7 +335,7 @@ Environ **8 600 lignes** de QML, C++ et JavaScript.
 
 **La règle tient en une phrase : aucune valeur métier n'est écrite dans un
 écran.** C'est ce qui rend le branchement du vrai véhicule indolore — on coupe
-le simulateur (`running: false`), on alimente `VehicleData`, et aucun écran ne
+le simulateur (construction de production), on alimente `VehicleData`, et aucun écran ne
 change. Les trois méthodes de branchement sont dans [BACKEND.md](BACKEND.md).
 
 C'est aussi ce qui permet de corriger une incohérence **à la source** plutôt
@@ -642,7 +661,12 @@ Hypothèses à vérifier sur la machine, dans cet ordre :
 - **d'autres sons de la machine** sur les haut-parleurs, que rien ne coupe ;
 - **le réglage du micro** (gain, micro interne près des haut-parleurs).
 
-Pistes de correction : l'annulation d'écho du système (module `echo-cancel` de
+Première mesure, appliquée mais **non vérifiée en conditions réelles** :
+l'écoute reste coupée 700 ms après la fin de chaque phrase de l'assistant
+(`Main.qml`, `echoTail`), le temps que les haut-parleurs se taisent. Si le
+défaut persiste, ce n'était pas la cause, ou pas la seule.
+
+Autres pistes : l'annulation d'écho du système (module `echo-cancel` de
 PipeWire / PulseAudio, qui retire du micro ce qui part vers les haut-parleurs,
 sans toucher au code), un délai avant de rouvrir l'écoute, un micro
 directionnel orienté vers le conducteur sur la cible, et le bouton micro
@@ -687,11 +711,12 @@ non gardés dans l'interface, pour que le backend les voie.
 Pas besoin d'écran : Qt tourne en mode *offscreen*. **À lancer avant chaque
 `git push`.**
 
-Onze étapes :
+Treize étapes (`--sans-production` saute la dernière, qui recompile tout) :
 
 | # | Étape | Échoue si |
 |---|---|---|
 | 1 | Construction | la compilation échoue |
+| 1 bis | Tests unitaires | un des 31 cas du moteur de carte échoue (`tests/tst_mapdata.cpp`) |
 | 2 | Parcours de l'interface | Qt émet **le moindre avertissement QML** |
 | 3 | Présence des panneaux | un des 40 panneaux ne produit pas de capture |
 | 4 | Séquence de démarrage | la séquence ne se joue pas jusqu'au bout |
@@ -699,9 +724,11 @@ Onze étapes :
 | 6 | Chaîne d'alerte | une panne injectée ne remonte pas au bandeau |
 | 7 | Verrou haute tension | un motif est mal rapporté, ou l'isolement n'est pas bloquant |
 | 8 | Assistant vocal | une commande hors table est acceptée, un ouvrant s'ouvre en roulant, un « oui » agit après que la navette a démarré, ou un capteur muet est annoncé comme une valeur |
-| 9 | Conversation | le son n'est pas découpé et compris phrase par phrase, l'assistant répond sans avoir été appelé, le dialogue avec le modèle sort des règles de la table, ou un modèle qui ment obtient l'action ou fait prononcer son mensonge |
+| 9 | Conversation | le modèle fait prononcer une action qu'il prétend avoir faite, le son n'est pas découpé et compris phrase par phrase, l'assistant répond sans avoir été appelé, le dialogue avec le modèle sort des règles de la table, ou un modèle qui ment obtient l'action ou fait prononcer son mensonge |
 | 10 | Annonces d'alerte | la ceinture, son retour à la normale, la batterie aux seuils ou le défaut système ne sont pas annoncés, ou une annonce est répétée à tort |
-| 11 | Navigation | une destination n'est pas atteignable depuis une autre, un itinéraire prend un sens unique à rebours, un trajet simulé n'arrive pas, s'écarte de son tracé ou n'annonce pas ses consignes, le GPS perdu n'est pas estimé puis repris, un itinéraire est proposé sans position, ou la carte met plus de 40 ms à se dessiner |
+| 11 | Navigation | une destination n'est pas atteignable depuis une autre, un itinéraire prend un sens unique à rebours, un trajet simulé n'arrive pas, s'écarte de son tracé ou n'annonce pas ses consignes, le GPS perdu n'est pas estimé puis repris, un itinéraire est proposé sans position, la carte met plus de 40 ms à se dessiner, ou un départ à rebours du cap est pris pour une sortie d'itinéraire |
+| 12 | Entrées malformées | un fichier son ou une carte corrompus font planter le programme au lieu d'être refusés |
+| 13 | Construction de production | le binaire `-DAGOOJIYE_PRODUCTION=ON` ne se construit pas, garde le simulateur ou un outil de recette, ou réagit à une variable `HMI_*` |
 
 L'étape 2 est celle qui attrape les vraies régressions : **une dépendance
 circulaire ou une propriété inconnue ne casse pas la compilation**, elle fait
@@ -752,6 +779,12 @@ d'un défaut qui n'appartient qu'à l'échantillonnage.
 
 Les arguments de `run.sh` ne font que poser `HMI_HV` et `HMI_FAULT` pour vous.
 
+**Toutes ces variables n'existent que dans la construction de démonstration.**
+Le binaire de production ne les lit pas (il avertit si elles sont posées) ;
+seules `AGOOJIYE_ASR_URL`, `AGOOJIYE_LLM_URL`, `AGOOJIYE_NO_MIC` et
+`AGOOJIYE_NO_PERSIST` y restent actives. `./build/agoojiye-hmi --diagnostic`
+dit à quelle construction on a affaire.
+
 ### 8.4 Ce qui n'est pas encore mesuré
 
 **La fluidité d'animation sur le matériel réel n'a jamais été mesurée.** Seul
@@ -768,8 +801,13 @@ lecture du temps par image.
 
 Une liste courte, à vérifier avant d'embarquer :
 
-- [ ] **`VehicleSimulator.running` à `false`.** Sinon il continuera d'écraser les
-      valeurs venues du bus, en silence.
+- [ ] **Construit avec `-DAGOOJIYE_PRODUCTION=ON`**, et `--diagnostic` vérifié
+      sur la cible : `construction=production|outils_recette=absents|simulateur=arrete`.
+- [ ] Signaux déclarés manquants tant que le backend ne les a pas écrits
+      (BACKEND.md, « Avant la mise en production »).
+- [ ] Empreintes des modèles inscrites (`./voice.sh pin`) et `VOICE_STRICT=1`.
+- [ ] Licences des composants tiers respectées (TIERS.md), et licence du
+      projet choisie.
 - [ ] `VehicleData` alimenté par la vraie source — voir [BACKEND.md](BACKEND.md),
       §« Les trois façons de brancher ».
 - [ ] `hvTestPattern` remplacé par le résultat du contrôle réel des cinq organes.

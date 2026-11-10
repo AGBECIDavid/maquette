@@ -6,12 +6,15 @@ rendu soit identique sur une cible embarquée en rendu logiciel.
 
 Ce fichier suffit pour démarrer. Pour le reste :
 [DOCUMENTATION.md](DOCUMENTATION.md) (technologies, architecture, exécution,
-cible matérielle) et [BACKEND.md](BACKEND.md) (brancher le vrai véhicule).
+cible matérielle), [BACKEND.md](BACKEND.md) (brancher le vrai véhicule),
+[AUDIT.md](AUDIT.md) (audit de sécurité et de qualité, ce qui reste à faire)
+et [TIERS.md](TIERS.md) (composants tiers et licences).
 
 `AGOOJIYE-HMI-Documentation.pdf` est la même documentation mise en page, pour
 la lire hors ligne ou l'imprimer. Elle est **figée à la révision indiquée sur
 sa couverture** : le fichier Markdown reste la source, le PDF ne se met pas à
-jour tout seul.
+jour tout seul. **Il date d'avant l'assistant conversationnel, la carte et
+l'audit** : pour ces sujets, lire les fichiers Markdown.
 
 ## Démarrer
 
@@ -44,7 +47,9 @@ CMAKE_PREFIX_PATH=$HOME/Qt/6.8.3/gcc_64 ./run.sh
 ./test.sh
 ```
 
-Pas besoin d'écran : Qt tourne en mode *offscreen*. Le script échoue si un
+Pas besoin d'écran : Qt tourne en mode *offscreen*. Treize étapes, environ
+cinq minutes ; `./test.sh --sans-production` saute la dernière (la
+construction du binaire de production) quand on itère. Le script échoue si un
 avertissement QML apparaît, si un des 40 panneaux ne s'affiche pas, si l'état
 véhicule viole une règle physique sur 30 s de simulation (frein de
 stationnement en roulant, vitesse qui se téléporte, autonomie négative), ou si
@@ -115,10 +120,18 @@ prévenir.
 
 ## Mode démo
 
-`VehicleSimulator.running` pilote la source simulée : un modèle physique
-(accélération bornée, bilan d'énergie, thermique) qui fait vivre la maquette
-sans véhicule. **À passer à `false` en production**, sinon il écrasera les
-valeurs venues du bus.
+Par défaut, le programme est une **démonstration** : `VehicleSimulator`, un
+modèle physique (accélération bornée, bilan d'énergie, thermique), fait vivre
+la maquette sans véhicule, et la barre du haut affiche « DÉMO ».
+
+Pour le véhicule, on construit le **binaire de production** : le simulateur et
+les outils de recette n'y sont pas désactivés, ils en sont absents.
+
+```bash
+cmake -S . -B build-production -DCMAKE_BUILD_TYPE=Release -DAGOOJIYE_PRODUCTION=ON
+cmake --build build-production -j
+./build-production/agoojiye-hmi --diagnostic     # dit ce qu'est ce binaire
+```
 
 ## Rejouer un scénario
 

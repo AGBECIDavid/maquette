@@ -23,12 +23,25 @@ courant, section ouverte, préférences d'usage). Le backend n'a pas à y touche
 
 ## Remplacer le simulateur par le véhicule
 
-Une seule ligne suffit à rendre la main :
+Le simulateur ne se coupe plus en modifiant une ligne : c'est la
+**construction de production** qui l'exclut.
 
-```qml
-// qml/VehicleSimulator.qml
-property bool running: false
+```bash
+cmake -S . -B build-production -DCMAKE_BUILD_TYPE=Release -DAGOOJIYE_PRODUCTION=ON
+cmake --build build-production -j
+./build-production/agoojiye-hmi --diagnostic
+# diagnostic|construction=production|outils_recette=absents|simulateur=arrete|carte=chargee|…
 ```
+
+| | Démonstration (par défaut) | Production (`-DAGOOJIYE_PRODUCTION=ON`) |
+|---|---|---|
+| Simulateur | tourne, badge « DÉMO » dans la barre du haut | ne démarre pas |
+| Outils de recette (`HMI_*`, `AGOOJIYE_MAP`) | présents | **absents du binaire** ; une variable posée ne produit qu'un avertissement |
+| Carte | embarquée, ou `AGOOJIYE_MAP` | embarquée seulement |
+
+Une variable d'environnement oubliée ou posée par un tiers ne peut donc plus
+changer ce que le conducteur voit. `./test.sh` (étape 13) construit ce binaire
+et vérifie les trois lignes du tableau.
 
 Puis alimentez `VehicleData` depuis votre source, de l'une des trois façons
 décrites plus bas. Aucun écran, aucun composant, aucune alerte ne bouge.
@@ -233,8 +246,16 @@ violée sur 30 s, et que chaque panne injectée remonte bien jusqu'au bandeau.
 
 ## Avant la mise en production
 
-Passer `VehicleSimulator.running` à `false`. Tant qu'il tourne, il écrase les
-valeurs venues du véhicule.
+Construire avec `-DAGOOJIYE_PRODUCTION=ON` (voir « Remplacer le simulateur par
+le véhicule ») et vérifier `--diagnostic` sur la cible.
+
+**Attention aux valeurs de départ.** Sans simulateur et sans backend,
+`VehicleData` garde ses valeurs initiales (82 % de batterie, chaîne haute
+tension saine, ceinture bouclée…) : elles s'affichent comme si elles étaient
+mesurées. Tant que la vraie source n'écrit pas un signal, il doit être déclaré
+manquant — `setQuality(nom, "MISSING")` au démarrage du backend, levé à la
+première trame reçue. C'est au backend de le faire ; ce point est ouvert
+(AUDIT.md, « Ce qui reste »).
 
 ## Ce que contient VehicleData
 
