@@ -7,6 +7,25 @@ set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network)
 
+# Construction de PRODUCTION : -DAGOOJIYE_PRODUCTION=ON.
+#
+# Par défaut, le programme est une maquette de démonstration : le simulateur
+# alimente l'état véhicule, et les outils de recette (HMI_VOICE, HMI_NAV,
+# HMI_FAULT, HMI_ASSISTANT « @set: »…) répondent aux variables
+# d'environnement. Rien de cela n'a sa place dans un véhicule : ces outils
+# écrivent dans l'état affiché au conducteur.
+#
+# En production, ils ne sont pas désactivés mais ABSENTS du binaire, et le
+# simulateur ne démarre pas. Une variable d'environnement oubliée ne peut
+# alors rien changer.
+option(AGOOJIYE_PRODUCTION "Binaire embarqué : sans simulateur ni outils de recette" OFF)
+if(AGOOJIYE_PRODUCTION)
+    message(STATUS "Construction de PRODUCTION : simulateur et outils de recette absents.")
+else()
+    message(STATUS "Construction de DÉMONSTRATION : simulateur actif, outils de recette présents. "
+                   "Pour le véhicule : -DAGOOJIYE_PRODUCTION=ON")
+endif()
+
 # Micro : optionnel. Sans Qt Multimedia, l'assistant reste utilisable au
 # clavier (Paramètres → Assistant vocal) et tout le reste est identique.
 # -DAGOOJIYE_MIC=OFF s'en passe même s'il est installé (cible sans micro).
@@ -149,6 +168,17 @@ target_link_libraries(agoojiye-hmi
         Qt6::Network
 )
 
+if(AGOOJIYE_PRODUCTION)
+    target_compile_definitions(agoojiye-hmi PRIVATE AGOOJIYE_PRODUCTION)
+endif()
+
+# Avertissements : le code du projet se compile sans aucun, et doit le rester.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_source_files_properties(
+        main.cpp mapdata.cpp navigation.cpp mapview.cpp voiceannouncer.cpp voicelistener.cpp
+        PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra")
+endif()
+
 if(Qt6Multimedia_FOUND)
     target_link_libraries(agoojiye-hmi PRIVATE Qt6::Multimedia)
     target_compile_definitions(agoojiye-hmi PRIVATE AGOOJIYE_HAS_MIC)
@@ -157,6 +187,26 @@ endif()
 if(Qt6TextToSpeech_FOUND)
     target_link_libraries(agoojiye-hmi PRIVATE Qt6::TextToSpeech)
     target_compile_definitions(agoojiye-hmi PRIVATE AGOOJIYE_HAS_TTS)
+endif()
+
+# Tests unitaires : ctest --test-dir build --output-on-failure (./test.sh les
+# lance). Optionnels — sans Qt Test, l'application se construit à l'identique.
+option(AGOOJIYE_TESTS "Tests unitaires (Qt Test)" ON)
+if(AGOOJIYE_TESTS)
+    find_package(Qt6 QUIET COMPONENTS Test)
+    if(Qt6Test_FOUND)
+        enable_testing()
+        qt_add_executable(tst_mapdata tests/tst_mapdata.cpp mapdata.h mapdata.cpp)
+        target_include_directories(tst_mapdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+        target_compile_definitions(tst_mapdata PRIVATE
+            MAP_FILE="${CMAKE_CURRENT_SOURCE_DIR}/map/gdiz.map.json")
+        target_compile_options(tst_mapdata PRIVATE -Wall -Wextra)
+        target_link_libraries(tst_mapdata PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+        add_test(NAME mapdata COMMAND tst_mapdata)
+        set_tests_properties(mapdata PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+    else()
+        message(STATUS "Qt Test absent : pas de tests unitaires (sudo apt install qt6-base-dev).")
+    endif()
 endif()
 
 include(GNUInstallDirs)

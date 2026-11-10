@@ -63,10 +63,23 @@ Window {
     }
     // Sourd pendant qu'il parle : sinon l'assistant s'entendrait dans les
     // haut-parleurs et se répondrait.
+    //
+    // Et encore un instant après : le moteur de synthèse annonce « fini » quand
+    // il a rendu le son, pas quand les haut-parleurs se sont tus. Sans ce
+    // délai, la fin de sa propre phrase (et son écho dans l'habitacle) rouvre
+    // l'écoute et peut être prise pour une demande.
     Binding {
         target: VoiceListener
         property: "muted"
-        value: VoiceAnnouncer.speaking
+        value: VoiceAnnouncer.speaking || echoTail.running
+    }
+    Timer { id: echoTail; interval: 700 }
+    Connections {
+        target: VoiceAnnouncer
+        function onSpeakingChanged() {
+            if (!VoiceAnnouncer.speaking)
+                echoTail.restart()
+        }
     }
 
     // ---- branchement de la navigation ------------------------------------

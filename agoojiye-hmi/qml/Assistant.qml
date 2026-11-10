@@ -425,6 +425,11 @@ QtObject {
             spoken = entry.reply
         } else {
             spoken = out.reply !== "" ? out.reply : "Je n'ai pas compris."
+            // Aucune commande n'a été exécutée dans cette branche. Si le modèle
+            // affirme pourtant avoir agi (« j'ai ouvert la porte »), sa phrase
+            // est fausse : on ne la prononce pas.
+            if (_claimsAction(spoken))
+                spoken = "Je n'ai rien fait : cette action n'est pas dans mes commandes."
             // Une conversation qui part ailleurs abandonne la question en attente,
             // comme le fait toute autre phrase.
             if (VoiceCommands.cancelPending())
@@ -432,6 +437,19 @@ QtObject {
             _say(spoken, "chat")
         }
         _remember(text, out, spoken)
+    }
+
+    // Le modèle prétend-il avoir fait quelque chose ? Première personne, au
+    // passé ou en cours (« j'ai allumé », « je viens d'ouvrir », « c'est
+    // fait », « j'active »), suivie d'un verbe d'action sur le véhicule.
+    // « J'ai compris », « j'ai bien noté » ne sont pas des actions.
+    readonly property var _actionClaim: new RegExp(
+        "(^|[^a-z])(j ai|je viens d|je suis en train d|je l ai|c est fait|voila c est|je m en occupe|je lance|j active|j allume|j ouvre|je ferme|je mets|je passe|je regle|je coupe|je desactive|j eteins|je verrouille|je deverrouille)([^a-z]|$)")
+    readonly property var _actionVerb: new RegExp(
+        "(ouvert|ferme|allum|etein|activ|desactiv|verrouill|deverrouill|frein|demarr|arret|lanc|regl|coup|baiss|mont|augment|diminu|chang|pass|mis |mise |c est fait|occupe)")
+    function _claimsAction(reply) {
+        var t = VoiceCommands.normalize(reply).replace(/[^a-z0-9]+/g, " ")
+        return _actionClaim.test(t) && _actionVerb.test(t)
     }
 
     function _remember(text, out, spoken) {

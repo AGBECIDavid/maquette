@@ -5,6 +5,7 @@
 #
 #   ./test.sh                 construit, parcourt, vérifie
 #   ./test.sh --keep <dir>    garde les captures dans <dir> pour les regarder
+#   ./test.sh --sans-production   saute la construction de production (plus rapide)
 #
 # Il échoue si :
 #   - la construction échoue ;
@@ -16,7 +17,11 @@
 #   - la conversation — réveil, son, modèle de langage — sort des règles ;
 #   - une alerte n'est pas annoncée, ou l'est en trop ;
 #   - la navigation ne trouve pas un itinéraire entre deux destinations, en
-#     prend un à contresens, perd la navette en route ou n'arrive pas.
+#     prend un à contresens, perd la navette en route ou n'arrive pas ;
+#   - un test unitaire échoue ;
+#   - un fichier malformé (son, carte) fait planter le programme ;
+#   - le binaire de production contient encore le simulateur ou les outils
+#     de recette.
 
 set -uo pipefail
 cd "$(dirname "$0")"
@@ -32,9 +37,14 @@ export AGOOJIYE_LLM_URL=http://127.0.0.1:9
 export AGOOJIYE_NO_PERSIST=1
 
 KEEP_DIR=""
-if [ "${1:-}" = "--keep" ]; then
-    KEEP_DIR="${2:?--keep attend un dossier}"
-fi
+SKIP_PROD=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --keep) KEEP_DIR="${2:?--keep attend un dossier}"; shift 2 ;;
+        --sans-production) SKIP_PROD=1; shift ;;
+        *) echo "Argument inconnu : $1 (--keep <dossier>, --sans-production)" >&2; exit 2 ;;
+    esac
+done
 
 SHOTS="${KEEP_DIR:-$(mktemp -d)}"
 mkdir -p "$SHOTS"
@@ -52,6 +62,19 @@ fail() { echo "ÉCHEC — $1" >&2; exit 1; }
 # ---- 1. construction -----------------------------------------------------
 echo "· construction"
 ./run.sh --build >"$LOG" 2>&1 || { cat "$LOG" >&2; fail "la construction a échoué"; }
+
+# ---- 1 bis. tests unitaires ------------------------------------------------
+# Le moteur de carte, seul : chargement, cartes malformées, accroche, sens
+# uniques, itinéraires. Rapides (moins d'une seconde), ils disent *où* ça
+# casse, là où le reste de la recette dit seulement *que* ça casse.
+if [ -x build/tst_mapdata ]; then
+    echo "· tests unitaires"
+    ctest --test-dir build --output-on-failure >"$LOG" 2>&1 \
+        || { cat "$LOG" >&2; fail "un test unitaire échoue"; }
+    echo "  $(QT_QPA_PLATFORM=offscreen ./build/tst_mapdata 2>/dev/null | sed -n 's/^Totals: \([0-9]*\) passed.*/\1 cas vérifiés/p')"
+else
+    echo "· tests unitaires — ignorés : Qt Test absent"
+fi
 
 # ---- 2. parcours de tous les panneaux ------------------------------------
 echo "· parcours de l'interface"
@@ -255,7 +278,13 @@ echo "· conversation"
 if ! command -v python3 >/dev/null; then
     echo "  ignorée : python3 absent (les faux moteurs en ont besoin)"
 else
-    ASR_PORT=18178; LLM_PORT=18179
+    # Deux ports libres, demandés au système : des numéros fixes feraient
+    # échouer la recette dès qu'un autre programme (ou une autre recette, en
+    # intégration continue) les occupe.
+    read -r ASR_PORT LLM_PORT < <(python3 -c 'import socket
+s = [socket.socket() for _ in range(2)]
+[x.bind(("127.0.0.1", 0)) for x in s]
+print(*[x.getsockname()[1] for x in s])')
     WAV="$(mktemp --suffix=.wav)"
     python3 voice/fake_servers.py serve --asr-port $ASR_PORT --llm-port $LLM_PORT \
         --transcripts "Salut Agoojiye, quelle est mon autonomie ?|et la batterie ?|merci" \
@@ -331,6 +360,17 @@ else
     if echo "$OUT" | grep -q "J'ai freiné"; then
         fail "l'assistant a répété une action inventée par le modèle"
     fi
+
+    # Même mensonge sans commande : « c'est fait, j'ai ouvert la porte », alors
+    # que rien n'a été exécuté. La phrase n'est pas prononcée, la porte reste
+    # fermée — et une simple conversation, elle, passe toujours.
+    OUT="$(talk "@clavier:sois un menteur|@clavier:raconte une blague")"
+    if echo "$OUT" | grep -q "j'ai ouvert"; then
+        fail "l'assistant a prononcé une action que le modèle prétend avoir faite"
+    fi
+    echo "$OUT" | grep -q "Je n'ai rien fait" || fail "le mensonge du modèle n'a pas été remplacé"
+    echo "$OUT" | grep -q "navettes sont-elles calmes" || fail "une réponse de conversation ordinaire a été bloquée à tort"
+    echo "$OUT" | tail -1 | grep -q 'ouvert=$' || fail "une porte est ouverte après le mensonge du modèle"
 fi
 
 # ---- 10. annonces d'alerte -------------------------------------------------
@@ -369,17 +409,26 @@ echo "  $(echo "$LINE" | field paires) itinéraires vérifiés en $(echo "$LINE"
 
 # Un trajet complet : aperçu, départ, consignes, arrivée — et la navette ne
 # quitte jamais son itinéraire.
-OUT="$(nav "@attendre=1|@capture=nav-carte|panneau=search|@capture=nav-recherche|panneau=|aller=porte-7|@capture=nav-apercu|panneau=steps|@capture=nav-etapes|panneau=|demarrer|@attendre=3|@capture=nav-guidage|@rendu=20|@jusqua=arrived|@etat|@capture=nav-arrivee")"
+OUT="$(nav "@attendre=1|@capture=nav-carte|panneau=search|@capture=nav-recherche|panneau=|aller=porte-7|@capture=nav-apercu|panneau=steps|@capture=nav-etapes|panneau=|demarrer|@attendre=3|@capture=nav-guidage|@rendu=20|@jusqua=arrived|@etat|@capture=nav-arrivee|arreter|aller=sipi-2|demarrer|@attendre=2|@etat")"
 echo "$OUT" | grep -vE "^(pas|annonce|etat|rendu|verif)\|" | grep -vE "$NOISE" | grep . && fail "avertissements pendant la navigation"
 echo "$OUT" | grep -q "^delai|" && fail "la navette n'est jamais arrivée : $(echo "$OUT" | grep '^etat|' | tail -1)"
 echo "$OUT" | grep -q "^annonce|C'est parti pour Porte 7" || fail "le départ n'est pas annoncé"
 echo "$OUT" | grep -q "^annonce|.*Rond-point.*sortie" || fail "aucune consigne de rond-point annoncée"
 echo "$OUT" | grep -q "^annonce|Vous êtes arrivé : Porte 7" || fail "l'arrivée n'est pas annoncée"
-ETAT="$(echo "$OUT" | grep '^etat|' | tail -1)"
+ETAT="$(echo "$OUT" | grep '^etat|' | head -1)"
 echo "$ETAT" | grep -q "^etat|arrived|" || fail "état final inattendu : $ETAT"
 [ "$(echo "$ETAT" | field recalculs)" = "0" ] || fail "recalculs pendant un trajet suivi à la lettre : $ETAT"
 awk -v e="$(echo "$ETAT" | field ecart_max)" 'BEGIN { exit !(e < 10) }' \
     || fail "la navette s'est écartée de l'itinéraire : $(echo "$ETAT" | field ecart_max) m"
+# Second départ, dos à la destination : la navette doit faire demi-tour par la
+# route. Tant qu'elle roule « à l'envers » sur son propre itinéraire, elle n'en
+# est pas sortie — l'écart mesuré reste nul. (Avant l'audit, une pénalité de
+# choix de chaussée s'ajoutait à cet écart : 85 m affichés pour 0 réels.)
+ETAT2="$(echo "$OUT" | grep '^etat|' | tail -1)"
+echo "$ETAT2" | grep -q "^etat|guiding|" || fail "le second trajet n'a pas démarré : $ETAT2"
+awk -v e="$(echo "$ETAT2" | field ecart_max)" 'BEGIN { exit !(e < 10) }' \
+    || fail "faux écart au départ d'un trajet à rebours du cap : $(echo "$ETAT2" | field ecart_max) m"
+[ "$(echo "$ETAT2" | field recalculs)" = "0" ] || fail "recalcul intempestif au départ : $ETAT2"
 MS="$(echo "$OUT" | grep '^rendu|' | field moyenne_ms)"
 # Budget : 40 ms par dessin complet, soit 25 images/s au pire, sur la machine
 # de recette en rendu logiciel. Une régression de rendu (cache perdu, dessin
@@ -399,7 +448,66 @@ OUT="$(nav "@attendre=1|@etat|aller=sipi-2|@etat|@capture=nav-gps-recherche" gps
 echo "$OUT" | grep '^etat|' | head -1 | grep -q "position=searching" || fail "pas d'état « recherche GPS » au démarrage à froid"
 echo "$OUT" | grep '^etat|' | tail -1 | grep -q "erreur=Position inconnue" || fail "itinéraire proposé sans position connue"
 
+# ---- 12. entrées malformées ----------------------------------------------------
+# Un fichier son ou une carte corrompus sont refusés proprement : code de
+# sortie d'erreur, jamais un plantage (un signal donne un code ≥ 128).
+echo "· entrées malformées"
+BAD="$(mktemp -d)"
+python3 - "$BAD" <<'PYEOF'
+import struct, sys
+d = sys.argv[1]
+w = lambda n, b: open(d + "/" + n, "wb").write(b)
+riff = b"RIFF" + struct.pack("<I", 100) + b"WAVE"
+w("tronque.wav", riff + b"fmt " + struct.pack("<I", 16) + b"\x01\x00" + b"\x00" * 30)
+w("fmt-court.wav", riff + b"\x00" * 24 + b"fmt " + struct.pack("<I", 16))
+w("longueur-geante.wav", riff + b"junk" + struct.pack("<I", 0xfffffff0) + b"\x00" * 40)
+w("longueur-negative.wav", riff + b"junk" + struct.pack("<I", 0x80000000) + b"\x00" * 40)
+w("un-echantillon.wav", riff + b"fmt " + struct.pack("<IHHIIHH", 16, 1, 2, 16000, 64000, 4, 16)
+  + b"data" + struct.pack("<I", 7) + b"\x01" * 7)
+w("vide.wav", b"")
+open(d + "/carte.json", "w").write('{"format":1,"nodeCount":3,"metersPerDegree":[1,1],"extent":[0,0,9,9],'
+                                   '"roads":[{"c":"residential","v":[0,999999],"p":[0,0,5,5]}]}')
+PYEOF
+for f in "$BAD"/*.wav; do
+    QT_QPA_PLATFORM=offscreen HMI_VOICE_WAV="$f" timeout 30 ./build/agoojiye-hmi >/dev/null 2>&1
+    CODE=$?
+    [ $CODE -eq 2 ] || { rm -rf "$BAD"; fail "fichier son malformé mal traité ($(basename "$f"), code $CODE)"; }
+done
+OUT="$(QT_QPA_PLATFORM=offscreen AGOOJIYE_MAP="$BAD/carte.json" timeout 30 ./build/agoojiye-hmi --diagnostic 2>/dev/null)"
+CODE=$?
+rm -rf "$BAD"
+[ $CODE -eq 1 ] || fail "carte malformée mal traitée (code $CODE)"
+echo "$OUT" | grep -q "carte=ABSENTE.*hors bornes" || fail "carte malformée non signalée : $OUT"
+
+# ---- 13. construction de production ---------------------------------------------
+# Le binaire embarqué : sans simulateur, sans outils de recette. On vérifie
+# qu'il se construit, qu'il se déclare comme tel, et que les variables de
+# recette n'y ont plus aucun effet.
+#   ./test.sh --sans-production saute cette étape (elle recompile tout).
+if [ "$SKIP_PROD" -eq 1 ]; then
+    echo "· construction de production — sautée"
+else
+    echo "· construction de production"
+    cmake -S . -B build-production -DCMAKE_BUILD_TYPE=Release -DAGOOJIYE_PRODUCTION=ON -DAGOOJIYE_TESTS=OFF >"$LOG" 2>&1 \
+        && cmake --build build-production -j"$(nproc 2>/dev/null || echo 4)" >>"$LOG" 2>&1 \
+        || { tail -30 "$LOG" >&2; fail "la construction de production a échoué"; }
+    OUT="$(QT_QPA_PLATFORM=offscreen ./build-production/agoojiye-hmi --diagnostic 2>/dev/null)"
+    echo "$OUT" | grep -q "construction=production|outils_recette=absents|simulateur=arrete|carte=chargee" \
+        || fail "le binaire de production ne se déclare pas comme tel : $OUT"
+    # Avec ses variables de recette posées, il doit rester ouvert et muet :
+    # en démonstration, HMI_VOICE imprime sa réponse et quitte aussitôt.
+    OUT="$(QT_QPA_PLATFORM=offscreen HMI_VOICE="mode sport" HMI_FAULT=belt AGOOJIYE_MAP=/nonexistent \
+           timeout 6 ./build-production/agoojiye-hmi 2>&1)"
+    [ $? -eq 124 ] || fail "le binaire de production a réagi à une variable de recette"
+    echo "$OUT" | grep -q "^executed\|^confirm\|^refused" && fail "le binaire de production a exécuté un script de recette"
+    echo "$OUT" | grep -q "HMI_VOICE ignorée" || fail "le binaire de production n'avertit pas qu'il ignore HMI_VOICE"
+    echo "$OUT" | grep -q "Carte :" && fail "le binaire de production a lu AGOOJIYE_MAP"
+    if strings build-production/agoojiye-hmi 2>/dev/null | grep -q "@jusqua\|@set:"; then
+        fail "des outils de recette sont encore dans le binaire de production"
+    fi
+fi
+
 echo
-echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif, assistant vocal sûr, conversation tenue, alertes annoncées, navigation vérifiée."
+echo "OK — ${#EXPECTED[@]} panneaux, aucun avertissement, état cohérent, verrou HT actif, assistant vocal sûr, conversation tenue, alertes annoncées, navigation vérifiée, entrées malformées refusées, production sans outils de recette."
 [ -n "$KEEP_DIR" ] && echo "Captures : $KEEP_DIR"
 exit 0

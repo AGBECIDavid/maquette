@@ -525,29 +525,42 @@ bool VoiceListener::feedWav(const QString &path)
         return false;
 
     // Parcours des blocs : « fmt » puis « data », dans n'importe quel ordre.
-    int pos = 12, rate = 0, ch = 0, bits = 0, fmt = 0;
+    // Chaque longueur annoncée est confrontée à ce que le fichier contient
+    // vraiment : un en-tête menteur ne fait lire ni au-delà du tampon, ni en
+    // boucle.
+    qsizetype pos = 12;
+    int rate = 0, ch = 0, bits = 0, fmt = 0;
     QByteArray data;
     while (pos + 8 <= d.size()) {
         const QByteArray id = d.mid(pos, 4);
-        const quint32 len = qFromLittleEndian<quint32>(d.constData() + pos + 4);
+        const qsizetype len = qsizetype(qFromLittleEndian<quint32>(d.constData() + pos + 4));
+        const qsizetype body = pos + 8;
+        if (len > d.size() - body)
+            return false;                       // bloc tronqué
         if (id == "fmt ") {
-            fmt = qFromLittleEndian<quint16>(d.constData() + pos + 8);
-            ch = qFromLittleEndian<quint16>(d.constData() + pos + 10);
-            rate = int(qFromLittleEndian<quint32>(d.constData() + pos + 12));
-            bits = qFromLittleEndian<quint16>(d.constData() + pos + 22);
+            if (len < 16)
+                return false;
+            fmt = qFromLittleEndian<quint16>(d.constData() + body);
+            ch = qFromLittleEndian<quint16>(d.constData() + body + 2);
+            rate = int(qFromLittleEndian<quint32>(d.constData() + body + 4));
+            bits = qFromLittleEndian<quint16>(d.constData() + body + 14);
         } else if (id == "data") {
-            data = d.mid(pos + 8, int(len));
+            data = d.mid(body, len);
         }
-        pos += 8 + int(len) + (len & 1);
+        pos = body + len + (len & 1);
     }
+    if (rate > 384000 || ch > 8)
+        return false;
     if (rate <= 0 || ch <= 0 || data.isEmpty() || !((fmt == 1 && bits == 16) || (fmt == 3 && bits == 32)))
         return false;
 
     const int bps = bits / 8;
-    const int frames = data.size() / (bps * ch);
+    const int frames = int(data.size() / (bps * ch));
+    if (frames < 2)
+        return false;
     auto sampleAt = [&](int i, int c) -> double {
         const char *p = data.constData() + (i * ch + c) * bps;
-        if (fmt == 3) { float v; std::memcpy(&v, p, 4); return v; }
+        if (fmt == 3) { float v; std::memcpy(&v, p, 4); return std::isfinite(v) ? v : 0.0; }
         return qFromLittleEndian<qint16>(p) / 32768.0;
     };
     QVector<qint16> pcm;

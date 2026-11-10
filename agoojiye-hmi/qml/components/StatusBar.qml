@@ -58,6 +58,24 @@ Item {
             Text { text: VehicleData.reading("speed", Math.round(VehicleData.speed)); font.family: Theme.fontFamily; font.pixelSize: 21; font.weight: Font.Bold; color: Theme.textPrimary; anchors.verticalCenter: parent.verticalCenter }
             Text { text: "km/h"; font.family: Theme.fontFamily; font.pixelSize: 13; color: Theme.textMuted; anchors.verticalCenter: parent.verticalCenter }
         }
+
+        // Données simulées : dit en toutes lettres, sur tous les écrans. Absent
+        // d'un binaire de production, où le simulateur ne tourne pas.
+        Rectangle {
+            visible: VehicleSimulator.running
+            anchors.verticalCenter: parent.verticalCenter
+            height: 24; radius: 12
+            width: demoLabel.implicitWidth + 20
+            color: Theme.alpha(Theme.orange, 0.16)
+            border.width: 1; border.color: Theme.alpha(Theme.orange, 0.6)
+            Text {
+                id: demoLabel
+                anchors.centerIn: parent
+                text: "DÉMO"
+                font.family: Theme.fontFamily; font.pixelSize: 12; font.weight: Font.Bold
+                font.letterSpacing: 1.2; color: Theme.orange
+            }
+        }
     }
 
     // ---- clignotants ---------------------------------------------------------

@@ -30,9 +30,14 @@ import QtQuick
 QtObject {
     id: sim
 
-    // Couper ceci fige l'état sur les dernières valeurs. À faire dès que le
-    // véhicule alimente `VehicleData` pour de bon.
-    property bool running: true
+    // Le simulateur tourne dans la construction de démonstration, jamais dans
+    // celle de production (-DAGOOJIYE_PRODUCTION=ON) : `agoojiyeDemo` est posé
+    // par main.cpp selon la compilation. Ce n'est donc plus une ligne à penser
+    // à modifier avant d'embarquer.
+    //
+    // Tant qu'il tourne, la barre du haut affiche « DÉMO » : des valeurs
+    // simulées ne doivent jamais passer pour celles du véhicule.
+    property bool running: agoojiyeDemo
 
     // Cadence visée. 100 ms suffit pour que l'œil lise un mouvement continu,
     // sans réveiller le processeur inutilement sur cible embarquée.

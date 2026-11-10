@@ -44,7 +44,12 @@ Navigation::Navigation(QObject *parent)
     s_instance = this;
     m_persist = !qEnvironmentVariableIsSet("AGOOJIYE_NO_PERSIST");
 
-    const QString path = qEnvironmentVariable("AGOOJIYE_MAP", QStringLiteral(":/AgoojiyeHMI/map/gdiz.map.json"));
+    // La carte embarquée. En démonstration seulement, AGOOJIYE_MAP en désigne
+    // une autre (recette, essai d'une carte en préparation).
+    QString path = QStringLiteral(":/AgoojiyeHMI/map/gdiz.map.json");
+#ifndef AGOOJIYE_PRODUCTION
+    path = qEnvironmentVariable("AGOOJIYE_MAP", path);
+#endif
     if (!m_map.load(path, &m_loadError))
         qWarning("Carte : %s", qPrintable(m_loadError));
 
@@ -239,8 +244,14 @@ void Navigation::track(const Route &path, double *along, int *index, double *dis
     const int n = path.pts.size();
     if (n < 2)
         return;
+    // Deux grandeurs, à ne pas confondre : le *coût* sert à choisir le tronçon
+    // (il pénalise un tronçon orienté à contresens du cap), la *distance* est
+    // l'écart réel au tracé. C'est elle seule que l'on rend : y mêler la
+    // pénalité ferait croire à une sortie d'itinéraire là où la navette est
+    // simplement en train de faire demi-tour sur sa route.
     auto bestIn = [&](int from, int to, bool useHeading, int *bestSeg, double *bestT, double *bestD) {
-        *bestD = std::numeric_limits<double>::infinity();
+        double bestCost = std::numeric_limits<double>::infinity();
+        *bestD = bestCost;
         for (int i = qMax(0, from); i < qMin(n - 1, to); i++) {
             const QPointF a = path.pts[i], b = path.pts[i + 1];
             const QPointF ab = b - a;
@@ -248,14 +259,21 @@ void Navigation::track(const Route &path, double *along, int *index, double *dis
             double t = l2 > 1e-9 ? ((m_pos.x() - a.x()) * ab.x() + (m_pos.y() - a.y()) * ab.y()) / l2 : 0;
             t = std::clamp(t, 0.0, 1.0);
             const QPointF q = a + ab * t;
-            double d = std::hypot(m_pos.x() - q.x(), m_pos.y() - q.y());
-            // En roulant, un tronçon parcouru à contresens ne compte pas :
-            // sur une avenue à deux chaussées, ou une boucle qui repasse au
-            // même endroit, c'est ce qui départage.
+            const double d = std::hypot(m_pos.x() - q.x(), m_pos.y() - q.y());
+            double cost = d;
+            // En roulant, un tronçon orienté à contresens du cap passe après
+            // un voisin dans le bon sens : sur une avenue à deux chaussées
+            // (10 à 15 m d'écart), ou une boucle qui repasse au même endroit,
+            // c'est ce qui départage. 30 m, pas davantage : au-delà, on
+            // sauterait vers un tronçon lointain de l'itinéraire — et ses
+            // consignes intermédiaires avec — au lieu de rester où l'on est.
             if (useHeading && l2 > 1 && qAbs(MapData::angleDiff(MapData::bearing(a, b), m_heading)) > 100)
-                d += 80;
-            if (d < *bestD) {
-                *bestD = d;
+                cost += 30;
+            // L'écart est celui du tronçon le plus proche, quel que soit celui
+            // que le cap fait retenir pour situer la navette.
+            *bestD = qMin(*bestD, d);
+            if (cost < bestCost) {
+                bestCost = cost;
                 *bestSeg = i;
                 *bestT = t;
             }

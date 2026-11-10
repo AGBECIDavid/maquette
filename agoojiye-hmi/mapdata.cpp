@@ -12,6 +12,7 @@
 namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
+constexpr int kMaxNodes = 2'000'000;    // garde-fou : la GDIZ en compte 2 400
 
 // Allure de calcul par type de route, km/h. Une navette de zone industrielle
 // plafonne bien en dessous des limites légales : ces valeurs donnent des
@@ -113,6 +114,7 @@ bool MapData::load(const QString &path, QString *error)
         return false;
     };
 
+    *this = MapData();
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly))
         return fail(QStringLiteral("carte introuvable : %1").arg(path));
@@ -151,7 +153,16 @@ bool MapData::load(const QString &path, QString *error)
     for (const QJsonValue &v : o.value("gates").toArray())
         m_gates.append(QPointF(v.toArray().at(0).toDouble(), v.toArray().at(1).toDouble()));
 
+    // La carte est une donnée : rien de ce qu'elle contient n'est cru sur
+    // parole. Un indice de nœud hors bornes ou une échelle nulle donnerait
+    // plus bas un accès mémoire invalide ou des positions infinies.
+    if (!(m_kLat > 0) || !(m_kLon > 0) || !std::isfinite(m_kLat) || !std::isfinite(m_kLon))
+        return fail(QStringLiteral("carte invalide : échelle nulle ou absente"));
+    if (!m_extent.isValid() || m_extent.isEmpty())
+        return fail(QStringLiteral("carte invalide : emprise vide"));
     const int nodeCount = o.value("nodeCount").toInt();
+    if (nodeCount <= 0 || nodeCount > kMaxNodes)
+        return fail(QStringLiteral("carte invalide : nombre de nœuds %1").arg(nodeCount));
     m_nodePos = QVector<QPointF>(nodeCount);
     for (const QJsonValue &v : o.value("roads").toArray()) {
         const QJsonObject r = v.toObject();
@@ -175,10 +186,17 @@ bool MapData::load(const QString &path, QString *error)
             road.nodes.append(n.toInt());
         if (road.nodes.size() != road.pts.size() || road.pts.size() < 2)
             continue;
+        for (int i = 0; i < road.nodes.size(); i++) {
+            if (road.nodes[i] < 0 || road.nodes[i] >= nodeCount)
+                return fail(QStringLiteral("carte invalide : nœud %1 hors bornes (route %2)")
+                                .arg(road.nodes[i]).arg(m_roads.size()));
+            if (!std::isfinite(road.pts[i].x()) || !std::isfinite(road.pts[i].y()))
+                return fail(QStringLiteral("carte invalide : coordonnée non finie (route %1)")
+                                .arg(m_roads.size()));
+        }
         road.bounds = road.pts.boundingRect();
         for (int i = 0; i < road.nodes.size(); i++)
-            if (road.nodes[i] >= 0 && road.nodes[i] < nodeCount)
-                m_nodePos[road.nodes[i]] = road.pts[i];
+            m_nodePos[road.nodes[i]] = road.pts[i];
         m_roads.append(road);
     }
 
@@ -192,6 +210,11 @@ bool MapData::load(const QString &path, QString *error)
     if (m_roads.isEmpty())
         return fail(QStringLiteral("carte sans routes"));
     buildGraph();
+    bool anyDrivable = false;
+    for (const MapRoad &road : m_roads)
+        anyDrivable = anyDrivable || road.mainNetwork;
+    if (!anyDrivable)
+        return fail(QStringLiteral("carte sans route praticable"));
     m_loaded = true;
     return true;
 }
@@ -244,6 +267,8 @@ void MapData::buildGraph()
                 }
         }
     }
+    if (sizes.isEmpty())
+        return;
     const int main = int(std::max_element(sizes.cbegin(), sizes.cend()) - sizes.cbegin());
     for (MapRoad &road : m_roads)
         road.mainNetwork = road.drivable && !road.nodes.isEmpty() && comp[road.nodes[0]] == main;

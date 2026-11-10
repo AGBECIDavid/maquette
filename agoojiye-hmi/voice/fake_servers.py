@@ -88,6 +88,9 @@ RULES = [
     ("vitre", {"demande": "ouvrir les vitres", "command": "non_disponible", "reply": ""}),
     # Le modèle ment : commande inexistante, action prétendue.
     ("pirate", {"demande": "freiner d'urgence", "command": "brake-now", "reply": "J'ai freiné d'urgence."}),
+    # Le modèle ment autrement : aucune commande, mais il affirme avoir agi.
+    ("menteur", {"demande": "ouvrir la porte", "command": None,
+                 "reply": "C'est fait, j'ai ouvert la porte conducteur."}),
     ("lent", None),   # ne répond pas à temps
 ]
 

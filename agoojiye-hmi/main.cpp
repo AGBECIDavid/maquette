@@ -6,6 +6,7 @@
 #include <QQuickWindow>
 #include <QTimer>
 #include <QQmlComponent>
+#include <QQmlContext>
 #include <QVariant>
 #include <QStringList>
 #include <QVariantList>
@@ -16,6 +17,7 @@
 #include "localurl.h"
 #include "navigation.h"
 
+#ifndef AGOOJIYE_PRODUCTION
 namespace {
 // A `property var` read from C++ holds either a QJSValue or an already
 // converted list, depending on how QML last assigned it.
@@ -26,6 +28,7 @@ QVariantList jsList(const QVariant &v)
     return v.toList();
 }
 }
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -45,8 +48,62 @@ int main(int argc, char *argv[])
         &engine, &QQmlApplicationEngine::objectCreationFailed,
         &app, []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
+    // Démonstration ou production : décidé à la compilation
+    // (-DAGOOJIYE_PRODUCTION=ON), lu par le simulateur et par la barre du haut.
+#ifdef AGOOJIYE_PRODUCTION
+    engine.rootContext()->setContextProperty(QStringLiteral("agoojiyeDemo"), false);
+#else
+    engine.rootContext()->setContextProperty(QStringLiteral("agoojiyeDemo"), true);
+#endif
     engine.load(QUrl(QStringLiteral("qrc:/AgoojiyeHMI/qml/Main.qml")));
 
+    // --diagnostic : dit ce qu'est ce binaire et dans quel état il démarre,
+    // puis quitte. Présent dans les deux constructions : c'est ainsi qu'on
+    // vérifie, sur le véhicule comme en recette, qu'un binaire de production
+    // en est bien un.
+    if (app.arguments().contains(QStringLiteral("--diagnostic"))) {
+        QQmlComponent probe(&engine);
+        probe.setData("import QtQml\nimport AgoojiyeHMI\n"
+                      "QtObject {\n"
+                      "  property bool simulateur: VehicleSimulator.running\n"
+                      "  property bool carte: Navigation.ready\n"
+                      "  property string erreurCarte: Navigation.loadError\n"
+                      "  property int lieux: Navigation.places.length\n"
+                      "  property bool micro: VoiceListener.micCompiled\n"
+                      "}", QUrl());
+        QObject *o = engine.rootObjects().isEmpty() ? nullptr : probe.create();
+        if (!o) {
+            printf("diagnostic|echec|l'interface ne se charge pas\n");
+            return 1;
+        }
+#ifdef AGOOJIYE_PRODUCTION
+        const char *kind = "production";
+        const char *qa = "absents";
+#else
+        const char *kind = "demonstration";
+        const char *qa = "presents";
+#endif
+        printf("diagnostic|construction=%s|outils_recette=%s|simulateur=%s|carte=%s|lieux=%d|micro=%s|qt=%s\n",
+               kind, qa,
+               o->property("simulateur").toBool() ? "actif" : "arrete",
+               o->property("carte").toBool() ? "chargee" : qPrintable("ABSENTE: " + o->property("erreurCarte").toString()),
+               o->property("lieux").toInt(),
+               o->property("micro").toBool() ? "compile" : "absent",
+               qVersion());
+        return o->property("carte").toBool() ? 0 : 1;
+    }
+
+#ifdef AGOOJIYE_PRODUCTION
+    // Les outils de recette ne sont pas compilés. Si leurs variables sont
+    // posées, on le dit : mieux vaut un avertissement qu'un essai qui semble
+    // ne rien faire.
+    for (const char *name : { "HMI_HV", "HMI_FAULT", "HMI_VOICE", "HMI_ASSISTANT", "HMI_VOICE_WAV",
+                              "HMI_NAV", "HMI_TRACE", "HMI_SCREENSHOT_DIR", "HMI_BOOT_FRAMES",
+                              "HMI_SIM_SPEED", "AGOOJIYE_MAP" }) {
+        if (qEnvironmentVariableIsSet(name))
+            qWarning("%s ignorée : binaire de production, outils de recette absents.", name);
+    }
+#else
     // HMI_HV=<5 digits> overrides the high-voltage test pattern baked into
     // VehicleSimulator, so a demo can move between fault scenarios without a
     // rebuild. Digit order matches VehicleData.hvChain: isolation, traction
@@ -647,6 +704,7 @@ int main(int argc, char *argv[])
             timer->start();
         }
     }
+#endif // !AGOOJIYE_PRODUCTION
 
     return app.exec();
 }

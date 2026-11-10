@@ -1,3 +1,4 @@
 build/
+build-production/
 # Journal laissé par aqtinstall quand on installe Qt depuis ce dossier.
 aqtinstall.log
