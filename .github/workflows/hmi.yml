@@ -1,0 +1,63 @@
+# Recette de l'IHM AGOOJIYE (Qt 6 / QML).
+#
+# À chaque poussée ou demande de fusion qui touche agoojiye-hmi/ : construction,
+# tests unitaires, parcours des 40 panneaux, cohérence physique, assistant
+# vocal, navigation, entrées malformées, binaire de production — les treize
+# étapes de ./test.sh, sans écran (Qt « offscreen »).
+#
+# Rien n'est déployé : ce workflow dit seulement si la branche est saine.
+
+name: Recette de l'IHM
+
+on:
+  push:
+    paths:
+      - 'agoojiye-hmi/**'
+      - '.github/workflows/hmi.yml'
+  pull_request:
+    paths:
+      - 'agoojiye-hmi/**'
+      - '.github/workflows/hmi.yml'
+  workflow_dispatch:
+
+# Lecture seule : la recette ne publie rien et n'écrit pas dans le dépôt.
+permissions:
+  contents: read
+
+concurrency:
+  group: hmi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  recette:
+    # Ubuntu 24.04 fournit Qt 6.4, la plus ancienne version que le projet
+    # vise : ce qui passe ici passe sur les Qt plus récents de l'équipe.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: agoojiye-hmi
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dépendances
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake python3 \
+            qt6-base-dev qt6-declarative-dev qt6-multimedia-dev \
+            qml6-module-qtquick qml6-module-qtquick-controls \
+            qml6-module-qtquick-shapes qml6-module-qtquick-window \
+            qml6-module-qtquick-templates qml6-module-qtquick-layouts \
+            qml6-module-qtqml-workerscript
+
+      - name: Recette
+        run: ./test.sh --keep "$RUNNER_TEMP/captures"
+
+      - name: Captures (en cas d'échec)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-recette
+          path: ${{ runner.temp }}/captures
+          if-no-files-found: ignore
