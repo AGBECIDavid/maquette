@@ -60,7 +60,7 @@ Gravité : **M** moyen, **F** faible. Aucun critique, aucun élevé.
 | F1 | **Carte malformée → plantage** (indices de nœuds non contrôlés). | `mapdata.cpp` | indices, échelle, emprise et présence d'une route praticable vérifiés au chargement ; refus avec message | 10 cas unitaires ; étape 12 |
 | F2 | **Fichier son malformé → lecture hors mémoire.** | `voicelistener.cpp`, `feedWav()` | chaque longueur annoncée est confrontée au fichier | étape 12 : six fichiers |
 | F3 | **Aucun test unitaire.** | — | 31 cas Qt Test sur le moteur de carte (`tests/tst_mapdata.cpp`), validés par mutation | étape 1 bis |
-| F4 | **Aucune intégration continue pour l'IHM.** | — | `.github/workflows/hmi.yml` lance `./test.sh` | **non vérifié** : voir §5 |
+| F4 | **Aucune intégration continue pour l'IHM.** | — | `.github/workflows/hmi.yml` lance `./test.sh` | premier passage vert sur GitHub (dépôt maquette, Ubuntu 24.04) ; à copier dans le dépôt d'équipe, voir §5 |
 | F5 | **Aucune mention des composants tiers.** | — | `TIERS.md` | relecture |
 | F6 | **Documentation périmée** (nombres de lignes, étapes de recette, passage en production). | `DOCUMENTATION.md`, `README.md`, `BACKEND.md` | mise à jour ; les nombres de lignes par fichier, qui périment à chaque commit, sont retirés | relecture |
 | F9a | Ports fixes dans la recette (collision possible). | `test.sh` | ports libres demandés au système | recette |
@@ -103,7 +103,7 @@ relevés, et le test tolère 2,1 pour absorber cet écart d'échantillonnage.
 | M7 | **L'assistant n'écoute bien qu'avec un casque.** | la cause n'est pas établie ; elle se diagnostique sur une machine avec micro et haut-parleurs | essai réel après le délai de 700 ms ; sinon annulation d'écho PipeWire (DOCUMENTATION.md §6.7) |
 | M4 | **Deux dépôts pour un même code.** La copie maquette → dépôt d'équipe écrase ce qu'un coéquipier y aurait modifié. | décision d'équipe | après fusion, désigner le dépôt d'équipe comme seule source |
 | M5 | Empreintes des modèles non inscrites. | Hugging Face est injoignable depuis l'environnement d'audit | `./voice.sh verify`, comparer à la source, `./voice.sh pin` |
-| F4 | Intégration continue jamais exécutée. | elle ne tourne que sur GitHub | regarder le premier passage ; le dépôt d'équipe a besoin de sa propre copie du workflow |
+| F4 | Intégration continue absente du dépôt d'équipe. | le workflow vit hors de `agoojiye-hmi/` : la copie habituelle ne l'emporte pas | le copier à la racine du dépôt d'équipe et regarder son premier passage |
 | F7 | **Qui parle n'est pas identifié.** Un passager peut dire « déverrouille » à l'arrêt. | choix de conception | à trancher par l'équipe ; sinon, réserver ces commandes au bouton micro du conducteur |
 | F8 | Valeurs fictives : numéro de série, « 4G », wifi, média, téléphone. | pas de backend | à brancher avec le véhicule |
 | F10 | **Valeurs de départ en production.** Sans backend, `VehicleData` affiche ses valeurs initiales (82 %, chaîne haute tension saine) comme si elles étaient mesurées. Constaté pendant la correction de M3. | c'est le rôle du backend, qui n'existe pas encore | déclarer chaque signal manquant jusqu'à sa première trame (BACKEND.md) |
